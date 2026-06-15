@@ -458,7 +458,9 @@ When prompting these tools later, keep using the same session and split text/Ent
 
 ## Worktree Integration
 
-For filesystem isolation between agents, use the `using-git-worktrees` skill to create worktrees before starting tmux sessions. Do not duplicate worktree creation logic here.
+For filesystem isolation between agents, use Superpowers'
+`using-git-worktrees` skill before starting tmux sessions. Do not duplicate
+worktree creation logic here.
 
 Pattern: one worktree per agent, one tmux session (or pane) per worktree.
 
