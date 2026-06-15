@@ -1,6 +1,6 @@
 ---
 description: 'Guidelines for writing and editing SKILL.md files'
-applyTo: '.github/skills/**/*.md'
+applyTo: 'skills/**/*.md'
 ---
 
 # Skill Authoring Rules
@@ -27,9 +27,7 @@ When writing or editing SKILL.md files:
 - Detailed reference material in separate files
 - Agent reads reference files on demand
 
-## Modern Features to Consider
-- `context: fork` for isolated execution
-- `allowed-tools` for restricted access
-- `disable-model-invocation: true` for manual-only skills
-- `$ARGUMENTS`, `$0`, `$1` for dynamic content
-- `!`command`` for dynamic context injection
+## Portability
+- Keep portable frontmatter to `name` and `description` by default
+- Avoid harness-specific preprocessing syntax
+- Document reduced compatibility before using harness extensions

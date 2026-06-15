@@ -1,1 +1,1 @@
-../../.github/docs/tdd-workflow.md
+../../docs/tdd-workflow.md

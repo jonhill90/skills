@@ -1,6 +1,6 @@
 ---
 paths:
-  - ".github/agents/**/*.md"
+  - "agents/**/*.md"
 ---
 
 # Agent Authoring Rules

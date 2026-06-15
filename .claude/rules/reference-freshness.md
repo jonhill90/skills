@@ -1,7 +1,7 @@
 ---
 paths:
   - ".claude/references/**/*.md"
-  - ".github/docs/**/*.md"
+  - "docs/**/*.md"
 ---
 
 # Reference Freshness

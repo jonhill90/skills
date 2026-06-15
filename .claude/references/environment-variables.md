@@ -1,1 +1,1 @@
-../../.github/docs/environment-variables.md
+../../docs/environment-variables.md

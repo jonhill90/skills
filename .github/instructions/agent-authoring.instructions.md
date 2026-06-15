@@ -1,6 +1,6 @@
 ---
 description: 'Guidelines for writing and editing agent definition files'
-applyTo: '.github/agents/**/*.md'
+applyTo: 'agents/**/*.md'
 ---
 
 # Agent Authoring Rules

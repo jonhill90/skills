@@ -1,160 +1,103 @@
-# vibes
+# Skills
 
-A multi-platform skill and agent framework for AI coding assistants.
+Personal skills and workflow components for AI coding agents.
 
-## What is vibes?
+This repository is a portable, multi-harness workflow layer: skills form the
+common core, while agents, hooks, instructions, MCP configuration, and package
+profiles can extend that core without being required for every installation.
 
-Vibes provides a shared set of skills, agents, and reference documentation for AI coding assistants. Write your agent instructions once in `AGENTS.md`, and every supported platform — Claude Code, GitHub Copilot, Codex CLI — gets the same guidance through symlinks and platform-specific configuration.
+## Install Skills
 
-Skills teach agents _how_ to perform specific tasks (fetch library docs, manage GitHub PRs, review code). Agents define _roles_ with scoped tools and system prompts. MCP servers provide _live documentation_ so agents work from current APIs instead of stale training data.
-
-## Quick Start
-
-```bash
-git clone https://github.com/jonhill90/vibes.git
-cd vibes
-```
-
-Open the repo in your editor. The platform reads its instruction file automatically — no build step, no install.
-
-### MCP Servers
-
-Three MCP servers provide live documentation. They are pre-configured in `.mcp.json` (Claude Code), `.vscode/mcp.json` (VS Code), and `.codex/config.toml` (Codex CLI). No API keys required.
-
-| Server | Purpose |
-|--------|---------|
-| **context7** | Library and framework docs (npm, PyPI, crates, etc.) |
-| **microsoft-learn** | Azure, .NET, M365, and Microsoft docs |
-| **deepwiki** | GitHub repository wikis and documentation |
-
-### Platform Setup
-
-| Platform | Instruction File | MCP Config |
-|----------|-----------------|------------|
-| **Claude Code** | `CLAUDE.md` (symlink → `AGENTS.md`) | `.mcp.json` |
-| **GitHub Copilot** | `.github/copilot-instructions.md` (symlink → `AGENTS.md`) | `.vscode/mcp.json` |
-| **Codex CLI** | `AGENTS.md` (read natively) | `.codex/config.toml` |
-
-For Codex skill discovery, this repo exposes `.agents/skills` (symlink → `.github/skills`).
-
-## Skills
-
-Skills are invocable instruction sets that teach an agent how to perform a specific task. Each lives in `.github/skills/<name>/SKILL.md`.
-
-### Documentation
-
-| Skill | Trigger | Description |
-|-------|---------|-------------|
-| `primer` | `/primer` | Orient in any codebase — structure, docs, key files, current state |
-| `context7` | `/context7` | Fetch live library/framework docs via MCP (Python, Bash, PowerShell variants) |
-| `ms-learn` | `/ms-learn` | Query official Microsoft docs for Azure, .NET, M365 |
-
-### Platform Integration
-
-| Skill | Trigger | Description |
-|-------|---------|-------------|
-| `gh-cli` | `/gh-cli` | Manage GitHub via CLI — PRs, issues, workflows, releases |
-| `az-devops` | `/az-devops` | Manage Azure DevOps — repos, pipelines, boards, work items |
-| `linear` | `/linear` | Manage Linear via CLI — issues, teams, projects, Git workflow |
-| `tmux` | `/tmux` | Run persistent interactive CLI sessions via tmux for agent tooling and REPLs |
-| `obsidian` | `/obsidian` | Read, write, search, and manage Obsidian vault notes |
-| `youtube-transcript` | `/youtube-transcript` | Fetch YouTube video transcripts and metadata |
-
-### Authoring & Validation
-
-| Skill | Trigger | Description |
-|-------|---------|-------------|
-| `create-skill` | `/create-skill` | Guide for creating new skills with scripts and references |
-| `validate-skill` | `/validate-skill` | Validate a SKILL.md against the spec |
-| `lint-agents` | `/lint-agents` | Check agent definition files for correct YAML frontmatter |
-
-## Agents
-
-Agents are specialized roles with scoped tools and a system prompt. Defined in `.github/agents/<name>.md`.
-
-| Agent | Purpose | Tools |
-|-------|---------|-------|
-| `code-reviewer` | Code quality and security review after changes | Read, Grep, Glob, Bash |
-| `researcher` | Codebase investigation and pattern analysis | Read, Grep, Glob |
-
-## Architecture
-
-```mermaid
-graph TD
-    AGENTS["AGENTS.md<br/><i>Single source of truth</i>"]
-
-    AGENTS -->|symlink| CLAUDE["CLAUDE.md<br/>Claude Code"]
-    AGENTS -->|symlink| COPILOT[".github/copilot-instructions.md<br/>GitHub Copilot"]
-    AGENTS -->|reads natively| CODEX["Codex CLI"]
-
-    GH[".github/<br/>skills/ agents/ docs/ instructions/"]
-    GH -->|symlink| CLAUDE_DIR[".claude/<br/>skills/ agents/ hooks/ references/ rules/"]
-    GH -->|symlink| CODEX_DIR[".codex/<br/>agents/ config.toml"]
-    GH -->|symlink| AGENTS_DIR[".agents/<br/>skills/"]
-
-    MCP["MCP Servers<br/>context7 · microsoft-learn · deepwiki"]
-    MCP -.->|live docs| CLAUDE
-    MCP -.->|live docs| COPILOT
-    MCP -.->|live docs| CODEX
-```
-
-**Key decisions:**
-
-- **`.github/` is the single source.** Platform directories (`.claude/`, `.codex/`, `.agents/`) contain symlinks and platform-specific config/policy.
-- **One instruction file for all platforms.** `AGENTS.md` is symlinked so every tool reads the same guidance.
-- **Progressive disclosure.** Skill metadata (name + description) is always in context. The SKILL.md body loads on trigger. Reference files load on demand.
-- **Codex uses native surfaces.** Skills are discovered via `.agents/skills/`; runtime policy/config lives under `.codex/` (`config.toml`, `rules/*.rules`).
-- **Platform-specific rules stay separate.** `.claude/rules/` and `.github/instructions/` use their own formats rather than a forced shared one.
-- **This repo's hooks always exit 0.** The three scripts in `.claude/hooks/` use non-blocking warnings (`systemMessage`) rather than exit 2 blocking. Frontmatter and symlink checks warn Claude after edits; transcript backup runs silently on compaction.
-
-## Reference Documentation
-
-Platform-agnostic docs live in `.github/docs/` and are symlinked into `.claude/references/`.
-
-| Document | Path | Topic |
-|----------|------|-------|
-| Best Practices | `.github/docs/best-practices.md` | Operational patterns for agent development |
-| Context Engineering | `.github/docs/context-engineering.md` | Token budget management, progressive disclosure |
-| TDD Workflow | `.github/docs/tdd-workflow.md` | Red-Green-Refactor process for agents |
-
-## Workflow
-
-```
-Explore → Plan → Red → Green → Refactor → Commit
-```
-
-1. **Explore** — Run `/primer` to orient, then dig deeper as needed
-2. **Plan** — Surface tradeoffs and get alignment
-3. **Red** — Write failing tests that define success
-4. **Green** — Write minimum code to pass
-5. **Refactor** — Clean up while tests stay green
-6. **Commit** — Clean, descriptive messages
-
-For non-code changes (docs, config), skip Red/Green/Refactor and go from Plan to Commit. See [`AGENTS.md`](AGENTS.md) for the full instruction set.
-
-## Adding Skills and Agents
-
-**New skill:**
+Browse the collection and select individual skills:
 
 ```bash
-mkdir -p .github/skills/my-skill
-# Create SKILL.md with name + description frontmatter
-# Validate: /validate-skill .github/skills/my-skill
+npx skills add jonhill90/skills
 ```
 
-**New agent:**
+Install a specific skill:
 
 ```bash
-# Create .github/agents/my-agent.md
-# YAML frontmatter (name, description, tools) + markdown system prompt
-# Validate: /lint-agents
+npx skills add jonhill90/skills --skill primer
 ```
 
-See `/create-skill` for the full skill authoring guide and [`AGENTS.md`](AGENTS.md) for naming conventions.
+The repository currently targets Codex, Claude Code, and GitHub Copilot. Other
+Agent Skills-compatible harnesses may work through the same installer.
 
-## Further Reading
+## Repository Model
 
-- **[`AGENTS.md`](AGENTS.md)** — Full instruction set, conventions, principles, and checklist
-- **[`.claude/references/skills-guide.md`](.claude/references/skills-guide.md)** — Skill authoring reference (frontmatter options, progressive disclosure)
-- **[`.claude/references/subagents-guide.md`](.claude/references/subagents-guide.md)** — Agent configuration and delegation patterns
-- **[`.github/docs/context-engineering.md`](.github/docs/context-engineering.md)** — Token budget management and context architecture
+```text
+skills/          Portable Agent Skills source
+agents/          Reusable agent definitions
+docs/            Platform-agnostic reference material
+.agents/         Codex and cross-harness compatibility projection
+.claude/         Claude-specific configuration and development hooks
+.codex/          Codex-specific configuration and policy
+.github/         GitHub Copilot instructions and repository automation
+tools/           Standalone tools used by selected skills
+```
+
+`skills/` is canonical. Harness directories contain configuration or symlinks
+back to canonical source; they are not independent copies.
+
+## Core Workflow Skills
+
+| Skill | Purpose |
+|---|---|
+| `primer` | Orient in an unfamiliar codebase |
+| `using-tmux` | Operate persistent interactive terminal sessions safely |
+| `using-git-worktrees` | Create isolated Git worktrees |
+| `test-driven-development` | Apply red-green-refactor discipline |
+| `dispatching-parallel-agents` | Split independent work across agents |
+| `closing-the-loop` | Produce implementation plans tied to verification |
+| `create-skill` | Design portable skills with progressive disclosure |
+| `validate-skill` | Validate skills against this repository's portable contract |
+
+Additional skills integrate with GitHub, Azure DevOps, Linear, Microsoft Learn,
+Context7, Obsidian, and YouTube transcripts. Install them selectively to avoid
+overlapping triggers and unnecessary context.
+
+## Authoring Contract
+
+Each skill lives at `skills/<name>/SKILL.md`:
+
+```text
+skills/example-skill/
+├── SKILL.md
+├── scripts/       Optional deterministic helpers
+├── references/    Optional detail loaded on demand
+└── assets/        Optional output resources
+```
+
+Portable skills use `name` and `description` frontmatter. The directory name
+must match `name`. Keep the core instructions concise and move detail into
+directly linked references.
+
+Validate the repository:
+
+```bash
+python3 scripts/validate_repository.py
+python3 -m unittest discover -s tests -v
+```
+
+## Distribution Direction
+
+Two installation layers are intentional:
+
+- `npx skills` installs independent public skills.
+- APM packages will reproduce opinionated workflow profiles containing skills
+  plus agents, instructions, hooks, and MCP dependencies.
+
+APM packaging will be added after the portable source layout and installer
+behavior are stable.
+
+## Content Boundaries
+
+- Generic personal workflow improvements should originate here.
+- Project-specific deployment and operational policy remains in its project.
+- Employer repository material is research input only and is not copied,
+  migrated, or adapted into this repository.
+
+See [docs/migration-audit.md](docs/migration-audit.md) for the source and
+selection decision behind each migrated skill.
+
+See [AGENTS.md](AGENTS.md) for contribution rules.

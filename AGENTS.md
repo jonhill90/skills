@@ -2,299 +2,112 @@
 
 ## Project
 
-Vibes — a conversational development environment for agent skills, subagents, and documentation.
+`skills` is a personal, multi-harness workflow layer for AI coding agents.
+Portable Agent Skills are the primary product. Agents, instructions, hooks, MCP
+configuration, and future package profiles are optional layers.
 
-This file is the single source of truth for all AI coding assistants.
-Chain: `AGENTS.md` (source) ← `CLAUDE.md` (symlink) ← `.github/copilot-instructions.md` (symlink to AGENTS.md)
+This file is the shared repository policy. `CLAUDE.md` and
+`.github/copilot-instructions.md` point here for harness compatibility.
 
----
+## Product Boundaries
 
-## Fresh Information First
+- Keep `skills/` portable and independently installable.
+- Keep canonical content out of harness-owned directories.
+- Treat `.agents/`, `.claude/`, `.codex/`, and `.github/` as adapters,
+  configuration, or repository automation.
+- Do not make installation of one skill inherit the complete personal workflow.
+- Keep project-specific and employer-specific material out of this repository.
 
-**Do not rely on training data for APIs, SDKs, or framework patterns.**
+## Canonical Layout
 
-Always check live documentation before writing code:
-
-| MCP Server | Use For |
-|------------|---------|
-| **context7** | Library and framework documentation (npm, PyPI, crates, etc.) |
-| **microsoft-learn** | Microsoft, Azure, .NET, and M365 documentation |
-| **deepwiki** | GitHub repository documentation and wikis |
-
-Skills and agent patterns evolve — verify against current docs, not memory.
-
----
-
-## Orient First
-
-Run `/primer` at the start of every session before diving into tasks. This analyzes project structure, documentation, key files, and current state — loading essential context for everything that follows.
-
----
-
-## Core Principles
-
-### 1. Think Before Coding
-
-- Surface assumptions explicitly — don't hide confusion
-- Present tradeoffs when multiple approaches exist
-- Ask clarifying questions before implementing ambiguous requests
-- Plan complex changes before touching code
-
-### 2. Simplicity First
-
-- Write the minimum code that solves the problem
-- No speculative features, no "just in case" abstractions
-- If you're overcomplicating it, rewrite — don't patch
-- Three similar lines beat a premature abstraction
-
-### 3. Surgical Changes
-
-- Touch only what's needed to accomplish the task
-- Match existing code style — indentation, naming, patterns
-- Don't refactor adjacent code, add docstrings, or "improve" untouched files
-- A bug fix doesn't need surrounding cleanup
-
-### 4. Goal-Driven Execution
-
-- Define success criteria as tests before writing implementation (see `.github/docs/tdd-workflow.md`)
-- Verify your work — run tests, check output, validate behavior
-- Loop until the task is actually done, not just attempted
-- If blocked, try a different approach before asking for help
-
----
-
-## Repository Structure
-
-```
-vibes/
-├── AGENTS.md                          # Source of truth (this file)
-├── CLAUDE.md → AGENTS.md              # Symlink for Claude Code
-├── .mcp.json                          # MCP server configuration
-│
-├── .github/                           # Source of truth for all content
-│   ├── skills/                        # Skill source directories
-│   │   ├── context7-py/SKILL.md
-│   │   ├── context7-sh/SKILL.md
-│   │   ├── context7-ps/SKILL.md
-│   │   └── ms-learn/SKILL.md
-│   ├── agents/                        # Agent definitions
-│   │   ├── code-reviewer.md
-│   │   └── researcher.md
-│   ├── copilot-instructions.md → ../AGENTS.md   # Symlink for Copilot
-│   ├── instructions/                  # Copilot scoped instructions
-│   │   ├── skill-authoring.instructions.md
-│   │   ├── agent-authoring.instructions.md
-│   │   ├── documentation.instructions.md
-│   │   ├── testing.instructions.md
-│   │   └── reference-freshness.instructions.md
-│   ├── docs/                          # Platform-agnostic reference docs
-│   │   ├── context-engineering.md
-│   │   ├── best-practices.md
-│   │   └── tdd-workflow.md
-│   ├── plugins/
-│   └── prompts/
-│
-├── .claude/                           # Claude Code platform directory
-│   ├── skills → ../.github/skills     # Symlink
-│   ├── agents → ../.github/agents     # Symlink
-│   ├── hooks/                         # Session lifecycle scripts
-│   │   ├── backup-transcript.sh       # PreCompact transcript backup
-│   │   ├── check-frontmatter.sh       # PostToolUse frontmatter validation
-│   │   └── check-symlinks.sh          # PostToolUse symlink integrity
-│   ├── settings.json                  # Project hooks config (shareable)
-│   ├── references/                    # Knowledge docs (mixed)
-│   │   ├── context-engineering.md → ../../.github/docs/context-engineering.md
-│   │   ├── best-practices.md → ../../.github/docs/best-practices.md
-│   │   ├── tdd-workflow.md → ../../.github/docs/tdd-workflow.md
-│   │   ├── skills-guide.md            # Claude-specific
-│   │   ├── hooks-guide.md             # Claude-specific
-│   │   ├── memory-system.md           # Claude-specific
-│   │   └── ...
-│   └── rules/                         # Claude Code-specific path rules
-│       ├── skill-authoring.md
-│       ├── agent-authoring.md
-│       ├── documentation.md
-│       ├── testing.md
-│       └── reference-freshness.md
-│
-├── .codex/                            # Codex CLI platform directory
-│   ├── agents → ../.github/agents     # Symlink
-│   ├── skills → ../.github/skills     # Symlink (compatibility alias)
-│   ├── config.toml                    # MCP servers, approval policy, sandbox
-│   └── rules/                         # Codex command policy (*.rules)
-│       └── default.rules
-│
-├── .agents/                           # Codex-native skills discovery
-│   └── skills → ../.github/skills     # Symlink
-│
-└── skills/                            # Categorized browsing view
-    ├── python/
-    ├── bash/
-    └── powershell/
+```text
+skills/
+  <skill-name>/
+    SKILL.md
+    scripts/
+    references/
+    assets/
+agents/
+docs/
+scripts/
+tests/
 ```
 
-### Architecture
+Compatibility projections:
 
-- **`.github/`** is the source of truth for all skills, agents, plugins, and prompts
-- **`.claude/`**, **`.codex/`**, and **`.agents/`** contain symlinks back to `.github/`
-- **`CLAUDE.md`** symlinks to `AGENTS.md` — Claude Code reads the same source
-- **`.github/copilot-instructions.md`** symlinks to `AGENTS.md` — GitHub Copilot gets the same guidance
-- **`skills/`** at the repo root provides categorized language-based browsing via symlinks
-- **`.github/docs/`** holds platform-agnostic reference docs (context engineering, best practices, TDD)
-- **`.claude/references/`** holds Claude-specific knowledge + symlinks to agnostic docs from `.github/docs/`
-- **`.claude/rules/`** holds path-specific authoring rules for Claude Code (`paths:` frontmatter)
-- **`.claude/hooks/`** contains session lifecycle scripts configured via `.claude/settings.json`
-- **`.github/instructions/`** holds scoped instruction files for GitHub Copilot (`applyTo:` frontmatter)
-- **`.agents/skills/`** is the Codex-native skills discovery path (symlinked to `.github/skills`)
-- **`.codex/config.toml`** configures MCP servers, approval policy, and sandbox mode for Codex CLI
-- **`.codex/rules/*.rules`** defines Codex executable command policy (`prefix_rule`)
-- **`AGENTS.md`** is read natively by Codex CLI from the project root (no symlink needed)
-- **`AGENTS.override.md`** (git-ignored) provides local Codex overrides, analogous to `CLAUDE.local.md`
+- `.agents/skills -> ../skills`
+- `.claude/skills -> ../skills`
+- `.codex/skills -> ../skills`
+- `.claude/agents -> ../agents`
+- `.codex/agents -> ../agents`
+- `.github/agents -> ../agents`
 
----
+## Skill Authoring
 
-## Conventions
+- Use `skills/<name>/SKILL.md`.
+- Match the directory name and frontmatter `name`.
+- Use lowercase letters, digits, and hyphens; maximum 64 characters.
+- Include what the skill does and when it should trigger in `description`.
+- Keep portable frontmatter to `name` and `description` by default.
+- Use imperative instructions.
+- Keep `SKILL.md` under 500 lines.
+- Move detailed material to `references/` and link it directly from `SKILL.md`.
+- Put deterministic, repeated operations in tested scripts.
+- Do not add a README inside a skill directory.
+- Avoid harness-specific preprocessing syntax in portable skills.
 
-### Skill Naming
+Harness-specific extensions require an explicit compatibility note and must not
+replace the portable workflow.
 
-- Source directory: `.github/skills/{name}-{lang}/` (e.g., `context7-py`, `context7-sh`)
-- Each directory contains a `SKILL.md` file
-- Language variants get separate skill directories — one per language (py, sh, ps)
-- Categorized symlinks: `skills/{language}/{short-name}` → `../../.github/skills/{full-name}`
+## Agent Authoring
 
-### Agent Naming
-
-- File: `.github/agents/{name}.md` (e.g., `code-reviewer.md`)
-- Use kebab-case for filenames
-- Agent files combine YAML frontmatter (config) + markdown body (system prompt)
-
-### SKILL.md Authoring
-
-- **Frontmatter**: `name` and `description` are required; description is the PRIMARY trigger
-- **Description**: Include "when to use" context — this is how the agent decides to invoke the skill
-- **Body**: Imperative form ("Run tests" not "Running tests")
-- **Size**: Keep under 500 lines — use progressive disclosure for detail
-- **References**: Move detailed content to separate files, link from SKILL.md
-- **Examples**: Prefer concise examples over verbose explanations
-
-### SKILL.md Frontmatter Features
-
-| Field | Purpose |
-|-------|---------|
-| `name` | Skill identifier (required) |
-| `description` | Trigger text — when to use (required) |
-| `context: fork` | Isolated execution context |
-| `allowed-tools` | Restrict available tools |
-| `disable-model-invocation: true` | Manual-only activation |
-| `$ARGUMENTS`, `$0`, `$1` | Dynamic content injection |
-| `` !`command` `` | Dynamic context from shell commands |
-
----
-
-## MCP Servers
-
-This repository uses three MCP servers for fresh documentation:
-
-### context7
-
-Fetches up-to-date library and framework documentation.
-
-```
-Use: /context7 or resolve-library-id + get-library-docs
-When: Working with any library, framework, or SDK
-```
-
-### microsoft-learn
-
-Queries official Microsoft documentation.
-
-```
-Use: /ms-learn or microsoft_learn_search
-When: Azure, .NET, M365, Windows, or any Microsoft technology
-```
-
-### deepwiki
-
-Fetches GitHub repository documentation and wikis.
-
-```
-Use: deepwiki tools
-When: Understanding a GitHub project's architecture or API
-```
-
----
-
-## Environment Variables
-
-Skills and MCP servers require API keys. See [Environment Variables Guide](.github/docs/environment-variables.md) for setup.
-
-Required variables:
-
-| Variable | Used By |
-|----------|---------|
-| `CONTEXT7_API_KEY` | Context7 MCP, context7 skills |
-| `AZURE_DEVOPS_PAT` | az-devops skill |
-
----
-
-## Clean Code Checklist
-
-Before committing any skill, agent, or documentation change:
-
-- [ ] **Does it work?** — Tested, verified, produces expected output
-- [ ] **Tests first?** — Tests written before implementation (for code changes)
-- [ ] **Is it simple?** — No unnecessary abstraction or indirection
-- [ ] **Is it focused?** — Does one thing well
-- [ ] **Does it match existing patterns?** — Naming, structure, style
-- [ ] **Would another agent understand it?** — Clear description, obvious purpose
-
----
-
-## Do's and Don'ts
-
-### Do
-
-- Use MCP tools for fresh documentation before writing code
-- Write focused skills that do one thing well
-- Write tests before implementation for code changes (Red-Green-Refactor)
-- Test and verify before committing
-- Ask clarifying questions when requirements are ambiguous
-- Use progressive disclosure — core workflow in SKILL.md, details in reference files
-- Match the naming conventions: `{name}-{lang}` for skills, `kebab-case.md` for agents
-
-### Don't
-
-- Rely on training data for API signatures, SDK methods, or configuration formats
-- Create monolithic skills that try to do everything
-- Skip validation — always verify skills activate correctly
-- Add features that weren't requested
-- Modify files outside the scope of the current task
-- Commit without reviewing changes
-- Skip the Red step — implementation without a failing test first
-
----
-
-## Success Indicators
-
-You're doing it right when:
-
-- **Fewer unnecessary file changes** — only touched files are relevant to the task
-- **Clarifying questions come first** — ambiguity is resolved before implementation
-- **Skills auto-activate correctly** — descriptions trigger on the right queries
-- **Clean, focused commits** — each commit does one thing
-- **Fresh docs are used** — MCP tools are invoked before writing integration code
-
----
+- Store reusable agent definitions in `agents/<name>.md`.
+- Use kebab-case filenames.
+- Keep harness-specific projections or schemas in adapter directories.
+- Validate tool lists as YAML arrays where the target format requires arrays.
 
 ## Workflow
 
-Use Claude Code's built-in plan mode for feature planning and implementation.
+1. Orient in the repository and inspect current changes.
+2. Define observable success criteria.
+3. For behavioral code, use red-green-refactor.
+4. Make the smallest coherent change.
+5. Run repository validation and relevant script tests.
+6. Review the diff for generated files, broken links, and source duplication.
 
-1. **Explore** — run /primer to orient, then dig deeper as needed
-2. **Plan** — surface tradeoffs and get alignment
-3. **Red** — write failing tests that define success criteria
-4. **Green** — write minimum code to pass tests
-5. **Refactor** — clean up while keeping tests green
-6. **Commit** — clean, descriptive commit messages
+## Required Verification
 
-For non-code changes (docs, config), skip steps 3-5 and go directly from Plan to Commit.
+Run before considering repository changes complete:
+
+```bash
+python3 scripts/validate_repository.py
+python3 -m unittest discover -s tests -v
+npx skills add . --list
+```
+
+Run language-specific tests when changing bundled scripts or tools.
+
+## Distribution
+
+- Use `npx skills` for individual skill discovery and installation.
+- Use APM for future reproducible workflow packages.
+- Do not hand-maintain a growing matrix of harness skill copies.
+- Generated package or harness output must identify its canonical source.
+
+## Guardrails
+
+Do:
+
+- use current primary documentation for changing formats and tools;
+- install skills selectively;
+- preserve progressive disclosure;
+- keep generic improvements upstream here;
+- document compatibility assumptions.
+
+Do not:
+
+- copy employer-owned content into this repository;
+- add duplicate skill identities;
+- encode one harness as the portable source model;
+- load every skill into every workflow by default;
+- claim validation without running the commands above.

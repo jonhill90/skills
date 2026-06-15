@@ -1,6 +1,6 @@
 #!/bin/bash
 # PostToolUse (Edit|Write) hook: validates YAML frontmatter in skill and agent files.
-# Only checks files matching .github/skills/*/SKILL.md or .github/agents/*.md.
+# Only checks files matching skills/*/SKILL.md or agents/*.md.
 # Non-blocking: exits 0 with systemMessage warnings on issues found.
 # Soft-requires jq — degrades silently if missing.
 
@@ -25,9 +25,9 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 IS_SKILL=false
 IS_AGENT=false
 
-if echo "$FILE_PATH" | grep -qE '\.github/skills/[^/]+/SKILL\.md$'; then
+if echo "$FILE_PATH" | grep -qE '(^|/)skills/[^/]+/SKILL\.md$'; then
     IS_SKILL=true
-elif echo "$FILE_PATH" | grep -qE '\.github/agents/[^/]+\.md$'; then
+elif echo "$FILE_PATH" | grep -qE '(^|/)agents/[^/]+\.md$'; then
     IS_AGENT=true
 fi
 

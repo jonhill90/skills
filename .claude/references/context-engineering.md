@@ -1,1 +1,1 @@
-../../.github/docs/context-engineering.md
+../../docs/context-engineering.md

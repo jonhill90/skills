@@ -1,1 +1,1 @@
-../../.github/docs/best-practices.md
+../../docs/best-practices.md

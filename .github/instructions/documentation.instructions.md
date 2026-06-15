@@ -1,6 +1,6 @@
 ---
 description: 'Guidelines for writing and editing documentation and reference files'
-applyTo: '.github/docs/**/*.md'
+applyTo: 'docs/**/*.md'
 ---
 
 # Documentation Rules

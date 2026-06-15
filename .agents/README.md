@@ -2,5 +2,5 @@
 
 Codex-native skill discovery surface.
 
-- `skills/` points to `../.github/skills` (source of truth).
-- Keep authored skill content in `.github/skills`.
+- `skills/` points to `../skills`.
+- Keep authored skill content in the repository's root `skills/` directory.

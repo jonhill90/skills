@@ -1,6 +1,6 @@
 ---
 description: 'Verify reference docs against source URLs before relying on local content'
-applyTo: '.github/docs/**/*.md'
+applyTo: 'docs/**/*.md'
 ---
 
 # Reference Freshness
