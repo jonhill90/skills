@@ -45,9 +45,6 @@ back to canonical source; they are not independent copies.
 |---|---|
 | `primer` | Orient in an unfamiliar codebase |
 | `using-tmux` | Operate persistent interactive terminal sessions safely |
-| `using-git-worktrees` | Create isolated Git worktrees |
-| `test-driven-development` | Apply red-green-refactor discipline |
-| `dispatching-parallel-agents` | Split independent work across agents |
 | `closing-the-loop` | Produce implementation plans tied to verification |
 | `create-skill` | Design portable skills with progressive disclosure |
 | `validate-skill` | Validate skills against this repository's portable contract |
@@ -55,6 +52,11 @@ back to canonical source; they are not independent copies.
 Additional skills integrate with GitHub, Azure DevOps, Linear, Microsoft Learn,
 Context7, Obsidian, and YouTube transcripts. Install them selectively to avoid
 overlapping triggers and unnecessary context.
+
+General software-development methodology skills such as TDD, Git worktrees,
+and parallel-agent dispatch are provided by
+[Superpowers](https://github.com/obra/superpowers) and are intentionally not
+duplicated here.
 
 ## Authoring Contract
 
