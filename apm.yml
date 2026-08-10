@@ -1,7 +1,0 @@
-name: agent-dotfiles
-version: 0.1.0
-description: >-
-  Jon Hill's agent dotfiles — versioned personal harness for AI coding
-  agents. Portable skills, canonical instructions, hooks, agents, and
-  MCP declarations, deployed at user scope via apm install -g plus a
-  thin sync wrapper (see docs/SPEC.md).

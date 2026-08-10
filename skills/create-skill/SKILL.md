@@ -96,7 +96,7 @@ as instructions.
 Run:
 
 ```bash
-# inside the agent-dotfiles repo:
+# inside this repository:
 python3 scripts/validate_repository.py skills/<name>
 # anywhere else — the portable check:
 npx skills add . --list

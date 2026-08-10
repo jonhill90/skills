@@ -1,4 +1,0 @@
-[project]
-name = "orderflow"
-version = "0.3.0"
-description = "CSV order report CLI"

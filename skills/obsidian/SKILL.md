@@ -66,7 +66,10 @@ obsidian vaults verbose
 obsidian vault info=path
 ```
 
-Check `CLAUDE.local.md` in the project root for vault configuration:
+Check this harness's local, project-scoped configuration for vault
+settings — its file name and format vary by harness (a local instructions
+override, a local settings file, an environment variable) — for a block
+like:
 
 ```markdown
 ## Obsidian
@@ -74,8 +77,9 @@ Check `CLAUDE.local.md` in the project root for vault configuration:
 - Rules: {path to vault rules note}
 ```
 
-If absent, ask the user which vault to use and whether a rules/guide note
-exists, then have them record it there. **On first use per session**, if a
+If none exists, ask the user which vault to use and whether a rules/guide
+note exists, then have them record it in whatever local configuration
+this harness reads automatically. **On first use per session**, if a
 rules path is configured, read it and follow its folder, template, naming,
 and tagging rules exactly:
 

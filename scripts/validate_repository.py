@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate portable skills and repository compatibility projections."""
+"""Validate the portable Agent Skills in this repository."""
 
 from __future__ import annotations
 
@@ -10,16 +10,6 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-# One parser for the roster format, shared with the sync wrapper so the
-# two cannot drift on what a section means (SPEC §4.1).
-from sync import (  # noqa: E402
-    NEUTRAL_HARNESSES,
-    load_default_skills,
-    load_skill_roster,
-    roster_union,
-)
 
 try:
     import yaml
@@ -41,34 +31,13 @@ PORTABLE_FIELDS = {
     "allowed-tools",
 }
 EXECUTABLE_SUFFIXES = {".py", ".sh", ".bash"}
-INSTRUCTION_TOKEN_CAP = 2_000
-OVERLAY_TOKEN_CAP = 1_500
-DESCRIPTION_TOKEN_CAP = 2_000
-MEMORY_INDEX_TOKEN_RESERVE = 1_500
-TOTAL_STATIC_TOKEN_CAP = 8_000
-# Claude Code plus the neutral trio — every harness whose roster is
-# resolved separately (SPEC §4.1, §5).
-HARNESSES = ("claude", *NEUTRAL_HARNESSES)
-DEFAULT_APM_SKILLS = {
-    "create-skill",
-    "failing-test-first",
-    "github-cli",
-    "linear",
-    "memory-conventions",
-    "obsidian",
-    "safe-deletion",
-    "tmux",
-}
-# Retired at M3: installer-owned projection (APM + scripts/sync.py)
-# replaced the committed symlink matrix. Their presence is now an error.
-RETIRED_PROJECTIONS = (
-    ".agents/skills",
-    ".claude/skills",
-    ".codex/skills",
-    ".claude/agents",
-    ".codex/agents",
-    ".github/agents",
-)
+
+# AGENTS.md caps SKILL.md at 500 lines. Enforced since 2026-07-27: it was a
+# convention before, and skills/tmux reached 493 lines with nobody notified.
+# The warning band exists because "seven lines from breaking" and "fine"
+# look identical in a diff.
+SKILL_LINE_CAP = 500
+SKILL_LINE_WARN = 450
 
 
 @dataclass(frozen=True)
@@ -179,16 +148,6 @@ def validate_skill(skill_dir: Path) -> list[Finding]:
     if not body:
         findings.append(Finding("error", skill_file, "skill body is empty"))
 
-    line_count = len(skill_file.read_text(encoding="utf-8").splitlines())
-    if line_count > 500:
-        findings.append(
-            Finding(
-                "warning",
-                skill_file,
-                f"SKILL.md has {line_count} lines; prefer fewer than 500",
-            )
-        )
-
     if (skill_dir / "README.md").exists():
         findings.append(
             Finding("error", skill_dir / "README.md", "skill directories cannot contain README.md")
@@ -231,14 +190,6 @@ def discover_skill_dirs(root: Path, target: Path | None) -> list[Path]:
     raise ValueError(f"target is not a skill directory or skills root: {target}")
 
 
-# AGENTS.md caps SKILL.md at 500 lines. Enforced since 2026-07-27: it was a
-# convention before, and skills/tmux reached 493 lines with nobody notified
-# (#82). The warning band exists because "seven lines from breaking" and
-# "fine" look identical in a diff.
-SKILL_LINE_CAP = 500
-SKILL_LINE_WARN = 450
-
-
 def validate_skill_length(skill_dir: Path) -> list[Finding]:
     """Keep SKILL.md within the cap, and say so before it is breached."""
     path = skill_dir / "SKILL.md"
@@ -258,138 +209,6 @@ def validate_skill_length(skill_dir: Path) -> list[Finding]:
             "move detail into references/ before it breaks",
         )]
     return []
-
-
-def validate_projections(root: Path) -> list[Finding]:
-    findings: list[Finding] = []
-    for relative_path in RETIRED_PROJECTIONS:
-        projection = root / relative_path
-        if projection.is_symlink() or projection.exists():
-            findings.append(
-                Finding(
-                    "error",
-                    projection,
-                    "retired compatibility projection present; "
-                    "projection is installer-owned (scripts/sync.py)",
-                )
-            )
-    return findings
-
-
-def description_tokens_by_harness(root: Path) -> dict[str, float]:
-    """Static description cost per harness, against its resolved roster.
-
-    A skill scoped to one harness is charged to that harness only — the
-    point of per-harness rosters (SPEC §4.1). With a flat roster every
-    harness resolves to the same set and the numbers are identical.
-    """
-    roster = root / "settings" / "default-skills.txt"
-    if not roster.is_file():
-        names_by_harness = {
-            harness: [d.name for d in discover_skill_dirs(root, None)]
-            for harness in HARNESSES
-        }
-    else:
-        names_by_harness = {
-            harness: load_default_skills(root, harness) for harness in HARNESSES
-        }
-    totals: dict[str, float] = {}
-    for harness, names in names_by_harness.items():
-        description_bytes = 0
-        for name in sorted(set(names)):
-            try:
-                frontmatter, _ = parse_skill(root / "skills" / name / "SKILL.md")
-            except PARSE_ERRORS:
-                continue
-            description = frontmatter.get("description")
-            if isinstance(description, str):
-                description_bytes += len(description.encode("utf-8"))
-        totals[harness] = token_estimate_bytes(description_bytes)
-    return totals
-
-
-def validate_apm_skill_roster(root: Path) -> list[Finding]:
-    """Keep public skills distinct from the personal default package."""
-    roster = root / "settings" / "default-skills.txt"
-    if not roster.is_file():
-        return [Finding("error", roster, "default skill roster missing")]
-    # Per-harness sections (SPEC §4.1): the default package is the union
-    # across every section, since APM installs the union.
-    actual = set(roster_union(root))
-    findings: list[Finding] = []
-    missing = sorted(DEFAULT_APM_SKILLS - actual)
-    unexpected = sorted(actual - DEFAULT_APM_SKILLS)
-    if missing:
-        findings.append(
-            Finding(
-                "error",
-                roster,
-                f"missing default-package skills: {', '.join(missing)}",
-            )
-        )
-    if unexpected:
-        findings.append(
-            Finding(
-                "error",
-                roster,
-                f"unexpected default-package skills: {', '.join(unexpected)}",
-            )
-        )
-    return findings
-
-
-# SPEC §10.1 rule 5. A row promising future verification is exactly what the
-# retired prior-bar path looked like, and the promise came due nine days late
-# the one time it was used. Cheap to check, so it is checked rather than
-# trusted — the 500-line skill cap was a convention nothing enforced and was
-# three days from being breached silently (#82).
-OPEN_CAVEAT = re.compile(r"\*\*will be\*\*|will be re-verified|prior bar", re.I)
-
-
-def validate_roster_resolves(root: Path) -> list[Finding]:
-    """Every roster name must name a skill that exists here.
-
-    Nothing checked this, so deleting a skill directory while leaving its
-    roster line validated clean — and the wrapper would then derive disable
-    entries for a skill that is not there. Same silent shape as #93.
-    """
-    roster = root / "settings" / "default-skills.txt"
-    if not roster.is_file():
-        return []
-    return [
-        Finding(
-            "error", roster,
-            f"{name} is in the roster but skills/{name}/SKILL.md does not exist",
-        )
-        for name in roster_union(root)
-        if not (root / "skills" / name / "SKILL.md").is_file()
-    ]
-
-
-def validate_roster_credit(root: Path) -> list[Finding]:
-    """No default-roster skill may carry an unfinished verification promise."""
-    manifest = root / "docs" / "provenance-manifest.md"
-    if not manifest.is_file():
-        return []
-    roster = set(roster_union(root))
-    findings: list[Finding] = []
-    for line in manifest.read_text(encoding="utf-8").splitlines():
-        if not line.startswith("|") or not OPEN_CAVEAT.search(line):
-            continue
-        if "caveat cleared" in line.lower():
-            continue
-        for name in roster:
-            if f"`{name}`" in line:
-                findings.append(
-                    Finding(
-                        "error",
-                        manifest,
-                        f"{name} is in the default roster with an unfinished "
-                        "verification promise; SPEC §10.1 rule 5 requires it "
-                        "ship opt-in until the bar is cleared",
-                    )
-                )
-    return findings
 
 
 def validate_privacy(root: Path) -> list[Finding]:
@@ -450,94 +269,12 @@ def validate_skill_collection(skill_dirs: list[Path]) -> list[Finding]:
     return findings
 
 
-def token_estimate_bytes(size: int) -> float:
-    return size / 4
-
-
-def validate_static_context(root: Path) -> list[Finding]:
-    """Enforce the SPEC section 6 static-context budgets.
-
-    The memory index is machine-local, so the repository check reserves its
-    full component budget when enforcing the total. E15 measures the live
-    index separately.
-    """
-    findings: list[Finding] = []
-    instructions = root / "instructions" / "global.instructions.md"
-    if not instructions.is_file():
-        return [Finding("error", instructions, "canonical instructions missing")]
-
-    instruction_tokens = token_estimate_bytes(instructions.stat().st_size)
-    if instruction_tokens > INSTRUCTION_TOKEN_CAP:
-        findings.append(
-            Finding(
-                "error",
-                instructions,
-                f"canonical instructions use ~{instruction_tokens:.0f} tokens; "
-                f"cap is {INSTRUCTION_TOKEN_CAP}",
-            )
-        )
-
-    overlay_tokens = 0.0
-    overlays = root / "instructions" / "overlays"
-    if overlays.is_dir():
-        for overlay in sorted(overlays.glob("*.md")):
-            tokens = token_estimate_bytes(overlay.stat().st_size)
-            overlay_tokens = max(overlay_tokens, tokens)
-            if tokens > OVERLAY_TOKEN_CAP:
-                findings.append(
-                    Finding(
-                        "error",
-                        overlay,
-                        f"harness overlay uses ~{tokens:.0f} tokens; "
-                        f"cap is {OVERLAY_TOKEN_CAP}",
-                    )
-                )
-
-    by_harness = description_tokens_by_harness(root)
-    for harness, tokens in sorted(by_harness.items()):
-        if tokens > DESCRIPTION_TOKEN_CAP:
-            findings.append(
-                Finding(
-                    "error",
-                    root / "skills",
-                    f"{harness}: installed-skill descriptions use "
-                    f"~{tokens:.0f} tokens; cap is {DESCRIPTION_TOKEN_CAP}",
-                )
-            )
-    # The thickest harness sets the aggregate (SPEC §6 measures the worst
-    # case), but each harness is now charged only for its own roster.
-    description_tokens = max(by_harness.values(), default=0.0)
-
-    total_tokens = (
-        instruction_tokens
-        + overlay_tokens
-        + description_tokens
-        + MEMORY_INDEX_TOKEN_RESERVE
-    )
-    if total_tokens > TOTAL_STATIC_TOKEN_CAP:
-        findings.append(
-            Finding(
-                "error",
-                root / "instructions",
-                f"thickest-harness static context uses ~{total_tokens:.0f} "
-                f"tokens including the memory-index reserve; cap is "
-                f"{TOTAL_STATIC_TOKEN_CAP}",
-            )
-        )
-    return findings
-
-
 def validate(root: Path, target: Path | None = None) -> list[Finding]:
     skill_dirs = discover_skill_dirs(root, target)
     findings = validate_skill_collection(skill_dirs)
 
     if target is None:
-        findings.extend(validate_projections(root))
-        findings.extend(validate_apm_skill_roster(root))
-        findings.extend(validate_roster_credit(root))
-        findings.extend(validate_roster_resolves(root))
         findings.extend(validate_privacy(root))
-        findings.extend(validate_static_context(root))
 
     return findings
 

@@ -21,7 +21,13 @@ Every vault may have a rules file that defines:
 - Tagging conventions
 - Subfolder rules (e.g., project categories)
 
-**On first use per session**, read the vault rules file (path configured in `CLAUDE.local.md`) to learn the vault's specific conventions. Follow those rules exactly.
+**On first use per session**, read the vault rules file to learn the
+vault's specific conventions. Its location is not fixed by this skill —
+find it the way this harness declares local configuration: an
+environment variable (for the memory vault specifically, see
+`memory-conventions` and `$AGENT_MEMORY_VAULT`), a local project-override
+instructions file, or a path the user states directly. Ask the user if
+none of those resolve. Follow those rules exactly.
 
 If no rules file exists, apply the generic best practices below.
 

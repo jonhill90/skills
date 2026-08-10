@@ -124,28 +124,25 @@ the claim each anecdote was supporting is marked accordingly.
 
 - **A reviewer handed a conclusion confirms it.** *Evidenced.* Copilot
   sought a second opinion exactly as instructed, handed over its diagnosis,
-  the reviewer agreed, and it edited the wrong skill
-  ([ladder](../../tests/evals/results/2026-07-27-copilot-ladder.md)). The
-  same fixture, given raw to a reviewer on another harness, produced a
-  falsified hypothesis instead
-  ([E18](../../tests/evals/results/2026-07-26-e18-sentence-rung.md)).
+  the reviewer agreed, and it edited the wrong skill (2026-07-27, ladder
+  run). The same fixture, given raw to a reviewer on another harness,
+  produced a falsified hypothesis instead (2026-07-26, sentence-rung run).
 - **Agreement is not verification.** *Evidenced.* Copilot delegated to three
   reviewers, they agreed, and it acted on the vote without running the test
-  that settled the question — FAIL ×2
-  ([E17](../../tests/evals/results/2026-07-27-copilot-column.md)).
+  that settled the question — FAIL ×2 (2026-07-27, column run).
 - **Check the instrument before believing the verdict.** *Evidenced, and the
   best-supported claim here.* Twenty-plus false verdicts across
   2026-07-26/29, none from a skill; one was an arm that reported a skill
-  absent while a harness still listed it
-  ([counter-scenario](../../tests/evals/results/2026-07-28-sc-c1-instrument.md)).
+  absent while a harness still listed it (2026-07-28, counter-scenario run).
 - **Vary the question, not the reviewer count.** *Not evidenced.* Reasoning
   from the two entries above, not from a run that varied it.
 - **The eight prompt properties.** *Not evidenced individually.* Rules 3, 5,
   6 and 8 have no recorded instance behind them. They are practice.
 
-The technique as a whole has never been measured: E18 scores whether an
-outside check was **sought**, not whether the way it was asked improved the
-answer. That is why this skill is public opt-in rather than in the default
-roster (SPEC §10.1 rule 5). The scenario that would settle it — a fixture
+The technique as a whole has never been measured: the sentence-rung scenario
+scores whether an outside check was **sought**, not whether the way it was
+asked improved the answer. That is why this skill is public opt-in rather
+than in the default roster. The scenario that would settle it — a fixture
 where a well-built prompt and a naive one reach different answers — has not
-been written; the first attempt exercised the mechanism in 3 of 16 runs.
+been written; the first attempt exercised the mechanism in 3 of 16 runs. The
+underlying transcripts are private evaluation evidence, not published here.
