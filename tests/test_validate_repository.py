@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -241,6 +242,73 @@ class NoUnlabeledHarnessPathDependencyTests(unittest.TestCase):
             text = doc.read_text(encoding="utf-8")
             if "code.claude.com" in text:
                 offenders.append(doc.name)
+        self.assertEqual(offenders, [])
+
+
+class NoDanglingEvalReferenceTests(unittest.TestCase):
+    """jonhill90/skills#128: behavioral scenarios, counter-scenarios,
+    harness runners, results, transcripts, and scoring/arming tools moved
+    to the private jonhill90/agent-evals repository. A skill that points a
+    reader at private evidence without saying so is a broken instruction,
+    and it leaks the shape of private material. This scans the tree
+    actually shipped (SKILL.md, references/, scripts/) so the class cannot
+    silently reappear — the content, not validator logic, is the risk."""
+
+    ROOT = Path(__file__).parents[1]
+
+    # Identifiers with no plausible portable meaning outside the private
+    # eval suite; a hard ban wherever they show up in skill content.
+    HARD_BANNED = ("eval_arm", "EVAL_ARM", "tests/evals")
+    E_ID_RE = re.compile(r"(?<![\w/-])E(?:[1-9]|1[0-9]|20)(?![\w-])")
+    LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+
+    # A plain-text mention of the private repo is allowed (AGENTS.md:
+    # "plain provenance statements ... are fine"), but only paired with an
+    # explicit statement that the evidence isn't public.
+    UNAVAILABLE_PHRASES = (
+        "not publicly available",
+        "not published here",
+        "private evaluation",
+    )
+
+    def _skill_files(self) -> list[Path]:
+        paths = set(self.ROOT.glob("skills/**/SKILL.md"))
+        paths |= set(self.ROOT.glob("skills/**/references/**/*"))
+        paths |= set(self.ROOT.glob("skills/**/scripts/**/*"))
+        return sorted(path for path in paths if path.is_file())
+
+    def test_no_hard_banned_eval_identifiers(self) -> None:
+        offenders: list[str] = []
+        for path in self._skill_files():
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for token in self.HARD_BANNED:
+                if token in text:
+                    offenders.append(f"{path.relative_to(self.ROOT)}: {token!r}")
+            for match in self.E_ID_RE.finditer(text):
+                offenders.append(
+                    f"{path.relative_to(self.ROOT)}: scenario identifier {match.group(0)!r}"
+                )
+        self.assertEqual(offenders, [])
+
+    def test_no_clickable_link_to_private_agent_evals_repo(self) -> None:
+        offenders: list[str] = []
+        for path in self._skill_files():
+            if path.suffix != ".md":
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for match in self.LINK_RE.finditer(text):
+                if "agent-evals" in match.group(1).lower():
+                    offenders.append(f"{path.relative_to(self.ROOT)}: {match.group(0)}")
+        self.assertEqual(offenders, [])
+
+    def test_agent_evals_mentions_state_evidence_is_not_public(self) -> None:
+        offenders: list[str] = []
+        for path in self._skill_files():
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            if "agent-evals" not in text.lower():
+                continue
+            if not any(phrase in text.lower() for phrase in self.UNAVAILABLE_PHRASES):
+                offenders.append(str(path.relative_to(self.ROOT)))
         self.assertEqual(offenders, [])
 
 
