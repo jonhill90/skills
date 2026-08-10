@@ -1,8 +1,0 @@
-create-skill
-failing-test-first
-github-cli
-linear
-memory-conventions
-obsidian
-safe-deletion
-tmux

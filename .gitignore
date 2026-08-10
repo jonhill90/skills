@@ -1,7 +1,3 @@
-# APM (generated)
-apm_modules/
-build/
-
 # Local environment
 .env
 .DS_Store
@@ -10,21 +6,13 @@ __pycache__/
 # Platform-local config (not shared)
 CLAUDE.local.md
 AGENTS.override.md
-.claude/settings.local.json
-
-# Local shell profiles with secrets
-.zshrc.local
-*_profile_local.ps1
-.env.local
+.claude/
 
 # Temporary files
 *.log
 *.tmp
 *.bak
-repos
 
-# Hook artifacts
-.claude/backups/
 # Local privacy denylist (terms never enter git)
 .privacy-denylist
 
