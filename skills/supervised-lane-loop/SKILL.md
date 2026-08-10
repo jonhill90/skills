@@ -22,26 +22,10 @@ author's preference is unknown. The supervisor's own untested guess: the
 self-sufficient prompt and the defect family do most of the work, the merge
 standards make it safe, and the rest is refinement. Treat that as a hypothesis.
 
-Two separate claims live here, and only one is testable in a single session:
-
-- **The standards are followable and improve individual decisions.** These are
-  per-decision properties. A single scored session can falsify them.
-- **The loop compounds over days.** The prompt's value is that it survives
-  context loss; the seam's value is that it generates the next task without a
-  human. Both are *scheduling* properties, unobservable in one session by
-  construction.
-
-No amount of the first passing is evidence for the second. If you see rule
-tests go green, they cover the safety leg and say nothing about the
-productivity leg.
-
-And when you do test the standards, **make the salted item the Nth, not the
-first.** These rules do not fail from ignorance — every competent agent knows
-to read a diff. They fail from vigilance decaying under monotony: skipping the
-check on the thirtieth PR because the previous twenty-nine were clean and this
-body reads plausibly. A fixture that presents one suspicious item cues the
-behaviour it means to measure and passes trivially. Seven clean items and one
-salted measures the thing that actually breaks.
+The standards below are per-decision rules you can judge one at a time. That
+the loop *compounds* over days — the prompt surviving context loss, the seam
+generating the next task unaided — is the part no single observation
+establishes. Weigh the two differently.
 
 ## Preconditions
 
