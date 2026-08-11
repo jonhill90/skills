@@ -271,6 +271,17 @@ class NoDanglingEvalReferenceTests(unittest.TestCase):
         "private evaluation",
     )
 
+    # A dated citation shaped "(YYYY-MM-DD, <label> run)" points at a
+    # specific private eval run without naming agent-evals or using a link
+    # — the string- and link-based checks above don't key on it. Scoped
+    # tightly to that parenthetical shape (date, comma, the word "run", no
+    # nested parens) so it doesn't fire on unrelated dated prose elsewhere
+    # in the tree.
+    DATED_RUN_RE = re.compile(
+        r"\(([^()]*\d{4}-\d{2}-\d{2}(?:/\d{2})?[^()]*\brun\b[^()]*)\)",
+        re.DOTALL,
+    )
+
     def _skill_files(self) -> list[Path]:
         paths = set(self.ROOT.glob("skills/**/SKILL.md"))
         paths |= set(self.ROOT.glob("skills/**/references/**/*"))
@@ -309,6 +320,27 @@ class NoDanglingEvalReferenceTests(unittest.TestCase):
                 continue
             if not any(phrase in text.lower() for phrase in self.UNAVAILABLE_PHRASES):
                 offenders.append(str(path.relative_to(self.ROOT)))
+        self.assertEqual(offenders, [])
+
+    def test_dated_run_citation_discloses_private_evidence(self) -> None:
+        offenders: list[str] = []
+        for path in self._skill_files():
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for match in self.DATED_RUN_RE.finditer(text):
+                # Collapse line wraps so a phrase split across a hard-wrapped
+                # line (e.g. "not\n  publicly available") still matches.
+                clause = " ".join(match.group(1).lower().split())
+                if "agent-evals" not in clause:
+                    offenders.append(
+                        f"{path.relative_to(self.ROOT)}: "
+                        f"{match.group(0)!r} names a run but not agent-evals"
+                    )
+                    continue
+                if not any(phrase in clause for phrase in self.UNAVAILABLE_PHRASES):
+                    offenders.append(
+                        f"{path.relative_to(self.ROOT)}: "
+                        f"{match.group(0)!r} names agent-evals but doesn't say it's private"
+                    )
         self.assertEqual(offenders, [])
 
 
