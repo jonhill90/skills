@@ -47,7 +47,7 @@ class NotifyTelegramChannelTests(unittest.TestCase):
         self.assertEqual(rc, 2)
         self.assertIn("AGENT_NOTIFY_TELEGRAM_TOKEN", err)
         self.assertIn("AGENT_NOTIFY_TELEGRAM_CHAT_ID", err)
-        self.assertIn("NOTIFY_IMESSAGE_TARGET", err)
+        self.assertIn("AGENT_NOTIFY_IMESSAGE_TO", err)
 
     def test_auto_mode_prefers_telegram_over_imessage(self) -> None:
         os.environ["AGENT_NOTIFY_TELEGRAM_TOKEN"] = "faketoken"
@@ -137,6 +137,75 @@ class NotifyTelegramChannelTests(unittest.TestCase):
 
     def test_self_test_passes(self) -> None:
         self.assertTrue(notify.self_test())
+
+
+class NotifyImessageEnvVarAlignmentTests(unittest.TestCase):
+    """skills#152: agent-dotfiles/scripts/supervisor/notify.sh reads
+    AGENT_NOTIFY_IMESSAGE_TO, not NOTIFY_IMESSAGE_TARGET — the same
+    divergence shape #151 fixed for Telegram by keeping identical names in
+    both readers. AGENT_NOTIFY_IMESSAGE_TO is canonical (matches the
+    AGENT_NOTIFY_* prefix Telegram already uses, and is the name that
+    actually delivers in notify.sh); NOTIFY_IMESSAGE_TARGET is a deprecated
+    alias so an existing notify.env or shell profile keeps working."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmpdir.cleanup)
+        env = {"NOTIFY_STATE_DIR": self.tmpdir.name}
+        self.env_patch = mock.patch.dict(os.environ, env, clear=True)
+        self.env_patch.start()
+        self.addCleanup(self.env_patch.stop)
+
+    def run_notify(self, argv: list[str]) -> tuple[int, str, str]:
+        parser = notify.build_parser()
+        args = parser.parse_args(argv)
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            rc = notify.run(args)
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_canonical_agent_notify_imessage_to_is_read(self) -> None:
+        """Set only AGENT_NOTIFY_IMESSAGE_TO (not the skill's old name),
+        force --channel imessage, and assert the target is actually found
+        and used. This must fail before the fix (notify.py reads only
+        NOTIFY_IMESSAGE_TARGET today)."""
+        os.environ["AGENT_NOTIFY_IMESSAGE_TO"] = "jon@example.com"
+        with mock.patch.object(notify, "send_imessage") as im:
+            rc, out, _ = self.run_notify(
+                ["--message", "hi", "--channel", "imessage", "--send"]
+            )
+        self.assertEqual(rc, 0)
+        im.assert_called_once_with("jon@example.com", "hi")
+        self.assertIn("target=jon@example.com", out)
+
+    def test_deprecated_notify_imessage_target_alias_still_works(self) -> None:
+        """A target set under the old name alone must still be found, so
+        the alias cannot rot silently."""
+        os.environ["NOTIFY_IMESSAGE_TARGET"] = "jon@example.com"
+        with mock.patch.object(notify, "send_imessage") as im:
+            rc, out, _ = self.run_notify(
+                ["--message", "hi", "--channel", "imessage", "--send"]
+            )
+        self.assertEqual(rc, 0)
+        im.assert_called_once_with("jon@example.com", "hi")
+        self.assertIn("target=jon@example.com", out)
+
+    def test_canonical_name_wins_when_both_are_set(self) -> None:
+        os.environ["AGENT_NOTIFY_IMESSAGE_TO"] = "canonical@example.com"
+        os.environ["NOTIFY_IMESSAGE_TARGET"] = "deprecated@example.com"
+        with mock.patch.object(notify, "send_imessage") as im:
+            self.run_notify(["--message", "hi", "--channel", "imessage", "--send"])
+        im.assert_called_once_with("canonical@example.com", "hi")
+
+    def test_missing_target_error_names_the_canonical_var(self) -> None:
+        rc, _, err = self.run_notify(["--message", "hi", "--channel", "imessage"])
+        self.assertEqual(rc, 2)
+        self.assertIn("AGENT_NOTIFY_IMESSAGE_TO", err)
+
+    def test_auto_mode_missing_config_names_canonical_imessage_var(self) -> None:
+        rc, _, err = self.run_notify(["--message", "hi"])
+        self.assertEqual(rc, 2)
+        self.assertIn("AGENT_NOTIFY_IMESSAGE_TO", err)
 
 
 if __name__ == "__main__":

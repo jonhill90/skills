@@ -44,6 +44,13 @@ LOCK_SCREEN_LENGTH = 200  # a message longer than this stops being readable at a
 
 TELEGRAM_TOKEN_ENV = "AGENT_NOTIFY_TELEGRAM_TOKEN"
 TELEGRAM_CHAT_ID_ENV = "AGENT_NOTIFY_TELEGRAM_CHAT_ID"
+# Canonical per skills#152: matches the AGENT_NOTIFY_* prefix Telegram
+# already uses, and is the name that actually delivers in
+# agent-dotfiles/scripts/supervisor/notify.sh. NOTIFY_IMESSAGE_TARGET is a
+# deprecated alias, kept working so an existing notify.env or shell
+# profile does not break; the canonical var wins if both are set.
+IMESSAGE_TARGET_ENV = "AGENT_NOTIFY_IMESSAGE_TO"
+IMESSAGE_TARGET_ENV_DEPRECATED = "NOTIFY_IMESSAGE_TARGET"
 
 AUTO_CHANNEL = "auto"
 SUPPORTED_CHANNELS = {"imessage", "telegram"}
@@ -135,12 +142,13 @@ def check_suppression(digest: str, dedup_window: int, min_interval: int, force: 
 
 
 def imessage_target() -> str:
-    target = os.environ.get("NOTIFY_IMESSAGE_TARGET")
+    target = os.environ.get(IMESSAGE_TARGET_ENV) or os.environ.get(IMESSAGE_TARGET_ENV_DEPRECATED)
     if not target:
         raise ConfigError(
-            "NOTIFY_IMESSAGE_TARGET is not set — set it to the phone number or "
+            f"{IMESSAGE_TARGET_ENV} is not set — set it to the phone number or "
             "Apple ID email the message should go to (your own, for a "
-            "self-notification)."
+            f"self-notification). ({IMESSAGE_TARGET_ENV_DEPRECATED} also works, "
+            "as a deprecated alias.)"
         )
     return target
 
@@ -440,7 +448,7 @@ def self_test() -> bool:
 
     with tempfile.TemporaryDirectory() as td:
         os.environ["NOTIFY_STATE_DIR"] = td
-        os.environ["NOTIFY_IMESSAGE_TARGET"] = "test@example.com"
+        os.environ[IMESSAGE_TARGET_ENV] = "test@example.com"
 
         # Dry run never touches state.
         parser = build_parser()
@@ -450,11 +458,19 @@ def self_test() -> bool:
         checks.append(("dry-run writes no state file", not dedup_state_path().exists()))
 
         # Missing target is a config error (exit 2), not a send failure.
-        del os.environ["NOTIFY_IMESSAGE_TARGET"]
+        del os.environ[IMESSAGE_TARGET_ENV]
         args = parser.parse_args(["--message", "hello", "--channel", "imessage"])
         rc = run(args)
         checks.append(("missing target is exit 2", rc == 2))
-        os.environ["NOTIFY_IMESSAGE_TARGET"] = "test@example.com"
+
+        # skills#152: the deprecated alias alone must still resolve the
+        # target, and the canonical name must win when both are set.
+        os.environ[IMESSAGE_TARGET_ENV_DEPRECATED] = "deprecated@example.com"
+        checks.append(("deprecated alias alone resolves", imessage_target() == "deprecated@example.com"))
+        os.environ[IMESSAGE_TARGET_ENV] = "canonical@example.com"
+        checks.append(("canonical name wins over deprecated alias", imessage_target() == "canonical@example.com"))
+        del os.environ[IMESSAGE_TARGET_ENV_DEPRECATED]
+        os.environ[IMESSAGE_TARGET_ENV] = "test@example.com"
 
         # Unbuilt channel is a config error, not a silent no-op.
         args = parser.parse_args(["--message", "hello", "--channel", "discord"])
@@ -462,17 +478,17 @@ def self_test() -> bool:
         checks.append(("unbuilt channel refuses with exit 2", rc == 2))
 
         # Telegram missing credentials is a config error, checked even on a
-        # dry run (no NOTIFY_IMESSAGE_TARGET fallback for an explicit channel).
+        # dry run (no imessage fallback for an explicit channel).
         args = parser.parse_args(["--message", "hello", "--channel", "telegram"])
         rc = run(args)
         checks.append(("telegram without credentials is exit 2", rc == 2))
 
         # Auto mode with nothing configured names every missing credential.
-        del os.environ["NOTIFY_IMESSAGE_TARGET"]
+        del os.environ[IMESSAGE_TARGET_ENV]
         args = parser.parse_args(["--message", "hello", "--channel", "auto"])
         rc = run(args)
         checks.append(("auto mode with nothing configured is exit 2", rc == 2))
-        os.environ["NOTIFY_IMESSAGE_TARGET"] = "test@example.com"
+        os.environ[IMESSAGE_TARGET_ENV] = "test@example.com"
 
         # Auto mode with only imessage configured dry-runs on imessage alone.
         args = parser.parse_args(["--message", "hello", "--channel", "auto"])
