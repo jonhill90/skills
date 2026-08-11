@@ -37,8 +37,10 @@ list exists for portability, not because five channels are the goal.
 
 - Transport: `Messages.app` via AppleScript/`osascript`.
 - Credential: none — iMessage on a Mac is already signed in. Set
-  `NOTIFY_IMESSAGE_TARGET` to the recipient (phone number or Apple ID
-  email).
+  `AGENT_NOTIFY_IMESSAGE_TO` to the recipient (phone number or Apple ID
+  email) — canonical since jonhill90/skills#152, matching
+  `agent-dotfiles/scripts/supervisor/notify.sh`.
+  `NOTIFY_IMESSAGE_TARGET` still works as a deprecated alias.
 - Failure shape: `osascript` exiting non-zero, or timing out (often an
   unacknowledged Automation permission dialog) — both map to `SendError`.
 - Why second: costs nothing extra to keep since it was already built, but

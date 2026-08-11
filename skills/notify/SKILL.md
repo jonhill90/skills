@@ -67,7 +67,8 @@ Nothing is hardcoded and nothing is committed.
 | `NOTIFY_CHANNEL` | no | `auto` | `auto` tries telegram then imessage, in that order, stopping at the first that accepts the message; `telegram` or `imessage` forces exactly one channel with no fallback |
 | `AGENT_NOTIFY_TELEGRAM_TOKEN` | yes, for Telegram | — | bot token from `@BotFather` |
 | `AGENT_NOTIFY_TELEGRAM_CHAT_ID` | yes, for Telegram | — | the chat to send to (must have started a chat with the bot at least once) |
-| `NOTIFY_IMESSAGE_TARGET` | yes, for iMessage | — | the phone number or Apple ID email to send to (your own, for a self-notification) |
+| `AGENT_NOTIFY_IMESSAGE_TO` | yes, for iMessage | — | **canonical.** The phone number or Apple ID email to send to (your own, for a self-notification). Matches the `AGENT_NOTIFY_*` prefix Telegram already uses and is the name `agent-dotfiles/scripts/supervisor/notify.sh` reads. |
+| `NOTIFY_IMESSAGE_TARGET` | no | — | **deprecated alias** for `AGENT_NOTIFY_IMESSAGE_TO`, kept working so an existing `notify.env` or shell profile doesn't break. If both are set, `AGENT_NOTIFY_IMESSAGE_TO` wins. New config should use the canonical name (jonhill90/skills#152). |
 | `NOTIFY_STATE_DIR` | no | `~/.local/state/notify` | where the dedup/rate-limit state and local log live |
 | `NOTIFY_DEDUP_WINDOW_SECONDS` | no | `300` | suppress an identical message sent again within this window |
 | `NOTIFY_MIN_INTERVAL_SECONDS` | no | `60` | suppress *any* send within this long of the last one |
@@ -87,11 +88,11 @@ python3 scripts/notify.py --message "watchdog: escalate — 3 restarts/hr, stopp
 
 # Real send, auto channel selection (Telegram, then iMessage fallback).
 AGENT_NOTIFY_TELEGRAM_TOKEN="..." AGENT_NOTIFY_TELEGRAM_CHAT_ID="..." \
-NOTIFY_IMESSAGE_TARGET="you@example.com" \
+AGENT_NOTIFY_IMESSAGE_TO="you@example.com" \
   python3 scripts/notify.py --message "watchdog: escalate — check tmux." --send
 
 # Force a single channel — no fallback to the other if it fails.
-NOTIFY_IMESSAGE_TARGET="you@example.com" \
+AGENT_NOTIFY_IMESSAGE_TO="you@example.com" \
   python3 scripts/notify.py --message "..." --channel imessage --send
 ```
 
