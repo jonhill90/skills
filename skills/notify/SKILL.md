@@ -1,6 +1,6 @@
 ---
 name: notify
-description: Send a short, structured message to a human on a configured outbound channel (iMessage today) from the terminal, so a stalled or escalated agent loop can reach someone who's away from the machine. Owns sending only, not escalation policy — the caller decides what's worth interrupting a human for. Dry-run by default; sending requires an explicit flag and a real send failure exits non-zero. User-invoked only — call this deliberately from a caller that has already decided to notify (e.g. a supervisor's escalate state), never automatically because a task felt important.
+description: Send a short, structured message to a human on a configured outbound channel (Telegram first, iMessage as a Mac-only fallback) from the terminal, so a stalled or escalated agent loop can reach someone who's away from the machine. Owns sending only, not escalation policy — the caller decides what's worth interrupting a human for. Dry-run by default; sending requires an explicit flag and a real send failure exits non-zero. User-invoked only — call this deliberately from a caller that has already decided to notify (e.g. a supervisor's escalate state), never automatically because a task felt important.
 ---
 
 # Notify
@@ -39,16 +39,22 @@ loop. That integration is the caller's job.
 
 ## Channel priority
 
-Per [jonhill90/skills#146](https://github.com/jonhill90/skills/issues/146):
+Per [jonhill90/skills#146](https://github.com/jonhill90/skills/issues/146),
+Jon later re-ordered this (2026-08-11) once Telegram proved to be the only
+channel that actually reached his phone: Telegram works from any machine
+and does not depend on macOS automation permissions, so it goes first and
+iMessage becomes the fallback rather than the primary.
 
-1. **iMessage — built.** No third-party service, no credential on a Mac;
-   Messages.app is already signed in. This is the only channel this
-   skill sends on today.
-2. Telegram, 3. Discord, 4. Teams — designed, not built. See
+1. **Telegram — built, tried first.** Bot API over HTTPS; works from any
+   machine, not just a Mac.
+2. **iMessage — built, Mac-only fallback.** No credential on a Mac;
+   Messages.app is already signed in. Tried only if Telegram isn't
+   configured or its send fails.
+3. Discord, 4. Teams — designed, not built. See
    [`references/channels.md`](references/channels.md) for the shape each
-   would take if a future change needs one. Build only if iMessage is
-   genuinely blocked for a given setup — one working channel closes the
-   operational gap; five is not the goal.
+   would take if a future change needs one. Build only if both Telegram and
+   iMessage are genuinely blocked for a given setup — one working channel
+   closes the operational gap; five is not the goal.
 5. Slack — deferred indefinitely, unused since 2019. Do not build it.
 
 ## Configuration
@@ -58,15 +64,20 @@ Nothing is hardcoded and nothing is committed.
 
 | Variable | Required | Default | Meaning |
 |---|---|---|---|
-| `NOTIFY_CHANNEL` | no | `imessage` | which channel to send on |
+| `NOTIFY_CHANNEL` | no | `auto` | `auto` tries telegram then imessage, in that order, stopping at the first that accepts the message; `telegram` or `imessage` forces exactly one channel with no fallback |
+| `AGENT_NOTIFY_TELEGRAM_TOKEN` | yes, for Telegram | — | bot token from `@BotFather` |
+| `AGENT_NOTIFY_TELEGRAM_CHAT_ID` | yes, for Telegram | — | the chat to send to (must have started a chat with the bot at least once) |
 | `NOTIFY_IMESSAGE_TARGET` | yes, for iMessage | — | the phone number or Apple ID email to send to (your own, for a self-notification) |
 | `NOTIFY_STATE_DIR` | no | `~/.local/state/notify` | where the dedup/rate-limit state and local log live |
 | `NOTIFY_DEDUP_WINDOW_SECONDS` | no | `300` | suppress an identical message sent again within this window |
 | `NOTIFY_MIN_INTERVAL_SECONDS` | no | `60` | suppress *any* send within this long of the last one |
 
-iMessage needs no credential — that's part of why it's first per the
-issue. There is no config file in this repository to edit; set the
-environment where the caller runs.
+Credentials must come from the environment — an untracked, 0600 env file
+loaded by the caller is the pattern this skill assumes, the same one
+`agent-dotfiles/scripts/supervisor/notify.sh` uses. Never put a token
+inline in a command, a script, or anything committed to this repository.
+There is no config file in this repository to edit; set the environment
+where the caller runs.
 
 ## Usage
 
@@ -74,9 +85,14 @@ environment where the caller runs.
 # Dry run (default) — prints exactly what would be sent, sends nothing, exits 0.
 python3 scripts/notify.py --message "watchdog: escalate — 3 restarts/hr, stopped."
 
-# Real send — requires the flag explicitly.
+# Real send, auto channel selection (Telegram, then iMessage fallback).
+AGENT_NOTIFY_TELEGRAM_TOKEN="..." AGENT_NOTIFY_TELEGRAM_CHAT_ID="..." \
 NOTIFY_IMESSAGE_TARGET="you@example.com" \
   python3 scripts/notify.py --message "watchdog: escalate — check tmux." --send
+
+# Force a single channel — no fallback to the other if it fails.
+NOTIFY_IMESSAGE_TARGET="you@example.com" \
+  python3 scripts/notify.py --message "..." --channel imessage --send
 ```
 
 - `--message` (required) — kept under 200 characters by the script; a
@@ -88,17 +104,19 @@ NOTIFY_IMESSAGE_TARGET="you@example.com" \
 - `--force` — bypass dedup/rate-limit suppression for one send. Use
   sparingly; the suppression exists because a loop that messages on
   every tick is worse than silence.
-- `--channel` — override `$NOTIFY_CHANNEL`. Anything other than
-  `imessage` currently exits 2 with a message pointing at
-  `references/channels.md`, rather than silently doing nothing.
+- `--channel` — override `$NOTIFY_CHANNEL`. `auto` (default) tries
+  telegram then imessage with no further fallback once one is named
+  explicitly. `discord`, `teams`, and `slack` exit 2 with a message
+  pointing at `references/channels.md`, rather than silently doing
+  nothing.
 
 ### Exit codes
 
 | Code | Meaning |
 |---|---|
 | `0` | dry run printed, message sent, or message intentionally suppressed (deduped / rate-limited) |
-| `1` | a send was attempted and failed — always logged to `$NOTIFY_STATE_DIR/notify.log` first |
-| `2` | usage or configuration error (missing `--message`, oversized message, unknown or unbuilt channel, missing target) |
+| `1` | a send was attempted and failed on every candidate channel (just `--channel imessage` itself, when forced explicitly) — always logged to `$NOTIFY_STATE_DIR/notify.log` first |
+| `2` | usage or configuration error (missing `--message`, oversized message, unknown or unbuilt channel, no channel configured at all) |
 
 An unreachable channel must never look like "nothing to report" — that
 is the fail-open shape this comes from
