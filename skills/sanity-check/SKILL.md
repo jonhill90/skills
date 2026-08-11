@@ -125,11 +125,15 @@ the claim each anecdote was supporting is marked accordingly.
 - **A reviewer handed a conclusion confirms it.** *Evidenced.* Copilot
   sought a second opinion exactly as instructed, handed over its diagnosis,
   the reviewer agreed, and it edited the wrong skill (2026-07-27, ladder
-  run). The same fixture, given raw to a reviewer on another harness,
-  produced a falsified hypothesis instead (2026-07-26, sentence-rung run).
+  run; recorded in the private jonhill90/agent-evals repository, not
+  publicly available). The same fixture, given raw to a reviewer on
+  another harness, produced a falsified hypothesis instead (2026-07-26,
+  sentence-rung run; recorded in the private jonhill90/agent-evals
+  repository, not publicly available).
 - **Agreement is not verification.** *Evidenced.* Copilot delegated to three
   reviewers, they agreed, and it acted on the vote without running the test
-  that settled the question — FAIL ×2 (2026-07-27, column run).
+  that settled the question — FAIL ×2 (2026-07-27, column run; recorded in
+  the private jonhill90/agent-evals repository, not publicly available).
 - **Check the instrument before believing the verdict.** *Evidenced, and the
   best-supported claim here.* Twenty-plus false verdicts across
   2026-07-26/29, none from a skill; one was an arm that reported a skill
