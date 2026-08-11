@@ -133,7 +133,9 @@ the claim each anecdote was supporting is marked accordingly.
 - **Check the instrument before believing the verdict.** *Evidenced, and the
   best-supported claim here.* Twenty-plus false verdicts across
   2026-07-26/29, none from a skill; one was an arm that reported a skill
-  absent while a harness still listed it (2026-07-28, counter-scenario run).
+  absent while a harness still listed it (2026-07-28, counter-scenario run;
+  recorded in the private jonhill90/agent-evals repository, not publicly
+  available).
 - **Vary the question, not the reviewer count.** *Not evidenced.* Reasoning
   from the two entries above, not from a run that varied it.
 - **The eight prompt properties.** *Not evidenced individually.* Rules 3, 5,
