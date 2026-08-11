@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 """Send a short outbound notification to a human from the terminal.
 
-Sends on whichever channel is configured (iMessage today — see SKILL.md for
-why the others are documented but not built). Does not decide *whether* to
-notify; that judgement belongs to the caller (e.g. a supervisor's `escalate`
-state). This script only owns: read config, dedupe/rate-limit, send or dry
-run, and fail loudly and locally when a send doesn't go through.
+Tries channels in priority order — Telegram, then iMessage as a Mac-only
+fallback (jonhill90/skills#146) — so this is the single canonical sender;
+`--channel` can force one channel with no fallback. Does not decide
+*whether* to notify; that judgement belongs to the caller (e.g. a
+supervisor's `escalate` state). This script only owns: read config,
+dedupe/rate-limit, send or dry run, and fail loudly and locally when no
+channel goes through.
 
 Exit codes:
   0  dry run printed, or message sent, or message intentionally suppressed
      (deduped / rate-limited) — suppression is not failure
-  1  send attempted and failed (channel unreachable, missing credential,
-     recipient rejected, etc.) — always logged locally first
-  2  usage or configuration error (bad args, unknown channel, no target
-     configured for the selected channel)
+  1  send attempted and failed on every configured channel (channel
+     unreachable, missing credential, recipient rejected, etc.) — always
+     logged locally first
+  2  usage or configuration error (bad args, unknown channel, no channel
+     configured at all)
 
-Nothing here is hardcoded: channel, recipient, and state directory all come
-from environment variables, never from a literal in this file or from a
-committed config file.
+Nothing here is hardcoded: channel, recipient, credentials, and state
+directory all come from environment variables, never from a literal in
+this file or from a committed config file.
 """
 
 from __future__ import annotations
@@ -29,6 +32,9 @@ import os
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 DEFAULT_STATE_DIR = "~/.local/state/notify"
@@ -36,10 +42,18 @@ DEFAULT_DEDUP_WINDOW_SECONDS = 300
 DEFAULT_MIN_INTERVAL_SECONDS = 60
 LOCK_SCREEN_LENGTH = 200  # a message longer than this stops being readable at a glance
 
-SUPPORTED_CHANNELS = {"imessage"}
+TELEGRAM_TOKEN_ENV = "AGENT_NOTIFY_TELEGRAM_TOKEN"
+TELEGRAM_CHAT_ID_ENV = "AGENT_NOTIFY_TELEGRAM_CHAT_ID"
+
+AUTO_CHANNEL = "auto"
+SUPPORTED_CHANNELS = {"imessage", "telegram"}
+# Telegram first, iMessage as a Mac-only fallback — the order Jon chose
+# 2026-08-11 and the only order proven to reach his phone
+# (agent-dotfiles/scripts/supervisor/notify.sh).
+CHANNEL_ORDER = ["telegram", "imessage"]
 # Documented, not built (references/channels.md) — listed here so an unknown
 # --channel gets a useful error instead of a bare KeyError.
-PLANNED_CHANNELS = {"telegram", "discord", "teams"}
+PLANNED_CHANNELS = {"discord", "teams"}
 DEFERRED_CHANNELS = {"slack"}
 
 
@@ -131,14 +145,36 @@ def imessage_target() -> str:
     return target
 
 
+def telegram_credentials() -> tuple[str, str]:
+    token = os.environ.get(TELEGRAM_TOKEN_ENV)
+    chat_id = os.environ.get(TELEGRAM_CHAT_ID_ENV)
+    missing = [
+        name
+        for name, value in ((TELEGRAM_TOKEN_ENV, token), (TELEGRAM_CHAT_ID_ENV, chat_id))
+        if not value
+    ]
+    if missing:
+        raise ConfigError(
+            f"{' and '.join(missing)} not set — a bot token from @BotFather and "
+            "the target chat_id are both required for telegram."
+        )
+    assert token and chat_id
+    return token, chat_id
+
+
+def escape_applescript(message: str) -> str:
+    return message.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def send_imessage(target: str, message: str) -> None:
     """Send via Messages.app using AppleScript. No credential: iMessage on a
     Mac is already signed in, which is why this channel needs none."""
+    escaped = escape_applescript(message)
     script = (
         'tell application "Messages"\n'
         '  set targetService to 1st service whose service type = iMessage\n'
         f'  set targetBuddy to buddy "{target}" of targetService\n'
-        f'  send "{message}" to targetBuddy\n'
+        f'  send "{escaped}" to targetBuddy\n'
         'end tell\n'
     )
     try:
@@ -161,33 +197,91 @@ def send_imessage(target: str, message: str) -> None:
         )
 
 
-def resolve_target(channel: str) -> str:
-    """Validate the channel and return the configured recipient. Raises
-    ConfigError for anything not built, even during a dry run — a caller
-    should learn a channel isn't supported before ever passing --send."""
+def send_telegram(token: str, chat_id: str, message: str) -> None:
+    """Send via the Telegram Bot API. Works from any machine with outbound
+    HTTPS, not just a Mac — why it is tried first (references/channels.md)."""
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = urllib.parse.urlencode({"chat_id": chat_id, "text": message}).encode("utf-8")
+    request = urllib.request.Request(url, data=data, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            if response.status >= 300:
+                raise SendError(f"telegram API returned HTTP {response.status}")
+    except urllib.error.HTTPError as e:
+        raise SendError(f"telegram API returned HTTP {e.code}: {e.reason}") from e
+    except urllib.error.URLError as e:
+        raise SendError(f"telegram API unreachable: {e.reason}") from e
+    except TimeoutError as e:
+        raise SendError("telegram API did not respond within 15s") from e
+
+
+def channel_config_error(channel: str) -> str | None:
+    """Return why `channel` isn't usable right now, or None if it is —
+    checked even during a dry run so a caller learns about a missing
+    credential before ever passing --send."""
+    if channel == "telegram":
+        try:
+            telegram_credentials()
+        except ConfigError as e:
+            return str(e)
+        return None
+    if channel == "imessage":
+        try:
+            imessage_target()
+        except ConfigError as e:
+            return str(e)
+        return None
+    return f"unknown channel: {channel}"
+
+
+def channel_target(channel: str) -> str:
+    """The recipient to report in logs/dry-run output for `channel`. Only
+    called after channel_config_error() has confirmed it's configured."""
+    if channel == "telegram":
+        return telegram_credentials()[1]
     if channel == "imessage":
         return imessage_target()
+    raise ConfigError(f"unknown channel: {channel}")
+
+
+def dispatch_send(channel: str, message: str) -> None:
+    if channel == "telegram":
+        token, chat_id = telegram_credentials()
+        send_telegram(token, chat_id, message)
+        return
+    if channel == "imessage":
+        send_imessage(imessage_target(), message)
+        return
+    raise ConfigError(f"unknown channel: {channel}")
+
+
+def resolve_single_channel(channel: str) -> None:
+    """Validate an explicitly-chosen (non-auto) channel. Raises ConfigError
+    for anything not configured or not built, even during a dry run."""
+    if channel in SUPPORTED_CHANNELS:
+        error = channel_config_error(channel)
+        if error:
+            raise ConfigError(error)
+        return
     if channel in PLANNED_CHANNELS:
         raise ConfigError(
             f"channel '{channel}' is designed but not built yet — see "
-            "references/channels.md. Only 'imessage' sends today."
+            "references/channels.md."
         )
     if channel in DEFERRED_CHANNELS:
         raise ConfigError(f"channel '{channel}' is deferred indefinitely (jonhill90/skills#146).")
     raise ConfigError(f"unknown channel: {channel}")
 
 
-def send(channel: str, target: str, message: str) -> None:
-    """Dispatch to the configured channel's sender. Channel and target are
-    assumed already validated by resolve_target()."""
-    if channel == "imessage":
-        send_imessage(target, message)
-        return
-    raise ConfigError(f"unknown channel: {channel}")
-
-
-def escape_applescript(message: str) -> str:
-    return message.replace("\\", "\\\\").replace('"', '\\"')
+def resolve_auto_channels() -> list[str]:
+    """The configured channels, in CHANNEL_ORDER, that `auto` mode will try.
+    Raises ConfigError naming every missing credential when none are
+    configured — an unreachable default must not look like nothing to do."""
+    configured = [c for c in CHANNEL_ORDER if channel_config_error(c) is None]
+    if not configured:
+        details = "; ".join(f"{c}: {channel_config_error(c)}" for c in CHANNEL_ORDER)
+        raise ConfigError(f"no channel is configured — {details}")
+    return configured
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -195,8 +289,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--message", help="the message body to send")
     parser.add_argument(
         "--channel",
-        default=os.environ.get("NOTIFY_CHANNEL", "imessage"),
-        help="channel to send on (default: $NOTIFY_CHANNEL or 'imessage')",
+        default=os.environ.get("NOTIFY_CHANNEL", AUTO_CHANNEL),
+        help="channel to send on: 'auto' (default; tries telegram then "
+        "imessage, in that order, with no fallback once one is explicitly "
+        "named), 'telegram', or 'imessage'",
     )
     parser.add_argument(
         "--send",
@@ -240,13 +336,65 @@ def run(args: argparse.Namespace) -> int:
         )
         return 2
 
-    channel = args.channel
+    if args.channel == AUTO_CHANNEL:
+        return run_auto(args)
+    return run_single_channel(args, args.channel)
+
+
+def run_auto(args: argparse.Namespace) -> int:
+    """Try channels in CHANNEL_ORDER (telegram, then imessage) until one
+    accepts the message. Dedup/rate-limit key on message content alone,
+    since which channel ultimately delivers a repeat shouldn't matter — the
+    human only cares that they were already told."""
     try:
-        target = resolve_target(channel)
+        candidates = resolve_auto_channels()
     except ConfigError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
+    digest = message_hash(AUTO_CHANNEL, AUTO_CHANNEL, args.message)
+
+    if not args.send:
+        print(f"DRY-RUN: would try channels in order: {', '.join(candidates)}")
+        print(f"DRY-RUN: message={args.message!r}")
+        return 0
+
+    suppression = check_suppression(digest, args.dedup_window, args.min_interval, args.force)
+    if suppression:
+        print(f"SKIPPED: {suppression}")
+        log_local(f"SKIPPED channel=auto reason={suppression!r}")
+        return 0
+
+    errors = []
+    for channel in candidates:
+        try:
+            dispatch_send(channel, args.message)
+        except SendError as e:
+            log_local(f"SEND-FAILED channel={channel} error={e!r} — falling through")
+            errors.append(f"{channel}: {e}")
+            continue
+        save_last_send(digest, time.time())
+        log_local(f"SENT channel={channel}")
+        print(f"SENT: channel={channel}")
+        return 0
+
+    # No channel worked. Deliberately loud: the caller must be able to tell
+    # "nobody was told" from "told successfully" (jonhill90/skills#146).
+    log_local(f"UNREACHABLE — no channel accepted: {'; '.join(errors)}")
+    print(f"ERROR: send failed on every channel — {'; '.join(errors)}", file=sys.stderr)
+    return 1
+
+
+def run_single_channel(args: argparse.Namespace, channel: str) -> int:
+    """An explicitly-named channel: validate, send, and fail loud with no
+    fallback to any other channel."""
+    try:
+        resolve_single_channel(channel)
+    except ConfigError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 2
+
+    target = channel_target(channel)
     digest = message_hash(channel, target, args.message)
 
     if not args.send:
@@ -261,7 +409,7 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     try:
-        send(channel, target, escape_applescript(args.message))
+        dispatch_send(channel, args.message)
     except (ConfigError, SendError) as e:
         log_local(f"SEND-FAILED channel={channel} target={target} error={e!r}")
         print(f"ERROR: send failed: {e}", file=sys.stderr)
@@ -309,9 +457,27 @@ def self_test() -> bool:
         os.environ["NOTIFY_IMESSAGE_TARGET"] = "test@example.com"
 
         # Unbuilt channel is a config error, not a silent no-op.
-        args = parser.parse_args(["--message", "hello", "--channel", "telegram"])
+        args = parser.parse_args(["--message", "hello", "--channel", "discord"])
         rc = run(args)
         checks.append(("unbuilt channel refuses with exit 2", rc == 2))
+
+        # Telegram missing credentials is a config error, checked even on a
+        # dry run (no NOTIFY_IMESSAGE_TARGET fallback for an explicit channel).
+        args = parser.parse_args(["--message", "hello", "--channel", "telegram"])
+        rc = run(args)
+        checks.append(("telegram without credentials is exit 2", rc == 2))
+
+        # Auto mode with nothing configured names every missing credential.
+        del os.environ["NOTIFY_IMESSAGE_TARGET"]
+        args = parser.parse_args(["--message", "hello", "--channel", "auto"])
+        rc = run(args)
+        checks.append(("auto mode with nothing configured is exit 2", rc == 2))
+        os.environ["NOTIFY_IMESSAGE_TARGET"] = "test@example.com"
+
+        # Auto mode with only imessage configured dry-runs on imessage alone.
+        args = parser.parse_args(["--message", "hello", "--channel", "auto"])
+        rc = run(args)
+        checks.append(("auto mode with only imessage configured is exit 0", rc == 0))
 
         # Message length guard.
         args = parser.parse_args(["--message", "x" * 300, "--channel", "imessage"])
