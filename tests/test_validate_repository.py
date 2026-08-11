@@ -172,6 +172,37 @@ class FallbackFrontmatterTests(unittest.TestCase):
             self.assertEqual(len(findings), 1)
             self.assertIn("must start with ---", findings[0].message)
 
+    def _write_colon_description_skill(self, root: Path) -> Path:
+        skill_dir = root / "skills" / "example-skill"
+        skill_dir.mkdir(parents=True)
+        frontmatter = (
+            "name: example-skill\n"
+            "description: Runs long: repetition, not duration, is the trigger."
+        )
+        (skill_dir / "SKILL.md").write_text(
+            f"---\n{frontmatter}\n---\n\n# Example\n\nRun the example.\n",
+            encoding="utf-8",
+        )
+        return skill_dir
+
+    def test_unquoted_colon_in_description_is_accepted_with_pyyaml(self) -> None:
+        # jonhill90/skills#142: a description containing a colon — a natural
+        # shape for "claim, then its qualification" — is valid content, but
+        # plain YAML treats unquoted ': ' as a mapping separator. PyYAML is
+        # present in this environment, so this exercises the real-YAML path.
+        assert validator.yaml is not None, "this test requires PyYAML installed"
+        with tempfile.TemporaryDirectory() as temporary:
+            skill_dir = self._write_colon_description_skill(Path(temporary))
+            findings = validator.validate_skill(skill_dir)
+            self.assertEqual([], findings)
+
+    def test_unquoted_colon_in_description_is_accepted_without_pyyaml(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            skill_dir = self._write_colon_description_skill(Path(temporary))
+            with mock.patch.object(validator, "yaml", None):
+                findings = validator.validate_skill(skill_dir)
+            self.assertEqual([], findings)
+
 
 class SkillLengthTests(unittest.TestCase):
     """AGENTS.md caps SKILL.md at 500 lines and nothing enforced it, so
