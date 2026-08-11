@@ -116,6 +116,99 @@ class ValidateRepositoryTests(unittest.TestCase):
             )
 
 
+class SpecConformanceTests(unittest.TestCase):
+    """Gaps found by diffing this validator against the spec's own reference
+    tool, `skills-ref` from github.com/agentskills/agentskills, on 2026-08-11
+    (jonhill90/skills#150). Each case is one the reference rejected and this
+    validator accepted."""
+
+    def make_skill(
+        self, root: Path, directory: str = "example-skill", frontmatter: str = ""
+    ) -> Path:
+        skill_dir = root / "skills" / directory
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\n{frontmatter}\n---\n\n# Example\n\nRun the example.\n",
+            encoding="utf-8",
+        )
+        return skill_dir
+
+    def messages(self, findings: list[object]) -> list[str]:
+        return [finding.message for finding in findings]
+
+    def test_compatibility_over_500_characters_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            skill_dir = self.make_skill(
+                Path(temporary),
+                frontmatter=(
+                    "name: example-skill\n"
+                    "description: Run an example workflow. Use for validator tests.\n"
+                    f"compatibility: {'c' * 501}"
+                ),
+            )
+            self.assertIn(
+                "compatibility exceeds 500 characters",
+                self.messages(validator.validate_skill(skill_dir)),
+            )
+
+    def test_compatibility_at_500_characters_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            skill_dir = self.make_skill(
+                Path(temporary),
+                frontmatter=(
+                    "name: example-skill\n"
+                    "description: Run an example workflow. Use for validator tests.\n"
+                    f"compatibility: {'c' * 500}"
+                ),
+            )
+            self.assertEqual([], validator.validate_skill(skill_dir))
+
+    def test_duplicate_frontmatter_key_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            skill_dir = self.make_skill(
+                Path(temporary),
+                frontmatter=(
+                    "name: example-skill\n"
+                    "description: The first description, silently discarded.\n"
+                    "description: The second description, silently kept."
+                ),
+            )
+            self.assertTrue(
+                any(
+                    "duplicate frontmatter key" in message
+                    for message in self.messages(validator.validate_skill(skill_dir))
+                )
+            )
+
+    def test_description_at_the_1024_limit_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            skill_dir = self.make_skill(
+                Path(temporary),
+                frontmatter=(
+                    "name: example-skill\n"
+                    f"description: {'d' * 1024}"
+                ),
+            )
+            self.assertEqual([], validator.validate_skill(skill_dir))
+
+    def test_metadata_mapping_is_accepted(self) -> None:
+        """The spec's `metadata` is a nested string-to-string mapping — the one
+        place frontmatter is not flat. The colon-quoting normalizer must leave
+        its indented lines alone."""
+        with tempfile.TemporaryDirectory() as temporary:
+            skill_dir = self.make_skill(
+                Path(temporary),
+                frontmatter=(
+                    "name: example-skill\n"
+                    "description: Run an example workflow. Use for validator tests.\n"
+                    "metadata:\n"
+                    "  author: Jon Hill\n"
+                    '  version: "1.0"'
+                ),
+            )
+            self.assertEqual([], validator.validate_skill(skill_dir))
+
+
 class PrivacyDenylistTests(unittest.TestCase):
     def test_flags_denylisted_terms_in_tracked_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as td:

@@ -98,6 +98,30 @@ npx skills add . --list
 
 Run language-specific tests when changing bundled scripts.
 
+## Spec Conformance
+
+`scripts/validate_repository.py` is checked against the specification's own
+reference implementation — `skills-ref` from
+[agentskills/agentskills](https://github.com/agentskills/agentskills) — by the
+`spec-conformance` CI job, which runs `skills-ref validate` over every skill.
+Reading the spec and comparing it to our own code is not an independent check;
+that job is the independent instrument.
+
+Where the two deliberately differ, this repository is the stricter one. None of
+these are spec violations — a skill accepted here is accepted by the reference:
+
+- **ASCII names only.** `NAME_RE` allows `a-z0-9-`; the reference also accepts
+  Unicode letters (`café-skill` passes it, fails us). The spec's own wording is
+  "lowercase alphanumeric characters (`a-z`, `0-9`)", and ASCII directory names
+  travel better across filesystems and URLs.
+- **`SKILL.md` must be uppercase.** The reference also accepts `skill.md`.
+- **A skill must have a body.** The reference accepts frontmatter with no
+  markdown after it.
+- **Names are not whitespace-stripped** before the directory-match check.
+- Plus checks the spec does not cover at all: the 500-line cap, resolvable
+  relative links, no `README.md` inside a skill, executable bits on bundled
+  scripts, collection-wide duplicate names, and the privacy denylist.
+
 ## Recording Figures
 
 A number written into this repository's docs is either **measured** — a
