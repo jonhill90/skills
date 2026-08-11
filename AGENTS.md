@@ -63,6 +63,12 @@ tests/
   should reach on its own) or *user-invoked* (a workflow reached
   deliberately). Express the classification in `description` trigger
   wording, not in frontmatter fields.
+- Frontmatter fields are flat `key: value` lines — never nested mappings or
+  flow collections. Write a colon in a `description` freely (e.g. "runs
+  long: repetition, not duration"); the validator quotes such values before
+  either parser sees them, so plain YAML's "unquoted `: ` is a mapping
+  separator" rule never applies to skill descriptions
+  (jonhill90/skills#142).
 
 ## Workflow
 

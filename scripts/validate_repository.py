@@ -64,6 +64,37 @@ def mini_yaml(text: str) -> dict[str, object]:
     return parsed
 
 
+def _quote_colon_value(line: str) -> str:
+    """Quote a flat 'key: value' line's value when it contains an embedded
+    colon. SKILL.md frontmatter is always flat key/value pairs — never
+    nested mappings or flow collections — so a bare colon in a value (e.g.
+    "runs long: repetition, not duration") is content, not a second mapping
+    separator. Plain YAML disagrees: unquoted ': ' inside a scalar is a
+    parse error, and PyYAML's message ("mapping values are not allowed
+    here") does not name the colon as the cause (jonhill90/skills#142).
+    Quoting the value here — before either parser sees it — makes a colon
+    in a description "just work" without the author having to know to
+    quote it, and keeps the PyYAML and mini_yaml backends in agreement."""
+    if not line or line[0].isspace() or line.lstrip().startswith("#"):
+        return line
+    key, sep, value = line.partition(":")
+    if not sep:
+        return line
+    stripped = value.strip()
+    if not stripped or ":" not in stripped:
+        return line
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in "'\"":
+        return line  # already quoted
+    if stripped[0] in "[{":
+        return line  # flow collection — leave to the real parser
+    escaped = stripped.replace("\\", "\\\\").replace('"', '\\"')
+    return f'{key}: "{escaped}"'
+
+
+def normalize_frontmatter(raw: str) -> str:
+    return "\n".join(_quote_colon_value(line) for line in raw.splitlines())
+
+
 def parse_skill(skill_file: Path) -> tuple[dict[str, object], str]:
     text = skill_file.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -75,7 +106,7 @@ def parse_skill(skill_file: Path) -> tuple[dict[str, object], str]:
     except ValueError as exc:
         raise ValueError("SKILL.md has unclosed YAML frontmatter") from exc
 
-    raw = "\n".join(lines[1:closing])
+    raw = normalize_frontmatter("\n".join(lines[1:closing]))
     frontmatter = yaml.safe_load(raw) if yaml else mini_yaml(raw)
     if not isinstance(frontmatter, dict):
         raise ValueError("frontmatter must be a YAML mapping")
