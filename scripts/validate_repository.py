@@ -31,6 +31,7 @@ PORTABLE_FIELDS = {
     "allowed-tools",
 }
 EXECUTABLE_SUFFIXES = {".py", ".sh", ".bash"}
+COMPATIBILITY_MAX = 500
 
 # AGENTS.md caps SKILL.md at 500 lines. Enforced since 2026-07-27: it was a
 # convention before, and skills/tmux reached 493 lines with nobody notified.
@@ -95,6 +96,28 @@ def normalize_frontmatter(raw: str) -> str:
     return "\n".join(_quote_colon_value(line) for line in raw.splitlines())
 
 
+def duplicate_keys(raw: str) -> list[str]:
+    """Top-level frontmatter keys declared more than once. Both backends here
+    resolve a repeat silently to the last value; strictyaml — which the spec's
+    reference validator uses — rejects it outright, so a repeated key means a
+    skill that loads differently in a conformant client than it reads here
+    (jonhill90/skills#150). Indented lines belong to a nested mapping such as
+    `metadata` and are not top-level keys."""
+    seen: list[str] = []
+    repeated: list[str] = []
+    for line in raw.splitlines():
+        if not line or line[0].isspace() or line.lstrip().startswith("#"):
+            continue
+        key, sep, _ = line.partition(":")
+        if not sep:
+            continue
+        key = key.strip()
+        if key in seen and key not in repeated:
+            repeated.append(key)
+        seen.append(key)
+    return repeated
+
+
 def parse_skill(skill_file: Path) -> tuple[dict[str, object], str]:
     text = skill_file.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -107,6 +130,11 @@ def parse_skill(skill_file: Path) -> tuple[dict[str, object], str]:
         raise ValueError("SKILL.md has unclosed YAML frontmatter") from exc
 
     raw = normalize_frontmatter("\n".join(lines[1:closing]))
+    repeated = duplicate_keys(raw)
+    if repeated:
+        raise ValueError(
+            f"duplicate frontmatter key(s): {', '.join(repeated)}"
+        )
     frontmatter = yaml.safe_load(raw) if yaml else mini_yaml(raw)
     if not isinstance(frontmatter, dict):
         raise ValueError("frontmatter must be a YAML mapping")
@@ -175,6 +203,24 @@ def validate_skill(skill_dir: Path) -> list[Finding]:
         findings.append(
             Finding("error", skill_file, "description exceeds 1024 characters")
         )
+
+    # The spec caps `compatibility` at 500 characters. This validator did not
+    # check it at all until the spec's reference tool flagged the case
+    # (jonhill90/skills#150).
+    compatibility = frontmatter.get("compatibility")
+    if compatibility is not None:
+        if not isinstance(compatibility, str):
+            findings.append(
+                Finding("error", skill_file, "compatibility must be a string")
+            )
+        elif len(compatibility) > COMPATIBILITY_MAX:
+            findings.append(
+                Finding(
+                    "error",
+                    skill_file,
+                    f"compatibility exceeds {COMPATIBILITY_MAX} characters",
+                )
+            )
 
     if not body:
         findings.append(Finding("error", skill_file, "skill body is empty"))

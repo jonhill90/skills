@@ -22,3 +22,33 @@ jobs:
       - run: python -m pip install -r tests/requirements-dev.txt
       - run: python scripts/validate_repository.py
       - run: python -m unittest discover -s tests -v
+
+  spec-conformance:
+    # Validate every skill with the specification's OWN reference tool, not
+    # only ours. Our validator was previously checked by reading the spec and
+    # comparing it to our code — same author, same reading, no independent
+    # instrument (jonhill90/skills#150). This job is that instrument.
+    #
+    # It tracks agentskills main rather than a pinned commit on purpose: a
+    # failure here means either a real conformance bug of ours or a spec that
+    # moved, and both are things this repository needs told about.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install the spec's reference validator
+        run: |
+          git clone --depth 1 https://github.com/agentskills/agentskills.git "$RUNNER_TEMP/agentskills"
+          python -m pip install "$RUNNER_TEMP/agentskills/skills-ref"
+          skills-ref --version
+      - name: Validate every skill against the reference implementation
+        run: |
+          status=0
+          for skill in skills/*/; do
+            if ! skills-ref validate "$skill"; then
+              status=1
+            fi
+          done
+          exit $status
