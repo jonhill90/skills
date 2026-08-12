@@ -5,13 +5,16 @@ discipline agent-dotfiles#143 and #161 used: measure, answer the three named
 questions, recommend, and let Jon decide before anything moves.
 
 Read directly: `agent-dotfiles/scripts/supervisor/loop-tick.md`, measured
-2026-08-12 at **540 lines** (`wc -l`) — up from the 527 the issue cites when
+2026-08-12 at **550 lines** (`wc -l`) — up from the 527 the issue cites when
 it was filed, itself a small data point about how often this file changes.
+(It read 540 earlier the same night, before `agent-dotfiles#183` merged and
+added 10 lines; re-measured against current `origin/main` rather than left
+stale.)
 
 ## 1. Is it one skill, or a skill plus references?
 
 This repository's own stated cap, from `create-skill/SKILL.md`: "Keep the
-main file under 500 lines." `loop-tick.md` at 540 already exceeds that
+main file under 500 lines." `loop-tick.md` at 550 already exceeds that
 before any reference material is even split out. The largest skills already
 here split main file plus `references/` — `github-cli` (411 lines main),
 `tmux` (381), `linear` (355), `close-the-loop` (223), `obsidian` (243),
@@ -47,8 +50,8 @@ Counted directly against the file, not estimated:
 
 | what | count |
 |---|---|
-| references to this estate's own `*.sh` scripts by name (`dispatch.sh`, `lanes.sh`, `claim.sh`, `worktree.sh`, `lane-done.sh`, `director-inbox.sh`, `advance-live.sh`, `would-revert.sh`) | **36**, across all 8 |
-| issue numbers cited | **35** mentions, **25** unique |
+| references to this estate's own `*.sh` scripts by name (`dispatch.sh`, `lanes.sh`, `claim.sh`, `worktree.sh`, `lane-done.sh`, `director-inbox.sh`, `advance-live.sh`, `would-revert.sh`) | **38**, across all 8 |
+| issue numbers cited | **38** mentions, **26** unique |
 | code fences with literal commands, exact paths, exact flags | **13** |
 
 That is not a file that describes a contract in the abstract and cites tools
@@ -68,7 +71,8 @@ safe to type into this lane at all) and collapsing them back into one name
 would erase exactly the distinction that incident forced. These eleven are
 `lanes.sh`'s own literal vocabulary, not a
 described interface a differently-named tool could also satisfy. The incident
-citations (#73, #81, #89, #99, #102, #108, and 19 more) are `agent-
+citations (#73, #81, #89, #99, #102, #108, and 20 more, including #174,
+added by `agent-dotfiles#183` since this document's earlier measurement) are `agent-
 dotfiles`' own history, load-bearing as the *reason* for each rule, and
 meaningless without that repository's issue tracker.
 
@@ -83,7 +87,7 @@ docs/SPEC.md §14` and `agent-dotfiles#22` as the evidentiary source, once,
 without the skill's operational content depending on that repo's file
 layout, script names, or issue numbers to be usable. `loop-tick.md` does
 the opposite of that on every page: the citation and the instruction are the
-same sentence, 36 and 25 times over.
+same sentence, 38 and 26 times over.
 
 **This is the crux, and it resolves against the move weakening the coupling
 objection.** The tick describes almost everything by name, not by contract.
@@ -132,15 +136,24 @@ to #158's own list along the way: #158 names its three newly-undocumented
 states as `blocked`, `menu-blocked`, `service`, but `blocked` is itself
 stale terminology — #159/#164 (both landed before #158 was filed) already
 split it into `text-blocked` and `menu-blocked`, so there is no bare
-`blocked` state left to search for. Redone against the current name: a
-fresh search across every `SKILL.md` and reference in this repo finds
-`text-blocked`, `menu-blocked`, and `service` in **zero** skills. The
-ordinary English word "blocked" does appear — in `notify`, `loop-contract`,
-and `supervised-lane-loop` itself — but never in `lanes.sh`'s literal
-state-machine sense (a merge being blocked, a `blocked-needs-human` loop
-outcome, a channel being blocked for a given setup). The drift #158 named
-is real and current, not historical, and #158's own list needs the same
-correction this document's state-name count above does.
+`blocked` state left to search for. A search against the current name set,
+re-run against this repo's present `main`, no longer finds zero: #165
+closed #158 the same night by giving `supervised-lane-loop/SKILL.md` a
+state table naming `menu-blocked`, `text-blocked`, `dead`, and `service`
+explicitly — so `text-blocked`, `menu-blocked`, and `service` now appear in
+**one** skill, not zero. That is not a hole in this document's argument;
+it is a second, independent demonstration of the same point. Fixing that
+one skill's drift took a dedicated, reviewed PR reacting to a filed issue,
+not something same-repo proximity did automatically — the exact burden §2
+argues a moved `loop-tick.md` would also carry, with nothing here that
+would force the fix to happen on its own. The ordinary English word
+"blocked" also appears — in `notify`, `loop-contract`, and
+`supervised-lane-loop` itself — but never in `lanes.sh`'s literal
+state-machine sense elsewhere (a merge being blocked, a
+`blocked-needs-human` loop outcome, a channel being blocked for a given
+setup). #158's own list needs the same eight-versus-eleven correction this
+document's state-name count above makes, and is now closed by #165 rather
+than open.
 
 ## 3. What breaks on day one
 
@@ -199,7 +212,7 @@ vendoring it."*
 `loop-tick.md`, as written today, is exactly that — personal harness
 configuration for one specific estate. It names Jon by name, the Director by
 name, four specific repositories by name, eight of this estate's own scripts
-by name, and 25 of that estate's own issue numbers. It is not "instructions
+by name, and 26 of that estate's own issue numbers. It is not "instructions
 an agent loads on demand" in the portable sense the rest of this repository
 means by that phrase; it is agent-dotfiles' own operations manual, written
 in markdown instead of bash only because prose was the right tool for that
@@ -217,7 +230,7 @@ repository's own scope section says stays where the code is.
 
 **Do not move `loop-tick.md` as written.** Question 2's measurement resolves
 the crux against the move — the coupling objection is not weakened, it is
-confirmed, at 36 script-name references and 25 unique issue citations. Moving
+confirmed, at 38 script-name references and 26 unique issue citations. Moving
 it unmodified would also cross this repository's own stated scope boundary,
 independent of the coupling question.
 
@@ -230,7 +243,7 @@ than reading a diff, a completion signal tied to the one event that cannot
 fire early — written generically, the way `loop-contract` and `tmux/
 references/supervisor-lanes.md` already are, citing `agent-dotfiles` once as
 where the evidence came from. The concrete, executable tick — script names,
-exact paths, the 25-incident history that justifies each rule — stays
+exact paths, the 26-incident history that justifies each rule — stays
 versioned with the code in `agent-dotfiles`, where that coupling is real and
 currently load-bearing.
 
