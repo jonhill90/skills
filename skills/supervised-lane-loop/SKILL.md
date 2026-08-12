@@ -238,7 +238,10 @@ Three things here are not terminal mechanics and belong with the loop:
   and it sat idle a full cycle, and a lane waiting on forked sub-agents read
   as idle and was nearly dispatched over. Check the live tail, never a
   keyword anywhere in the buffer. This generalises to any harness where a
-  worker signals liveness through a rendered surface.
+  worker signals liveness through a rendered surface. The section below
+  names the concrete states this looks like for a tmux-window-per-lane
+  supervisor; treat it as one worked instance of this rule, not a separate
+  one.
 - **A lane that says it will wait and then ends its turn has stopped, not
   waited.** That is agent behaviour, not a terminal flag, and it cost four
   cycles across two lanes before it was diagnosed. Instruct lanes to block
@@ -251,6 +254,37 @@ Three things here are not terminal mechanics and belong with the loop:
 Dispatch to an idle lane immediately; an idle lane is the only real waste.
 For long tasks, state the goal, the ranking rule, the standard of evidence,
 and the boundary you will not authorise crossing. Then let them work.
+
+### The lane state machine (tmux-window-per-lane supervisors)
+
+Where the lane protocol is `jonhill90/agent-dotfiles`' `lanes.sh`
+(`scripts/supervisor/lanes.sh`), it is the probe, and this table is a
+description of it, not the other way around — read the script when they
+disagree. As of 2026-08-12 it reports eleven states:
+
+| state | what it means | what an operator must NOT do |
+|---|---|---|
+| `free` | idle at the prompt, nothing delegated | (safe to dispatch) |
+| `busy` | mid-turn, recent tmux activity | do not dispatch — the brief queues behind the running turn |
+| `hung` | looks busy, but tmux has seen no output for the hang window | do not dispatch — it would queue forever; needs a human |
+| `menu-blocked` | waiting on a selection menu (folder-trust dialog, `/model`, a bash-permission prompt, `/theme`, or any unrecognised blocked shape — this is the default, not just one shape) | **never route free text here.** It lands as navigation keystrokes and the trailing Enter commits whatever option is highlighted — proven live, a routed reply changed a lane's theme instead of being read as an answer. This is the exact defect that, elsewhere, granted an agent filesystem read/edit/execute trust by typing a reply into a folder-trust dialog |
+| `text-blocked` | waiting on a genuine free-text prompt | this is the one blocked state safe to answer with routed free text — but it has never been observed live in this estate; do not assume a blocked lane is this one without positive evidence, and the probe itself defaults to `menu-blocked` when unsure |
+| `unsent` | a brief is typed into the input box and was never submitted | do not dispatch on top of it — a new brief lands behind stale unsubmitted text; a human needs to look |
+| `dead` | the pane's own first process is a bare shell, no agent running | restart the agent — but check `service` first, below |
+| `service` | the pane's own first process is a known long-running service (today, only `inbox-poll.sh`) | **never restart it as if it were dead.** `inbox-poll.sh` carries Jon's Telegram replies; restarting it looks exactly like nobody having written anything, because it silently stops the inbound channel instead of erroring |
+| `scrolled` | the pane is in copy-mode (someone scrolled the scrollback up) | do not dispatch — keys are eaten by the copy-mode key table, not the agent, even when the visible text looks idle |
+| `unknown` | no probe recognises the last line — a non-Claude-Code harness, or a footer shape not yet enumerated | do not guess free or dead; it needs a human to classify, not an assumption |
+| `supervisor` | the supervisor's own window | never a dispatch target — a worker brief sent there `/clear`s the supervisor's own loop |
+
+`--free` offers only `free`. `--blocked` offers `menu-blocked` and
+`text-blocked` together, tagged with which kind, because only
+`text-blocked` is safe to answer with routed free text.
+
+**The window name is not the source of truth for any of this, and is being
+removed as one** — see `jonhill90/agent-dotfiles#174`. `dead` is decided by
+the pane's own first process, not by whether the window is named `free-N`;
+a lane that finished, was renamed, and then lost its agent still reads
+`dead`, it does not vanish from the table.
 
 ## Reporting to the human
 
