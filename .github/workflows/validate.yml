@@ -23,6 +23,42 @@ jobs:
       - run: python scripts/validate_repository.py
       - run: python -m unittest discover -s tests -v
 
+  plugin-conformance:
+    # Validate `plugin.json` against the PUBLISHED Agent Plugins schema, not
+    # against this repository's transcription of it. `tests/test_plugin_manifest.py`
+    # encodes the same constraints offline and is the fast local guard; this
+    # job is the independent instrument, for the same reason `spec-conformance`
+    # exists alongside `validate_repository.py` (jonhill90/skills#159, #150).
+    #
+    # The manifest schema is CLOSED, so a misspelled or extra key is a hard
+    # failure for every conformant client. Fetching the live schema is the
+    # point: if agent-plugins.org changes it, this repository needs telling.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install jsonschema
+      - name: Validate plugin.json against the published schema
+        run: |
+          python - <<'PY'
+          import json, sys, urllib.request
+          from jsonschema import Draft202012Validator
+
+          URL = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+          with urllib.request.urlopen(URL) as response:
+              schema = json.load(response)
+          manifest = json.load(open("plugin.json"))
+
+          Draft202012Validator.check_schema(schema)
+          errors = sorted(Draft202012Validator(schema).iter_errors(manifest), key=lambda e: list(e.path))
+          for error in errors:
+              print(f"plugin.json: {list(error.path)}: {error.message}", file=sys.stderr)
+          print(f"validated plugin.json against {schema['$id']}: {len(errors)} error(s)")
+          sys.exit(1 if errors else 0)
+          PY
+
   spec-conformance:
     # Validate every skill with the specification's OWN reference tool, not
     # only ours. Our validator was previously checked by reading the spec and

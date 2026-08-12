@@ -26,6 +26,19 @@ project's skill set stays reproducible. See the [skills
 CLI](https://www.npmjs.com/package/skills) for the full command
 reference.
 
+### As an Agent Plugin
+
+This repository is also an [Agent Plugins
+1.0.0](https://agent-plugins.org/specification) plugin: `plugin.json` at the
+root, 24 skills at `skills/<name>/SKILL.md`, which is the standard's own
+discovery convention. Any conformant client can consume the collection whole,
+with no bespoke tooling.
+
+That is a portability claim, not a local one. Claude Code reads its own
+manifest at `.claude-plugin/plugin.json` and does not look for this file, so
+adding it changed nothing for Claude Code users today. `npx skills` above
+remains the way to install individual skills, and nothing here replaces it.
+
 ## Skills in this collection
 
 | Skill | Purpose |
