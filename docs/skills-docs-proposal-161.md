@@ -63,7 +63,7 @@ Concrete facts, not impressions:
   other 10 sit in `misc/`, `in-progress/`, `deprecated/` and are
   deliberately absent from the README, the plugin manifest, and `docs/`.
 - **`docs/` pages exist only for the 25 promoted skills**, one file each,
-  averaging ~90 lines (`docs/engineering/tdd.md` is 128 lines). They are
+  averaging ~90 lines (`docs/engineering/tdd.md` is 94 lines). They are
   published externally at `https://aihero.dev/skills-<name>` — the repo
   path is organisation only, not the served URL.
 - **A page is not a copy of `SKILL.md`.** `.agents/writing-docs.md`
@@ -130,7 +130,7 @@ Read cold, this repo is 24 skills (flat, no buckets), `AGENTS.md`,
    you'd reach for them? `mattpocock/skills` answers exactly this shape
    of question in `## When to reach for it` on every page, in a table
    whenever the answer branches.
-4. **No categorisation at all.** `mattpocock/skills` splits 24 promoted
+4. **No categorisation at all.** `mattpocock/skills` splits 25 promoted
    skills into two buckets your eye can scan; this repo's `skills/` is 24
    directories in one flat alphabetical list, and the README table is
    likewise flat. A reader cannot tell `create-skill` (repo-authoring
