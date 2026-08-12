@@ -1,0 +1,16 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "jonhill90-skills",
+  "description": "Jon Hill's public collection of portable Agent Skills: self-contained, model- and harness-agnostic instructions an AI coding agent loads on demand.",
+  "author": {
+    "name": "Jon Hill",
+    "url": "https://github.com/jonhill90"
+  },
+  "repository": "https://github.com/jonhill90/skills",
+  "keywords": [
+    "agent-skills",
+    "agent-plugins",
+    "portable",
+    "harness-agnostic"
+  ]
+}

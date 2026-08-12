@@ -30,6 +30,7 @@ file; the other two follow with no sync step.
 ## Canonical Layout
 
 ```text
+plugin.json                # Agent Plugins 1.0.0 manifest (closed schema)
 skills/
   <skill-name>/
     SKILL.md
@@ -40,6 +41,7 @@ scripts/
   validate_repository.py   # structural + link + naming checks
 tests/
   test_validate_repository.py
+  test_plugin_manifest.py  # manifest fields + plugin-root path containment
 .github/workflows/         # CI: validate + unit tests
 ```
 
@@ -107,6 +109,14 @@ reference implementation — `skills-ref` from
 Reading the spec and comparing it to our own code is not an independent check;
 that job is the independent instrument.
 
+`plugin.json` follows the same split (#159). `tests/test_plugin_manifest.py`
+encodes the Agent Plugins constraints offline — required fields, the exact
+`$schema` value, the `name` pattern, and the closed top-level key set — and the
+`plugin-conformance` CI job validates the same file against the schema fetched
+from `agent-plugins.org`. The manifest schema is closed, so one misspelled key
+fails every conformant client; both instruments were confirmed to go red on a
+`keywords` → `keyword` edit before this was merged.
+
 Where the two deliberately differ, this repository is the stricter one. None of
 these are spec violations — a skill accepted here is accepted by the reference:
 
@@ -134,9 +144,24 @@ you have not enumerated.
 - `npx skills add jonhill90/skills --list` browses the collection.
 - `npx skills add jonhill90/skills --skill <name>` installs one skill
   into the current project.
+- `plugin.json` declares the whole repository as an Agent Plugins 1.0.0
+  plugin, so any conformant client can consume it without bespoke
+  tooling (#159). **It replaces nothing today.** `npx skills` stays the
+  per-skill install path and is a different granularity — one skill,
+  content-hash pinned — which no whole-plugin install offers. A
+  consumer's `apm.yml` pinning is that consumer's concern, not this
+  repository's.
+- **Claude Code does not read this manifest.** Its own manifest is
+  `.claude-plugin/plugin.json`; `claude plugin validate .` on this tree
+  reports "No manifest found ... Expected .claude-plugin/marketplace.json
+  or .claude-plugin/plugin.json". Adding that second file is a separate
+  decision, not implied by this one.
 - Do not hand-maintain a growing matrix of harness-specific copies of
   this repository; harness projection is that consumer's job, not this
   repository's.
+- Do not add `mcp.json`. It is optional, this repository ships no MCP
+  servers, and a missing fixed component location is explicitly not an
+  error for a client.
 
 ## Guardrails
 
