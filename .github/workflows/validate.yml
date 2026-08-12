@@ -23,6 +23,24 @@ jobs:
       - run: python scripts/validate_repository.py
       - run: python -m unittest discover -s tests -v
 
+  orphan-check:
+    # jonhill90/skills#162: advisory only. The roster this compares against
+    # lives in a different repository (agent-dotfiles), so this job can
+    # never be authoritative and must never gate a merge -- a red run here
+    # means "look", not "fix required". continue-on-error is what makes
+    # that true regardless of the script's own exit code, which stays
+    # meaningful (0 clean, 1 orphans found, 2 could not check) for a human
+    # reading the log.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Report skills neither rostered nor benched in agent-dotfiles
+        run: python scripts/check_orphan_skills.py
+
   plugin-conformance:
     # Validate `plugin.json` against the PUBLISHED Agent Plugins schema, not
     # against this repository's transcription of it. `tests/test_plugin_manifest.py`
