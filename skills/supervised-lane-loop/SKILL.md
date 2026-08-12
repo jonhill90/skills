@@ -264,27 +264,39 @@ disagree. As of 2026-08-12 it reports eleven states:
 
 | state | what it means | what an operator must NOT do |
 |---|---|---|
-| `free` | idle at the prompt, nothing delegated | (safe to dispatch) |
+| `free` | idle at the prompt, nothing delegated | do not treat it as an exclusive claim. A second, uncoordinated dispatcher may read the same table before you send (`agent-dotfiles#184`, open: the Director and the supervisor loop race on lane selection) — take the claim first, then dispatch. `lanes.sh`'s own comment on the supervisor window puts it plainly: "'Free' and 'yours to take' are different questions" |
 | `busy` | mid-turn, recent tmux activity | do not dispatch — the brief queues behind the running turn |
 | `hung` | looks busy, but tmux has seen no output for the hang window | do not dispatch — it would queue forever; needs a human |
 | `menu-blocked` | waiting on a selection menu (folder-trust dialog, `/model`, a bash-permission prompt, `/theme`, or any unrecognised blocked shape — this is the default, not just one shape) | **never route free text here.** It lands as navigation keystrokes and the trailing Enter commits whatever option is highlighted — proven live, a routed reply changed a lane's theme instead of being read as an answer. This is the exact defect that, elsewhere, granted an agent filesystem read/edit/execute trust by typing a reply into a folder-trust dialog |
 | `text-blocked` | waiting on a genuine free-text prompt | this is the one blocked state safe to answer with routed free text — but it has never been observed live in this estate; do not assume a blocked lane is this one without positive evidence, and the probe itself defaults to `menu-blocked` when unsure |
 | `unsent` | a brief is typed into the input box and was never submitted | do not dispatch on top of it — a new brief lands behind stale unsubmitted text; a human needs to look |
-| `dead` | the pane's own first process is a bare shell, no agent running | restart the agent — but check `service` first, below |
-| `service` | the pane's own first process is a known long-running service (today, only `inbox-poll.sh`) | **never restart it as if it were dead.** `inbox-poll.sh` carries Jon's Telegram replies; restarting it looks exactly like nobody having written anything, because it silently stops the inbound channel instead of erroring |
+| `dead` | the pane's *current command* is a bare shell (`bash`/`zsh`/`sh`/`fish`/`login`) and its first process does not match the known-service whitelist | restart the agent — but the whitelist (`LANES_SERVICE_RE`) is env-overridable and narrow (today, only `inbox-poll.sh`); a shell running some other long-lived script one whitelist entry away from `service` reads `dead` too. Confirm it is actually a lost agent, not an unlisted service, before restarting |
+| `service` | the pane's own first process matches the known-service whitelist (today, only `inbox-poll.sh`) | **never restart it as if it were dead.** `inbox-poll.sh` carries Jon's Telegram replies; restarting it looks exactly like nobody having written anything, because it silently stops the inbound channel instead of erroring |
 | `scrolled` | the pane is in copy-mode (someone scrolled the scrollback up) | do not dispatch — keys are eaten by the copy-mode key table, not the agent, even when the visible text looks idle |
 | `unknown` | no probe recognises the last line — a non-Claude-Code harness, or a footer shape not yet enumerated | do not guess free or dead; it needs a human to classify, not an assumption |
 | `supervisor` | the supervisor's own window | never a dispatch target — a worker brief sent there `/clear`s the supervisor's own loop |
 
+**The probe decides in a fixed order, and the first match wins** — it is not
+independent per-state evaluation, so two orderings change what an operator
+sees. `scrolled` is decided before any blocked check, so a `menu-blocked`
+lane that someone scrolled up reads `scrolled` and is invisible to
+`--blocked`, which the inbound reply router builds its table from. And the
+shell check (`dead`/`service`) is decided before busy/blocked/free, so none
+of those three can ever apply to a pane whose current command is a shell.
 `--free` offers only `free`. `--blocked` offers `menu-blocked` and
 `text-blocked` together, tagged with which kind, because only
-`text-blocked` is safe to answer with routed free text.
+`text-blocked` is safe to answer with routed free text — but neither list is
+an enumeration of every lane actually waiting on a human, because of the
+ordering above.
 
-**The window name is not the source of truth for any of this, and is being
-removed as one** — see `jonhill90/agent-dotfiles#174`. `dead` is decided by
-the pane's own first process, not by whether the window is named `free-N`;
-a lane that finished, was renamed, and then lost its agent still reads
-`dead`, it does not vanish from the table.
+**`lanes.sh` never reads the window name for any state above** — every
+classification comes from tmux's own pane facts or a positive text match.
+`dead` is decided by the pane's current command, not by whether the window
+is named `free-N`; a lane that finished, was renamed, and then lost its
+agent still reads `dead`, it does not vanish from the table. That is a fact
+about this probe, not a claim about the rest of the estate: `agent-dotfiles#194`
+is open, arguing a different call site (`lane-done.sh`'s own completion
+rename) is still load-bearing rather than cosmetic.
 
 ## Reporting to the human
 
