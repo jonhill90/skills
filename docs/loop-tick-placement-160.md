@@ -18,8 +18,9 @@ main file under 500 lines." `loop-tick.md` at 550 already exceeds that
 before any reference material is even split out. The largest skills already
 here split main file plus `references/` — `github-cli` (411 lines main),
 `tmux` (381), `linear` (355), `close-the-loop` (223), `obsidian` (243),
-`supervised-lane-loop` (270) — so size alone says split, not "leave as one
-file."
+`supervised-lane-loop` (316, `wc -l` against `origin/main` at `7dce75a`,
+this document's own #165 landing that added the state table §2 discusses) —
+so size alone says split, not "leave as one file."
 
 But splitting by length is the wrong cut for this file. `references/` in
 this repo's existing skills holds *background* material — provider tables,
@@ -62,7 +63,7 @@ and this repo's actual name, typed as the thing to run. Counted directly
 against `lanes.sh`'s own `state=` assignments, not estimated: it emits
 **eleven** states, not eight — `free`, `busy`, `hung`, `dead`, `service`,
 `unknown`, `text-blocked`, `menu-blocked`, `unsent`, `scrolled`,
-`supervisor`. There is no bare `blocked` state to cite; #159/#164 split it
+`supervisor`. There is no bare `blocked` state to cite; #159/#161 split it
 into `text-blocked` and `menu-blocked` specifically because routing a reply
 into a menu-blocked lane as free text was the defect that changed a lane's
 `/theme` setting instead of being read as an answer, proven live
@@ -109,7 +110,7 @@ lane-state table (`agent-dotfiles/scripts/supervisor/loop-tick.md`,
 `unknown`, and `supervisor` (the last one line above the table, not in it) —
 and never mentions `text-blocked`, `menu-blocked`, `unsent`, or `scrolled`
 anywhere in the file, confirmed by grepping each literal state name
-directly against it. `text-blocked`/`menu-blocked` shipped in #159/#164,
+directly against it. `text-blocked`/`menu-blocked` shipped in #159/#161,
 `unsent` in #141 — both well before this measurement — in the same repository,
 under the same "code and its own operating instructions share a commit"
 theory this document is relying on. **They did not stay in sync even
@@ -134,7 +135,7 @@ repository.
 Independently corroborates #158's own claim, extended, with one correction
 to #158's own list along the way: #158 names its three newly-undocumented
 states as `blocked`, `menu-blocked`, `service`, but `blocked` is itself
-stale terminology — #159/#164 (both landed before #158 was filed) already
+stale terminology — #159/#161 (both landed before #158 was filed) already
 split it into `text-blocked` and `menu-blocked`, so there is no bare
 `blocked` state left to search for. A search against the current name set,
 re-run against this repo's present `main`, no longer finds zero: #165
@@ -203,11 +204,15 @@ opts out of the reason this repo exists.
 
 ## A fourth question neither side of #160 named: does this content belong here at all?
 
-This repository's own `AGENTS.md` and `README.md`, verbatim: *"Nothing here
-depends on any particular harness, personal dotfiles, or private evaluation
-tooling"* and *"Personal harness configuration ... lives in Jon's separate
+This repository's own `AGENTS.md`, verbatim: *"Nothing here depends on any
+particular harness, personal dotfiles, or private evaluation tooling"* and
+*"Personal harness configuration ... lives in Jon's separate
 `agent-dotfiles` repository, which consumes this collection rather than
-vendoring it."*
+vendoring it."* `README.md`, verbatim, says the same thing without naming
+either the owner or the repository: *"Personal harness configuration —
+canonical instructions, hooks, agents, settings, MCP declarations,
+install/sync tooling — lives in a separate personal harness repository
+that consumes this collection; it is not vendored here."*
 
 `loop-tick.md`, as written today, is exactly that — personal harness
 configuration for one specific estate. It names Jon by name, the Director by
