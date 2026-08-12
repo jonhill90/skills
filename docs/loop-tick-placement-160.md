@@ -49,16 +49,25 @@ Counted directly against the file, not estimated:
 |---|---|
 | references to this estate's own `*.sh` scripts by name (`dispatch.sh`, `lanes.sh`, `claim.sh`, `worktree.sh`, `lane-done.sh`, `director-inbox.sh`, `advance-live.sh`, `would-revert.sh`) | **36**, across all 8 |
 | issue numbers cited | **35** mentions, **25** unique |
-| code fences with literal commands, exact paths, exact flags | **26** |
+| code fences with literal commands, exact paths, exact flags | **13** |
 
 That is not a file that describes a contract in the abstract and cites tools
 as an example. `dispatch.sh 81 dispatch-worktree ~/.local/state/agent-
 dotfiles-supervisor/ad81-brief.md jonhill90/agent-dotfiles ~/source/repos/
 Personal/agent-dotfiles` is not a pattern, it is this machine's actual path
-and this repo's actual name, typed as the thing to run. The state names
-(`free`, `busy`, `hung`, `dead`, `service`, `unknown`, `blocked`,
-`menu-blocked`) are `lanes.sh`'s own literal vocabulary, not a described
-interface a differently-named tool could also satisfy. The incident
+and this repo's actual name, typed as the thing to run. Counted directly
+against `lanes.sh`'s own `state=` assignments, not estimated: it emits
+**eleven** states, not eight — `free`, `busy`, `hung`, `dead`, `service`,
+`unknown`, `text-blocked`, `menu-blocked`, `unsent`, `scrolled`,
+`supervisor`. There is no bare `blocked` state to cite; #159/#164 split it
+into `text-blocked` and `menu-blocked` specifically because routing a reply
+into a menu-blocked lane as free text was the defect that changed a lane's
+`/theme` setting instead of being read as an answer, proven live
+(agent-dotfiles#159/#161) — the two halves answer different questions (is it
+safe to type into this lane at all) and collapsing them back into one name
+would erase exactly the distinction that incident forced. These eleven are
+`lanes.sh`'s own literal vocabulary, not a
+described interface a differently-named tool could also satisfy. The incident
 citations (#73, #81, #89, #99, #102, #108, and 19 more) are `agent-
 dotfiles`' own history, load-bearing as the *reason* for each rule, and
 meaningless without that repository's issue tracker.
@@ -85,14 +94,53 @@ which is exactly the failure #158 already measured happening to the skills
 that already try to describe this material from a different repo (see the
 table below).
 
-Independently corroborates #158's own claim, extended: of the three lane
-states `#158` says are new since `supervised-lane-loop` was last touched
-(`blocked`, `menu-blocked`, `service`), a fresh search across every `SKILL.md`
-and reference in this repo finds `busy`, `service`, and `menu-blocked` in
-**zero** skills — `blocked` and `hung`/`dead`/`unknown` appear, but not in
-`lanes.sh`'s specific sense, in a handful of unrelated skills
-(`notify`, `loop-memory`, `verify-the-instrument`). The drift #158 named is
-real and current, not historical.
+**The strongest objection to that recommendation is that same-repo
+co-location does not actually earn the "single-commit discipline" claim
+above unless it is observed happening, and it needs to be checked, not
+assumed: does `lanes.sh` changing and `loop-tick.md` updating really land as
+one atomic commit today?** Measured, not asserted: `loop-tick.md`'s own
+lane-state table (`agent-dotfiles/scripts/supervisor/loop-tick.md`,
+"Dispatch only to lanes it reports `free`") names exactly seven of
+`lanes.sh`'s eleven states — `free`, `busy`, `hung`, `dead`, `service`,
+`unknown`, and `supervisor` (the last one line above the table, not in it) —
+and never mentions `text-blocked`, `menu-blocked`, `unsent`, or `scrolled`
+anywhere in the file, confirmed by grepping each literal state name
+directly against it. `text-blocked`/`menu-blocked` shipped in #159/#164,
+`unsent` in #141 — both well before this measurement — in the same repository,
+under the same "code and its own operating instructions share a commit"
+theory this document is relying on. **They did not stay in sync even
+co-located.** So skills#158 is not only evidence that a *cross-repo* copy
+drifts; it is standing evidence, inside `agent-dotfiles` itself, that
+proximity alone does not keep a hand-written description of `lanes.sh`
+current — nothing forces `loop-tick.md` to change when `lanes.sh` does, same
+repo or not, because nothing checks the two against each other. This does
+not flip the recommendation: `loop-tick.md` staying in `agent-dotfiles`
+is still correct, because a moved copy adds a second, harder desync (a repo
+boundary and a versioning lag on top of the same missing enforcement) rather
+than fixing the one that already exists. But "one atomic commit" is not by
+itself the reason to trust the tick stays current — nothing here currently
+guarantees that, in either repo — and a decision-ready answer has to say so
+rather than lean on same-repo-ness as if it were self-enforcing. Whatever
+`#158`'s "propose how this stops recurring" deliverable lands on (a CI check
+diffing `lanes.sh`'s state list against what its own documentation claims,
+or a single source both read) is the actual fix for this, and it would need
+to run against `loop-tick.md` too, not just against skills in this
+repository.
+
+Independently corroborates #158's own claim, extended, with one correction
+to #158's own list along the way: #158 names its three newly-undocumented
+states as `blocked`, `menu-blocked`, `service`, but `blocked` is itself
+stale terminology — #159/#164 (both landed before #158 was filed) already
+split it into `text-blocked` and `menu-blocked`, so there is no bare
+`blocked` state left to search for. Redone against the current name: a
+fresh search across every `SKILL.md` and reference in this repo finds
+`text-blocked`, `menu-blocked`, and `service` in **zero** skills. The
+ordinary English word "blocked" does appear — in `notify`, `loop-contract`,
+and `supervised-lane-loop` itself — but never in `lanes.sh`'s literal
+state-machine sense (a merge being blocked, a `blocked-needs-human` loop
+outcome, a channel being blocked for a given setup). The drift #158 named
+is real and current, not historical, and #158's own list needs the same
+correction this document's state-name count above does.
 
 ## 3. What breaks on day one
 
