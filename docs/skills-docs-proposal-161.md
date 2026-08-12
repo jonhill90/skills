@@ -4,6 +4,20 @@ Proposal only — no docs are written here, and no files move. Jon reacts to
 this; a follow-up PR implements whatever he picks. Same discipline
 agent-dotfiles#143 used for the layout question, and it worked.
 
+*Merged 2026-08-12 from two independent answers to the same question, filed
+in two repositories by the Director's own duplicate dispatch: this
+document (`skills#164`, from `skills#161`) and `agent-dotfiles#182` (from
+`agent-dotfiles#177`). This repository's backlog is where `jonhill90/skills`
+documentation work belongs — `skills#161` itself records that filing it in
+`agent-dotfiles` was the error — so this document survives and absorbs
+`#182`'s unique findings: the precise `agent-dotfiles#143` Q3/Q4 distinction
+below, the sharper cost argument against moving `create-skill`/SPEC, the
+confusable-siblings example, and the against-padding-templates refinement.
+`#182`'s engineering/productivity skill-count split (13/7) was checked
+against the actual tree and does not match (18/7, unchanged from this
+document's original count) — not carried over. `agent-dotfiles#182` is
+closed in favour of this document.*
+
 ## The concrete reference: `mattpocock/skills`
 
 Jon's own framing: *"i know i was thinking about how matt pocock has docs
@@ -109,6 +123,13 @@ Read cold, this repo is 24 skills (flat, no buckets), `AGENTS.md`,
    which one you're looking at." (Contrast `mattpocock/skills`, where
    `.agents/invocation.md` is a dedicated concept page and both README
    levels group entries under **User-invoked**/**Model-invoked** headers.)
+   Concretely unanswerable today without opening all 24 `SKILL.md` files:
+   is `sanity-check` something you type, or something the agent reaches
+   for on its own — and how does it differ from `dispatching-subagents`
+   and `keep-me-honest`, three names that plausibly overlap in when
+   you'd reach for them? `mattpocock/skills` answers exactly this shape
+   of question in `## When to reach for it` on every page, in a table
+   whenever the answer branches.
 4. **No categorisation at all.** `mattpocock/skills` splits 24 promoted
    skills into two buckets your eye can scan; this repo's `skills/` is 24
    directories in one flat alphabetical list, and the README table is
@@ -157,7 +178,17 @@ What genuinely is `agent-dotfiles`-only, and does **not** belong in a
 move, is *rostering* policy: `default-skills.txt`, the §10.1 evidence
 bar, and the cost-gate exception mechanics agent-dotfiles#181 just
 extended. That is Jon's personal install-default decision-making, not a
-property of the skill or a fact a skill author elsewhere needs.
+property of the skill or a fact a skill author elsewhere needs. Moving
+it here would do more than duplicate — it would invert a dependency
+direction `agent-dotfiles`' own `CLAUDE.md` already states explicitly
+("skill content is not vendored here … declared as pinned dependencies"):
+`agent-dotfiles` depends on `jonhill90/skills` for content, not the
+other way around, and rostering logic is meaningless outside
+`agent-dotfiles`' own install path. It would also gain nothing
+`mattpocock/skills` argues for — his `.agents/` material (his triage
+labels, his ADR numbering, his docs-page template) is scoped to *his*
+repo's own conventions, not a portable authoring spec, so it is not
+evidence for centralizing anything here either.
 
 What is a real, live duplication: the bullet list of `SKILL.md`
 mechanics — *"portable frontmatter, 500-line cap, `references/` for
@@ -181,56 +212,84 @@ anything roster-shaped.
 ## Resolving the tension, not asserting a side
 
 The issue frames a real tension: *"a standalone public collection
-arguably needs MORE explanation of itself, not less."* Read against
-`069e2c4`'s actual diff (`git show 069e2c4~1:docs` from this worktree),
-the tension dissolves rather than needing a judgment call either way.
-**What was removed was not skills documentation.** Before the split,
-`docs/` in this repo was a byte-identical mirror of `agent-dotfiles`'
-own project docs: `PRD.md`, `SPEC.md`,
-`docs/agent-engineering-lineage.md`, `docs/evals.md`,
-`docs/harness-engineering.md`, `docs/memory.md`,
+arguably needs MORE explanation of itself, not less."* Two independent
+pieces of evidence resolve it, and they reinforce each other.
+
+**First, what `069e2c4` actually removed.** Read against its diff
+(`git show 069e2c4~1:docs` from this worktree), `docs/` in this repo
+before the split was a byte-identical mirror of `agent-dotfiles`' own
+project docs: `PRD.md`, `SPEC.md`, `docs/agent-engineering-lineage.md`,
+`docs/evals.md`, `docs/harness-engineering.md`, `docs/memory.md`,
 `docs/migration-audit.md`, `docs/provenance-manifest.md`,
 `docs/work-tracking.md` — `agent-dotfiles`' *personal harness engineering*
 project record, not anything describing what a skill in this collection
 does or how to use one. The commit message confirms the intent: *"Strip
 agent-dotfiles harness machinery... and private behavioral-eval content
-out of the working tree."* It was a repo-split cleanup, not a decision
-that a public skills collection needs no consumer-facing documentation
-about itself — that question was never posed to `069e2c4`, so there is
-nothing here to reopen. A `docs/` tree of skill-usage pages, written
-fresh, would be unrelated content answering an unrelated question; adding
-one does not reverse anything.
+out of the working tree."* It was a repo-split cleanup.
+
+**Second, and more precisely: `agent-dotfiles#143`'s council already
+posed and answered a narrower version of this exact question, on
+purpose, with a named condition for reversing it.** Read directly
+(`agent-dotfiles`' `docs/docs-layout-council-138.md`, Question 3):
+*"Should `skills`/`skills-private` have `docs/` at all?"* — answered
+**12/12 unanimous, no**, both by arms told the `069e2c4` history and by
+arms shown only bare structure (`dir-c`/`dir-d`, no history). Every arm,
+informed or blind, converged on the identical reversal condition,
+quoted verbatim from the findings doc: *"it flips only if the repos
+start accumulating documentation genuinely native to a skill collection
+(not harness machinery) that no longer fits in `README.md`/`AGENTS.md`."*
+
+That is the correct scope for this issue, and it is narrower than
+"reopen #143": **Q3** (docs at all, for a content repo) and **Q4**
+(agent-dotfiles/agent-evals's five-way `architecture/decisions/product`
+split) are different questions in the same council, and this proposal
+touches only the first. Q3's own stated condition is what licenses
+reopening it — Matt Pocock's `mattpocock/skills` is exactly that
+evidence: real, external, populated documentation native to a skill
+collection, that did not exist as input when Q3 was answered. Q4 stays
+untouched and unrelitigated: nothing here proposes subdividing
+`jonhill90/skills`' hypothetical `docs/` tree, and Pocock's own `docs/`
+is flat-per-bucket, not five-way, so even the reference this proposal
+draws on does not point toward Q4's structure.
 
 ## The Agent Plugins angle (skills#159), briefly
 
 `skills#159` is adjacent, not the same question: it is about `plugin.json`
-making this repo consumable by any Agent-Plugins-conformant client, not
-about explaining the repo to a human reader. But the two are worth
-sequencing together rather than separately, because `mattpocock/skills`
-shows the concrete reason why: its `.claude-plugin/plugin.json` `skills`
-array is exactly the set that also needs a bucket/category answer (its
-own ADR, `.agents/adr/0002-*.md`, records that Codex's plugin format
-rejects an array and only accepts one path, forcing a real structural
-choice between promoted-vs-not buckets). If #159's `plugin.json` and any
-future bucket/category decision from this issue both touch "which
-skills are the curated public-facing set," deciding them independently
-risks two different answers to the same underlying question. Recommend:
-resolve this issue's categorisation question (if any) before or
-alongside #159's manifest, not after — but that is a sequencing note,
-not a reason to fold plugin work into this proposal.
+making this repo consumable by any Agent-Plugins-conformant client
+(spec: `agent-plugins.org/specification`,
+`github.com/agentplugins/agent-plugins-spec`), not about explaining the
+repo to a human reader. A public repo choosing to *describe* itself to
+the outside world (this proposal) and a public repo choosing to
+*package* itself for the outside world (#159's manifest) are the same
+posture applied to two different files, and `mattpocock/skills` shows
+the concrete reason they're worth sequencing together rather than
+separately: its `.claude-plugin/plugin.json` `skills` array is exactly
+the set that also needs a bucket/category answer, and its own dated ADR
+(`.agents/adr/0002-ship-as-a-claude-code-plugin.md`) records *why*
+Claude-first — Codex's plugin format rejects an array and accepts only
+one path, forcing a real structural choice between promoted-vs-not
+buckets — rather than silently picking one harness. If #159's
+`plugin.json` and any future bucket/category decision from this issue
+both touch "which skills are the curated public-facing set," deciding
+them independently risks two different answers to the same underlying
+question. Recommend: resolve this issue's categorisation question (if
+any) before or alongside #159's manifest, not after — but that is a
+sequencing note, not a reason to fold plugin work into this proposal.
 
 ## Recommendation
 
 Do not adopt `mattpocock/skills`'s bucket/category split
-(`engineering/`, `productivity/`, `misc/`, ...) — that re-opens
-agent-dotfiles#143's flat-layout verdict by another name, and #143's
-finding was that the disagreement correlated with whether an arm knew
-this repo's own history of trying and reversing subdivision once
-(2026-07-13), not with genuine merit. Flat stays flat.
+(`engineering/`, `productivity/`, `misc/`, ...) for `skills/` itself —
+that re-opens agent-dotfiles#143 **Q4** by another name, and #143's
+finding there was that the disagreement correlated with whether an arm
+knew this repo's own history of trying and reversing subdivision once
+(2026-07-13), not with genuine merit. Flat stays flat, for `skills/`
+and for any `docs/` this issue adds.
 
-What is not foreclosed by #143 — because #143 examined a
-`docs/{architecture,decisions,product}` project-documentation split, not
-consumer-facing skill docs — and is worth Jon's decision:
+What is not foreclosed by #143 — because this proposal reopens **Q3**
+only, on the evidence its own stated reversal condition names, and
+Q3 never addressed layout in the first place, only existence — and is
+worth Jon's decision:
 
 1. **Fix `README.md`'s table now**, regardless of anything else decided
    here: it is not incomplete, it is wrong, and it is a five-minute
@@ -242,10 +301,16 @@ consumer-facing skill docs — and is worth Jon's decision:
    `aihero.dev` to host them and no newsletter audience pulling readers
    toward them. If yes, they would live inline (`docs/<skill-name>.md`,
    flat, matching this repo's existing flat `skills/` — no bucket
-   mirroring) rather than externally hosted, and could reuse
-   `writing-docs.md`'s four-section frame (*What it does*, *When to
-   reach for it*, *Common questions*, *It's working if*) — that template
-   is a good idea independent of Pocock's hosting or bucket choices.
+   mirroring) rather than externally hosted, and should reuse
+   `writing-docs.md`'s section frame (*What it does*, *When to reach for
+   it*, *Common questions*, *It's working if*) as a **ceiling, not a
+   quota**: `writing-docs.md`'s own rule is that *Common questions* is
+   "sized to what it found, not padded," and with zero observed reader
+   questions behind most of these 24 skills today, a fixed template
+   filled in for its own sake would invent content nobody asked for.
+   Write *What it does*/*When to reach for it* for every page; add
+   *Common questions*/*It's working if* only where a real issue, a
+   repeated question, or a changelog entry earns them.
 3. **Consolidate the small `AGENTS.md` authoring-bullet duplication**
    described above — cheap, uncontroversial, and worth doing regardless
    of what else is decided.
