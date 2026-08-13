@@ -58,6 +58,14 @@ tmux -S "$SOCKET" capture-pane -p -J -t "$SESSION":shell -S -200
 
 Always use explicit targets. Never rely on the "active" pane — it changes when you split, select, or switch windows.
 
+**A target built from an empty variable does not error — it silently hits the active pane.** `tmux send-keys -t "$SESSION:"` with `$SESSION` empty targets whatever window is currently active, which on a shared supervisor session is often the supervisor's own pane. This is how a misdirected send loses its intended recipient's context while looking like nothing went wrong. Any target assembled from a prior command's output needs an explicit non-empty check before it is used:
+
+```bash
+IDX=$(tmux list-windows -t "$SESSION" -F '#{window_index} #{window_name}' \
+      | awk -v n="$WANT" '$2==n{print $1}')
+[ -n "$IDX" ] || { echo "no window named $WANT" >&2; exit 1; }
+```
+
 ### Target formats
 
 | Format | Example | When to use |

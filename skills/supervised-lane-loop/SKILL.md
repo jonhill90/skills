@@ -55,6 +55,23 @@ traps already paid for, and instrument quirks specific to this estate. Its
 job is to stop the loop re-deriving the same answers, which is the main way
 these loops waste days.
 
+### The loop's own pane is single-writer
+
+A dynamic recurring loop stays alive by scheduling its own next wakeup at the
+end of every turn. **A plain message sent into that same pane replaces the
+loop's prompt outright** — the next turn is an ordinary turn, nothing
+re-arms, and the loop ends silently. A watchdog cannot distinguish that from
+a crash; both look like "idle pane, agent alive, no pending wakeup."
+
+Route out-of-band corrections through a side channel the loop explicitly
+drains at the top of every firing — never as a raw message into its own
+conversation. Measured on one estate: 27 raw messages sent into a running
+loop produced zero re-armed wakeups; each one ended the loop, and every
+restart cost real time before anyone noticed. A convention alone ("nobody
+but the loop writes here") does not hold — enforce it by making corrections
+arrive somewhere the loop reads on purpose, not somewhere it merely happens
+to receive text.
+
 ## Health first, and it is a hard gate
 
 Begin every firing with the same concrete check, by name, against the real
@@ -158,6 +175,22 @@ and removing its allowlist entry ship together. Leave the entry behind and it
 suppresses nothing today — but if that check is later removed or renamed, the
 allowlist catches it on the way down and reports a regression as an
 acknowledged gap.
+
+**Check what a merge will actually close, not what its prose claims.** A
+platform's closing-keyword parser is typically not negation-aware: a PR body
+that says "does not close #N" still links and auto-closes #N, because the
+keyword-then-number pattern matched regardless of the sentence around it.
+Read the rendered list of issues a merge will close, not the words describing
+it — and check the commit message too, since a squash merge folds it in.
+Mechanics in [references/merge-safety.md](references/merge-safety.md).
+
+**A "this would revert something" claim needs the merge attempted, not a
+diff read.** Comparing two branch tips reports every commit one side lacks
+as a deletion, whether or not merging removes anything — that is a property
+of comparing tips, not a prediction about merging. When it matters, merge
+into a scratch worktree and look, rather than trusting a diff reading;
+mechanics and the exact pitfall in
+[references/merge-safety.md](references/merge-safety.md).
 
 **Serial work on shared files wants serial branches.** Cutting eight branches
 up front that all edit the same file means every one after the first
@@ -298,6 +331,28 @@ about this probe, not a claim about the rest of the estate: `agent-dotfiles#194`
 is open, arguing a different call site (`lane-done.sh`'s own completion
 rename) is still load-bearing rather than cosmetic.
 
+## When everything left is blocked
+
+**A gate on a human is often true of one verb, not the whole item.** Before
+recording something as blocked, name the specific verb that is gated — the
+rest is often ordinary, un-gated work. The split recurs in the same shape:
+run vs. write, decide vs. prepare, deploy vs. build, measure vs. explain.
+One worked case: an item read as fully blocked because every option it
+proposed needed a billed baseline the owner had to authorise — true, and it
+hid a free deliverable the same item's own text named. Recording the whole
+item as blocked and moving on looks like discipline and is how work quietly
+stops; state which part was gated and which part was done, every time.
+
+**Blocked is a state to sleep through, not a reason to stop the loop.** When
+every remaining item is genuinely gated, say so in one line and schedule the
+longest available wakeup — never invoke the loop's own stop primitive over a
+blocked backlog. This is loop-contract's `blocked-needs-human` terminal
+state applied literally: a *state* the loop reports and continues past, not
+an *exit*. Stopping requires a human to notice on their own and re-arm the
+loop by hand, which defeats the reason it runs unattended. A blocked firing
+should also be cheap — compare against what is already recorded and sleep if
+nothing changed, not a fresh analysis of an already-settled question.
+
 ## Reporting to the human
 
 One or two lines when nothing needs them. The value of a quiet report is that
@@ -314,3 +369,15 @@ what I would do.
 Report outcomes faithfully. Failures with their output, skipped steps named
 as skipped, and boundaries stated — "this proves the message reached the mail
 server, not an inbox" is worth more than a clean claim.
+
+## Where this came from
+
+The single-writer loop-pane rule, the gated-verb split, the never-stop-on-
+blocked rule, and the two merge-safety checks above are drawn from operating
+a tmux-window-per-lane supervisor loop over multiple days on one estate,
+recorded in `jonhill90/agent-supervisor` (private). That repository's own
+tick document names its estate's scripts, paths, and issue history directly
+because that coupling is real and load-bearing there; nothing here depends
+on it — this skill states the principle and stops. Treat the specifics
+(which verbs recur, how long a wakeup to schedule) as one estate's evidence,
+not a universal constant.
