@@ -332,17 +332,19 @@ shell.
 an enumeration of every lane actually waiting on a human, because of the
 ordering above.
 
-**The window name is read for exactly one thing: telling `dead` from
-`stale` among shells, never to decide whether a pane is free.** For every
-other state above, classification comes from tmux's own pane facts or a
-positive text match, not the name. A pane whose current command is a bare
-shell reads `dead` or `stale` regardless of whether the window is named
-`free-N`; a lane that finished, was renamed, and then lost its agent still
-reads one of those two, it does not vanish from the table or read `free`.
-That the name can decide `dead` vs. `stale` is a narrow, deliberate
-exception, not a contradiction of that rule — the name is trusted only to
-notice that a shell is *claiming* a task, never to say what the lane was
-doing; that answer lives in the ledger. That is a fact about this probe,
+**A window name is a projection of a record, never the record — and it is
+never what makes a lane free.** Every read of it in this script stays
+inside that boundary: `dead` vs. `stale` among shells is decided by whether
+the name still matches the task-name pattern, and, separately, a bare-shell
+pane whose own process is gone can still read `service` rather than `dead`
+if the name matches the estate's one hardcoded poller window — a narrow
+fallback for the gap where the pane's own process can't answer the question
+at all. Neither read stands in for the ledger's record of what a lane was
+doing, and neither one can produce `free`: that state comes only from tmux's
+own pane facts or a positive text match. **Do not cite a count of how many
+places read the name** — verify it yourself the same way, by finding every
+reference to the name variable in the script, the same drift this table
+already warns about for the state count. That is a fact about this probe,
 not a claim about the rest of the estate: `agent-dotfiles#194` argues a
 different call site (`lane-done.sh`'s own completion rename) is still
 load-bearing rather than cosmetic.
