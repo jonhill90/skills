@@ -290,10 +290,15 @@ and the boundary you will not authorise crossing. Then let them work.
 
 ### The lane state machine (tmux-window-per-lane supervisors)
 
-Where the lane protocol is `jonhill90/agent-dotfiles`' `lanes.sh`
+Where the lane protocol is `jonhill90/agent-supervisor`'s `lanes.sh`
 (`scripts/supervisor/lanes.sh`), it is the probe, and this table is a
 description of it, not the other way around — read the script when they
-disagree. As of 2026-08-12 it reports eleven states:
+disagree. **Do not cite a fixed count for how many states it reports.**
+The script's own header, its `AGENTS.md`, and a grep of its source have
+disagreed with each other before (`agent-supervisor#131`, open) — a
+number copied from any one of those goes stale the moment the script
+changes. Verify coverage the same way: grep the script for the states it
+assigns and diff that list against the table below.
 
 | state | what it means | what an operator must NOT do |
 |---|---|---|
@@ -303,7 +308,9 @@ disagree. As of 2026-08-12 it reports eleven states:
 | `menu-blocked` | waiting on a selection menu (folder-trust dialog, `/model`, a bash-permission prompt, `/theme`, or any unrecognised blocked shape — this is the default, not just one shape) | **never route free text here.** It lands as navigation keystrokes and the trailing Enter commits whatever option is highlighted — proven live, a routed reply changed a lane's theme instead of being read as an answer. This is the exact defect that, elsewhere, granted an agent filesystem read/edit/execute trust by typing a reply into a folder-trust dialog |
 | `text-blocked` | waiting on a genuine free-text prompt | this is the one blocked state safe to answer with routed free text — but it has never been observed live in this estate; do not assume a blocked lane is this one without positive evidence, and the probe itself defaults to `menu-blocked` when unsure |
 | `unsent` | a brief is typed into the input box and was never submitted | do not dispatch on top of it — a new brief lands behind stale unsubmitted text; a human needs to look |
-| `dead` | the pane's *current command* is a bare shell (`bash`/`zsh`/`sh`/`fish`/`login`) and its first process does not match the known-service whitelist | restart the agent — but the whitelist (`LANES_SERVICE_RE`) is env-overridable and narrow (today, only `inbox-poll.sh`); a shell running some other long-lived script one whitelist entry away from `service` reads `dead` too. Confirm it is actually a lost agent, not an unlisted service, before restarting |
+| `broken` | the pane's working directory has been removed from disk, so it cannot start another turn | do not treat it as `dead` or `hung` — the harness process may still be alive, there may be no running turn to time out, and it will never read `free`. Re-home the pane into a directory that exists before doing anything else with it |
+| `dead` | the pane's *current command* is a bare shell (`bash`/`zsh`/`sh`/`fish`/`login`) and its first process does not match the known-service whitelist, **and** its window name does not match the lane protocol's task-name pattern | restart the agent — but the whitelist (`LANES_SERVICE_RE`) is env-overridable and narrow (today, only `inbox-poll.sh`); a shell running some other long-lived script one whitelist entry away from `service` reads `dead` too. Confirm it is actually a lost agent, not an unlisted service, before restarting |
+| `stale` | the pane's current command is that same bare shell, but its window name still matches the task-name pattern — it is a shell wearing the name of a task it finished or lost | do not trust the window name as a description of current work; it names a claim a human can leave behind long after the work it names ended. Restart it like `dead`, but do not let the name stand in for the ledger's own record of what the lane was doing |
 | `service` | the pane's own first process matches the known-service whitelist (today, only `inbox-poll.sh`) | **never restart it as if it were dead.** `inbox-poll.sh` carries Jon's Telegram replies; restarting it looks exactly like nobody having written anything, because it silently stops the inbound channel instead of erroring |
 | `scrolled` | the pane is in copy-mode (someone scrolled the scrollback up) | do not dispatch — keys are eaten by the copy-mode key table, not the agent, even when the visible text looks idle |
 | `unknown` | no probe recognises the last line — a non-Claude-Code harness, or a footer shape not yet enumerated | do not guess free or dead; it needs a human to classify, not an assumption |
@@ -313,23 +320,32 @@ disagree. As of 2026-08-12 it reports eleven states:
 independent per-state evaluation, so two orderings change what an operator
 sees. `scrolled` is decided before any blocked check, so a `menu-blocked`
 lane that someone scrolled up reads `scrolled` and is invisible to
-`--blocked`, which the inbound reply router builds its table from. And the
-shell check (`dead`/`service`) is decided before busy/blocked/free, so none
-of those three can ever apply to a pane whose current command is a shell.
+`--blocked`, which the inbound reply router builds its table from. `broken`
+is decided before the shell check, so a pane whose directory was removed
+reads `broken` even if its current command is also a bare shell. And the
+shell check (`dead`/`service`/`stale`) is decided before busy/blocked/free,
+so none of those three can ever apply to a pane whose current command is a
+shell.
 `--free` offers only `free`. `--blocked` offers `menu-blocked` and
 `text-blocked` together, tagged with which kind, because only
 `text-blocked` is safe to answer with routed free text — but neither list is
 an enumeration of every lane actually waiting on a human, because of the
 ordering above.
 
-**`lanes.sh` never reads the window name for any state above** — every
-classification comes from tmux's own pane facts or a positive text match.
-`dead` is decided by the pane's current command, not by whether the window
-is named `free-N`; a lane that finished, was renamed, and then lost its
-agent still reads `dead`, it does not vanish from the table. That is a fact
-about this probe, not a claim about the rest of the estate: `agent-dotfiles#194`
-is open, arguing a different call site (`lane-done.sh`'s own completion
-rename) is still load-bearing rather than cosmetic.
+**The window name is read for exactly one thing: telling `dead` from
+`stale` among shells, never to decide whether a pane is free.** For every
+other state above, classification comes from tmux's own pane facts or a
+positive text match, not the name. A pane whose current command is a bare
+shell reads `dead` or `stale` regardless of whether the window is named
+`free-N`; a lane that finished, was renamed, and then lost its agent still
+reads one of those two, it does not vanish from the table or read `free`.
+That the name can decide `dead` vs. `stale` is a narrow, deliberate
+exception, not a contradiction of that rule — the name is trusted only to
+notice that a shell is *claiming* a task, never to say what the lane was
+doing; that answer lives in the ledger. That is a fact about this probe,
+not a claim about the rest of the estate: `agent-dotfiles#194` is open,
+arguing a different call site (`lane-done.sh`'s own completion rename) is
+still load-bearing rather than cosmetic.
 
 ## When everything left is blocked
 
