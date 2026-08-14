@@ -52,6 +52,26 @@ observations together establish the check is wired to reality.
 If step 2 doesn't fail, or fails with an unrelated error, stop — you do not
 have a check yet, you have a script that runs.
 
+**Three specific shapes this takes**, each one a check that still prints a
+verdict while no longer able to report the failure:
+
+- **A pipeline reports the last stage's exit code, not the command you meant
+  to check.** `cmd | tail` exits with `tail`'s status — a failing `cmd` piped
+  into a successful `tail` reads as success. Capture the exit code of the
+  command you actually care about (`${PIPESTATUS[0]}` in bash, or split the
+  pipe and check each stage) rather than trusting `$?` after a pipeline.
+- **A file or directory's existence stands in for the work it names having
+  happened.** A check that confirms a test directory exists, or that a
+  report file was written, has confirmed a side effect — not that the tests
+  ran, or that the report's content is right. Track the thing itself (tests
+  executed, assertions run, a count) rather than a proxy for it.
+- **A mutation's success is assumed instead of confirmed.** After a script
+  claims to have edited, moved, or written something, re-read the target
+  before trusting a later step that depends on it. A write that silently
+  failed — wrong path, a permissions error, a caught exception — reports
+  success identically to one that didn't, until something reads back what
+  is actually on disk.
+
 ### 2. Prove the fix is load-bearing
 
 "Red before green" is not only for writing your own code — it applies to
@@ -133,8 +153,8 @@ scanned), prefer that over remembering to redo this by hand each time.
 
 ## Where this came from
 
-The name and the four checks are Jon's, prompted by a documented pattern in
-this estate: verdicts trusted from checks that turned out not to be
+The name and the four checks come from a documented pattern across daily
+agent operation: verdicts trusted from checks that turned out not to be
 watching anything — a validator that reported zero findings because its
 input had vanished, a test module silently skipped rather than run, and a
 guard that stayed green after the code path it protected was deleted. Full
@@ -142,3 +162,11 @@ provenance for this pattern lives in issue jonhill90/skills#135 on this
 repository; the incidents themselves are not reproduced here because the
 underlying transcripts are private evaluation evidence, not published in
 this collection.
+
+The three blind spots under check 1 are a second, later incident: three
+scans reported "clean" while blind, and four iterations of a supervising
+loop reported a push as failed when it had actually succeeded, both traced
+to a check that could not report the failure it was supposed to catch
+(exit code lost through a pipeline, a check reading `$?` after `cmd |
+tail`). Recorded portably in issue jonhill90/skills#174; the underlying
+transcripts are private, not published here.
