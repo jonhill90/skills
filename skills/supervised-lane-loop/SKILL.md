@@ -302,7 +302,7 @@ assigns and diff that list against the table below.
 
 | state | what it means | what an operator must NOT do |
 |---|---|---|
-| `free` | idle at the prompt, nothing delegated | do not treat it as an exclusive claim. A second, uncoordinated dispatcher may read the same table before you send (`agent-dotfiles#184`, open: the Director and the supervisor loop race on lane selection) — take the claim first, then dispatch. `lanes.sh`'s own comment on the supervisor window puts it plainly: "'Free' and 'yours to take' are different questions" |
+| `free` | idle at the prompt, nothing delegated | do not treat it as an exclusive claim. A second, uncoordinated dispatcher may read the same table before you send (`agent-dotfiles#184`: the Director and the supervisor loop race on lane selection) — take the claim first, then dispatch. `lanes.sh`'s own comment on the supervisor window puts it plainly: "'Free' and 'yours to take' are different questions" |
 | `busy` | mid-turn, recent tmux activity | do not dispatch — the brief queues behind the running turn |
 | `hung` | looks busy, but tmux has seen no output for the hang window | do not dispatch — it would queue forever; needs a human |
 | `menu-blocked` | waiting on a selection menu (folder-trust dialog, `/model`, a bash-permission prompt, `/theme`, or any unrecognised blocked shape — this is the default, not just one shape) | **never route free text here.** It lands as navigation keystrokes and the trailing Enter commits whatever option is highlighted — proven live, a routed reply changed a lane's theme instead of being read as an answer. This is the exact defect that, elsewhere, granted an agent filesystem read/edit/execute trust by typing a reply into a folder-trust dialog |
@@ -343,9 +343,9 @@ That the name can decide `dead` vs. `stale` is a narrow, deliberate
 exception, not a contradiction of that rule — the name is trusted only to
 notice that a shell is *claiming* a task, never to say what the lane was
 doing; that answer lives in the ledger. That is a fact about this probe,
-not a claim about the rest of the estate: `agent-dotfiles#194` is open,
-arguing a different call site (`lane-done.sh`'s own completion rename) is
-still load-bearing rather than cosmetic.
+not a claim about the rest of the estate: `agent-dotfiles#194` argues a
+different call site (`lane-done.sh`'s own completion rename) is still
+load-bearing rather than cosmetic.
 
 ## When everything left is blocked
 
