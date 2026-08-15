@@ -311,7 +311,7 @@ assigns and diff that list against the table below.
 | `broken` | the pane's working directory has been removed from disk, so it cannot start another turn | do not treat it as `dead` or `hung` — the harness process may still be alive, there may be no running turn to time out, and it will never read `free`. Re-home the pane into a directory that exists before doing anything else with it |
 | `dead` | the pane's *current command* is a bare shell (`bash`/`zsh`/`sh`/`fish`/`login`) and its first process does not match the known-service whitelist, **and** its window name does not match the lane protocol's task-name pattern | restart the agent — but the whitelist (`LANES_SERVICE_RE`) is env-overridable and narrow (today, only `inbox-poll.sh`); a shell running some other long-lived script one whitelist entry away from `service` reads `dead` too. Confirm it is actually a lost agent, not an unlisted service, before restarting |
 | `stale` | the pane's current command is that same bare shell, but its window name still matches the task-name pattern — it is a shell wearing the name of a task it finished or lost | do not trust the window name as a description of current work; it names a claim a human can leave behind long after the work it names ended. Restart it like `dead`, but do not let the name stand in for the ledger's own record of what the lane was doing |
-| `service` | the pane's own first process matches the known-service whitelist (today, only `inbox-poll.sh`) | **never restart it as if it were dead.** `inbox-poll.sh` carries Jon's Telegram replies; restarting it looks exactly like nobody having written anything, because it silently stops the inbound channel instead of erroring |
+| `service` | the pane's own first process matches the known-service whitelist (today, only `inbox-poll.sh`) | **never restart it as if it were dead.** `inbox-poll.sh` carries the operator's Telegram replies; restarting it looks exactly like nobody having written anything, because it silently stops the inbound channel instead of erroring |
 | `scrolled` | the pane is in copy-mode (someone scrolled the scrollback up) | do not dispatch — keys are eaten by the copy-mode key table, not the agent, even when the visible text looks idle |
 | `unknown` | no probe recognises the last line — a non-Claude-Code harness, or a footer shape not yet enumerated | do not guess free or dead; it needs a human to classify, not an assumption |
 | `supervisor` | the supervisor's own window | never a dispatch target — a worker brief sent there `/clear`s the supervisor's own loop |
@@ -393,7 +393,7 @@ server, not an inbox" is worth more than a clean claim.
 The single-writer loop-pane rule, the gated-verb split, the never-stop-on-
 blocked rule, and the two merge-safety checks above are drawn from operating
 a tmux-window-per-lane supervisor loop over multiple days on one estate,
-recorded in `jonhill90/agent-supervisor` (private). That repository's own
+recorded in `jonhill90/agent-supervisor`. That repository's own
 tick document names its estate's scripts, paths, and issue history directly
 because that coupling is real and load-bearing there; nothing here depends
 on it — this skill states the principle and stops. Treat the specifics
