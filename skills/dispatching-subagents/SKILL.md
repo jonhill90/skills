@@ -66,6 +66,45 @@ The maker never grades its own work. If a verifier is itself an agent,
 it must be given the artifact and the criterion, not the maker's
 reasoning.
 
+## When independence is not available
+
+Sometimes no genuinely independent reviewer exists — only one reviewing
+agent is running, and it also contributed to the change under review.
+Three moves are possible and only one is right:
+
+1. **Proceed silently**, saying nothing about the conflict — a hidden
+   conflict is a defect.
+2. **Stall the queue** until independence returns — this looks safer but
+   is a failure too, just a quieter one, when the work is otherwise
+   mergeable.
+3. **Review anyway, and declare the conflict in the first line of the
+   review**: what the reviewer contributed to the change, and why review
+   is proceeding without independence regardless.
+
+A hidden conflict is a defect; a declared one is a tradeoff — the record
+can be judged either way later, but only if it says so.
+
+Two boundaries keep this from drifting into cover for bad practice:
+
+- **The strictly worse case stays refused.** A reviewer approving its own
+  work with no second reader of any kind — no declaration, no evidence,
+  no fixup-only pass — is not made acceptable by naming it. Declaring a
+  conflict is not a licence for that case.
+- **The exception is scoped and expires.** State when independence is
+  expected back, and stop taking the exception once it returns. An
+  exception with no stated end silently becomes the norm.
+
+When you get to choose which agent reviews, prefer one that only touched
+a fixup over one that wrote the substantive change, and say in the review
+which it was.
+
+This traces back to a standing independent reviewer becoming unavailable
+for a bounded window: rather than stalling a queue of otherwise-mergeable
+work indefinitely, a contributing agent reviewed its own queue with the
+conflict named explicitly in each review, while still refusing the
+strictly-worse case above. The exception was scoped to expire once
+independence returned.
+
 ## Report honestly
 
 State how many workers ran, what each was asked, what came back, and
