@@ -156,6 +156,54 @@ carry the receipt itself. The five files above are the *content* this
 skill says a loop should keep; where a ledger already exists to hold that
 content durably, use it as the home instead of a new flat file.
 
+## One document, one authority
+
+Two more general forms of the failure this skill exists to prevent for loop
+run-state — not scoped to loop files, but to any project document or status
+field a loop, or the humans around it, might duplicate.
+
+**A second file accumulating rules is the defect, not the drift it later
+causes.** Catch it at the moment a second document starts growing content of
+its own, not after someone has already acted on stale instructions. If a
+document must exist to point at another (a status page, a "start here"
+note), collapse it to a short pointer that declares itself subordinate:
+"read the real document first; anything here that contradicts it is wrong."
+That clause is what keeps the pointer safe even after it rots — a stale
+pointer that admits it might be stale cannot mislead the way a stale
+duplicate can, because nothing downstream ever trusted it as the source.
+
+Portable incident: a pointer/status document duplicated the actual source of
+truth, went stale within two days, and would have restarted an agent on
+instructions describing a state of the world that had already moved.
+Recorded portably in issue jonhill90/skills#177.
+
+**Derive state, never store it, when the fact is a measurement.** A
+*record* — a decision made, a choice about how to work — belongs in exactly
+one authoritative place, and this skill's Decisions log is that place for
+loop run-state. A *measurement* — a fact the system already produces and
+could re-derive on demand (whether a process is still running, how many
+items are queued, the current head commit) — should be read fresh, not
+copied into a hand-maintained field. A stored copy of a derivable fact is a
+second source of truth wearing a convenience disguise: it agrees with
+reality on the day it is written and silently disagrees the first time
+reality changes without it.
+
+This is not a ban on caching. A cache that is *labelled* as a cache — known
+to be disposable, safe to delete and regenerate, never read as if it were
+the original — is fine and often necessary. The defect is a copy that
+*becomes* authoritative because something downstream reads it instead of
+the source it was copied from. If the projection is ever wrong, the
+underlying fact is the bug to fix, not the projection.
+
+Portable incident: an availability signal lived in a hand-maintained label
+rather than being computed from facts that already existed, and a second
+hand-set status field was starting down the same path. Recorded portably in
+issue jonhill90/skills#177.
+
+Both are the Staleness hazard and the durable-ledger rule above, generalized
+past loop run-state: name the one authoritative source for a fact, and make
+everything else either point at it or compute from it.
+
 ## Hazards
 
 - **Staleness.** A file naming a path, flag, or function records what was
