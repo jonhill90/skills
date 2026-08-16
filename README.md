@@ -62,7 +62,7 @@ the tree for five days (`069e2c4`, 2026-08-09, through this correction).
 | [`loop-contract`](skills/loop-contract/) | Design a loop before running one — trigger, verification, stop conditions, terminal states |
 | [`loop-memory`](skills/loop-memory/) | Keep the run state a repeating or long-running loop needs between iterations on disk |
 | [`memory-conventions`](skills/memory-conventions/) | Read and write durable agent memory in a personal Obsidian vault |
-| [`mine-transcripts`](skills/mine-transcripts/) | Mine your own agent transcripts for vocabulary that's a candidate for the next skill |
+| [`mine-transcripts`](skills/mine-transcripts/) | Mine your own agent transcripts for vocabulary that's a candidate for the next skill, judging what an extractor tool hands back |
 | [`notify`](skills/notify/) | Send a short message to a human on a configured outbound channel from the terminal |
 | [`obsidian`](skills/obsidian/) | Read, write, search, and manage notes in Obsidian vaults |
 | [`prd`](skills/prd/) | Author or review a Product Requirements Document |
