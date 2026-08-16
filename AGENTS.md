@@ -79,11 +79,25 @@ skills/
     assets/
 scripts/
   validate_repository.py   # structural + link + naming checks
+  check_orphan_skills.py   # advisory: rostered/benched in agent-dotfiles?
+docs/
+  <issue-name>-<N>.md      # one doc per issue; each states its own
+                            # disposition — landed, rejected, or still open
 tests/
   test_validate_repository.py
   test_plugin_manifest.py  # manifest fields + plugin-root path containment
+  test_check_orphan_skills.py
 .github/workflows/         # CI: validate + unit tests
 ```
+
+`docs/` holds investigation and proposal documents named after the GitHub
+issue that asked for them, not project-level PRD/SPEC material — this
+repository does not carry those (see "Scope"). Each document states its own
+disposition up top: whether Jon accepted, rejected, or has not yet reacted
+to what it recommends. A document with no disposition note predates that
+convention (2026-08-16) — treat its recommendation as unconfirmed until
+checked against `gh issue view` / `gh pr list` for what actually happened,
+never as settled practice on its own say-so.
 
 ## Skill Authoring
 

@@ -1,5 +1,32 @@
 # Should this repository have docs, and what should they say? (#161)
 
+**Disposition, verified 2026-08-16T02:15Z: still an open proposal — no
+recorded decision from Jon accepts or rejects any of its four
+recommendations.** Checked against the tree as it stands today, item by
+item:
+
+1. *"Fix `README.md`'s table now"* — was not done as part of this proposal
+   landing (`#164` merged the proposal text only, no `README.md` diff); it
+   sat wrong for four more days and is corrected by this same sweep's PR
+   (`README.md`, this commit) rather than by a reaction to this document.
+2. Per-skill human-facing pages under `docs/` — undecided. `docs/` holds
+   only this file and `loop-tick-placement-160.md`; no `docs/<skill-name>.md`
+   exists.
+3. Consolidating the `AGENTS.md` authoring-bullet duplication with
+   `agent-dotfiles`'s own `AGENTS.md` — **not verified from this repository**;
+   settling it needs a checkout of `agent-dotfiles` alongside this one, which
+   this pass did not have. Flagged unverified rather than assumed either way.
+4. A dedicated reader-facing note on user-invoked vs. model-invoked — not
+   written. `README.md` now points at this document as the open tracker for
+   it (see "Skills in this collection") rather than restating unwritten
+   content as done.
+
+The "do not adopt buckets" recommendation is not a thing Jon needed to
+decide — it is a description of what already held on 2026-08-12 and still
+holds: `skills/` is flat, 25 directories, no `engineering/`/`productivity/`
+split. That part of this document reads as correct and current; the four
+numbered asks above remain proposal, not settled practice.
+
 Proposal only — no docs are written here, and no files move. Jon reacts to
 this; a follow-up PR implements whatever he picks. Same discipline
 agent-dotfiles#143 used for the layout question, and it worked.
