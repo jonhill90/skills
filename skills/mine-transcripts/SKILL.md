@@ -153,6 +153,15 @@ this run.
 |---|---|
 | `mine-vocabulary.py` | deterministic counting, clustering, and redaction pass over a transcript directory; read-only |
 
+`.jsonl` files get one extra step first: session transcripts like Claude
+Code's are JSON-per-line, and most of that JSON is API envelope (token
+counts, cache metadata, UUIDs) rather than anything anyone said. The script
+parses each line, keeps only `user`/`assistant` turns, and extracts their
+`text`/`thinking` content before counting — pointed straight at raw
+transcript bytes, envelope fields alone filled every ranked slot
+(jonhill90/skills#199). A `.jsonl` file that doesn't parse as transcript
+JSON is scanned as plain text, unchanged from before.
+
 ## Notes
 
 - This skill is public opt-in, not part of any default roster — rostering a
