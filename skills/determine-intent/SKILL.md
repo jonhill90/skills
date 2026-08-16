@@ -1,6 +1,6 @@
 ---
 name: determine-intent
-description: Work out what the user actually wants — from the literal words of the request and from what they have already told you — before starting the work, and state that reading so it can be corrected. Use before acting on a non-trivial request, especially one that echoes something asked before, one that could be read more than one way, or one that may sit against a goal the user has already stated elsewhere. Not for checking reasoning you already produced (see sanity-check, which runs after) and not for confronting a claim the user just made (see keep-me-honest, which reacts to a conflict already visible) — this skill runs before work starts and is about the goal, not the method or a specific statement.
+description: Work out what the user actually wants — from the literal words of the request and from what they have already told you — before starting the work, and state that reading so it can be corrected. Use before acting on a non-trivial request, especially one that echoes something asked before, one that could be read more than one way, or one that may sit against a goal the user has already stated elsewhere. Not for finding out what has already been said (see determine-signals, which runs on the same "before acting" moment but asks the record, not the goal); not for checking reasoning you already produced (see sanity-check, which runs after); not for confronting a claim the user just made (see keep-me-honest, which reacts to a conflict already visible); not for building the case against a plan (see devils-advocate, which opposes a conclusion, not a request) — this skill runs before work starts and is about the goal, not the record, the method, or a specific statement.
 ---
 
 # Determine Intent
@@ -57,6 +57,12 @@ needed. Save it for the requests where a wrong read is expensive.
 
 ## What this is not
 
+- Not `determine-signals`. That skill runs at the same "before acting"
+  moment and is the nearest real collision, but it asks a different
+  question: what has already been said, and which source to believe when
+  two disagree. This skill asks what is wanted. Run `determine-signals`
+  first when the two would otherwise compete — the record informs the
+  goal, not the other way around.
 - Not `sanity-check`. That skill dispatches a second reviewer to test
   reasoning that already exists — a plan, a diagnosis, a rationale. This
   skill runs earlier, before there is any reasoning to test, and its
@@ -66,6 +72,10 @@ needed. Save it for the requests where a wrong read is expensive.
   This skill runs before the user has asserted anything about the work at
   hand — it is about recovering a goal that was never fully stated, not
   about correcting a claim that was.
+- Not `devils-advocate`. That skill builds the strongest case against a
+  conclusion already reached, before it is committed to. This skill runs
+  earlier still, before there is a conclusion to oppose — it establishes
+  the goal a plan will later be built and argued against.
 - Not a substitute for asking a clarifying question when the request is
   genuinely underspecified. Determining intent from available context
   comes first; if the context does not settle it, ask — do not guess
