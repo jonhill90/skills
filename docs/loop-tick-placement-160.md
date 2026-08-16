@@ -1,5 +1,22 @@
 # Should `loop-tick.md` move from `agent-dotfiles` into this repo? (#160)
 
+**Disposition, verified 2026-08-16T02:15Z: decision landed, but not the one
+this document's own recommendation names below.** #160 closed 2026-08-12 with
+no comment recorded (`gh issue view 160 --json state,closedAt,comments`);
+its "do not move as written" recommendation is the last word this document
+argued for. Jon then gave a superseding instruction in #168 (2026-08-13):
+*"loop-tick.md moves to jonhill90/skills."* What actually shipped, in #169
+(merged 2026-08-13, "fold loop-tick.md's portable principles into the
+existing skill"), is not a verbatim move — it folded the *portable
+principles* into `supervised-lane-loop/SKILL.md`, the same shape this
+document's own "Recommendation" section below proposed as the productive
+path. There is no `loop-tick.md` file in this repository today (`find . -iname
+'*loop-tick*'` finds only this document). So: the outcome matches this
+document's reasoning, arrived at through a different, Jon-directed route
+rather than this document's own recommendation being accepted on its face —
+read the rest of this document as the argument that was available at the
+time, not as unexamined settled practice.
+
 Investigation only, per #160's own instruction — no files move here. Same
 discipline agent-dotfiles#143 and #161 used: measure, answer the three named
 questions, recommend, and let Jon decide before anything moves.
