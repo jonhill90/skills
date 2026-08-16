@@ -1,9 +1,9 @@
 ---
-name: devil-advocate
-description: Argue the strongest honest case against a plan or decision before it is committed, not after. Use before a hard-to-reverse choice is finalized — a build-vs-adopt call, an architecture pick, a plan about to be executed — while the decision can still change. Distinct from sanity-check, which tests whether existing reasoning holds; devil-advocate assumes the conclusion is wrong and builds the opposing case from scratch. Distinct from keep-me-honest, which challenges a claim already stated to the user; devil-advocate runs before anything is said or done. Distinct from ask-a-council, which assigns several non-overlapping lenses to one artifact; devil-advocate is one deliberate opposing pass, not a multi-lens convening.
+name: devils-advocate
+description: Argue the strongest honest case against a plan or decision before it is committed, not after. Use before a hard-to-reverse choice is finalized — a build-vs-adopt call, an architecture pick, a plan about to be executed — while the decision can still change. Distinct from sanity-check, which tests whether existing reasoning holds; devils-advocate assumes the conclusion is wrong and builds the opposing case from scratch. Distinct from keep-me-honest, which challenges a claim already stated to the user; devils-advocate runs before anything is said or done. Distinct from ask-a-council, which assigns several non-overlapping lenses to one artifact; devils-advocate is one deliberate opposing pass, not a multi-lens convening.
 ---
 
-# Devil's Advocate
+# Devils' Advocate
 
 Opposition is not verification. A verifier takes a conclusion and checks
 whether the reasoning behind it holds up — it can return "looks right."
@@ -31,7 +31,7 @@ for it to test whether your own reasoning is internally consistent —
 that is `sanity-check`. Do not reach for it when the failure modes worth
 covering are genuinely plural in kind (correctness, legitimacy,
 portability, cost) and need several distinct lenses at once — that is
-`ask-a-council`, and a devil's-advocate pass can be one of its lenses
+`ask-a-council`, and a devils-advocate pass can be one of its lenses
 without being a substitute for the whole convening.
 
 ## Build the case with intent
@@ -52,7 +52,7 @@ without being a substitute for the whole convening.
 4. **No strawmen, no hedging into neutrality.** Argue the strongest
    version of the opposing case, not the easiest one to knock down, and
    do not soften the conclusion into "it depends" to avoid taking a
-   position. A devil's advocate that ends up neutral did not do the job.
+   position. A devils-advocate pass that ends up neutral did not do the job.
 5. **Name what would have to be true for the objection to win.** Not
    just "this could fail" but the condition that would make it fail, so
    the decision-maker can go check whether that condition holds. An
@@ -74,7 +74,7 @@ without being a substitute for the whole convening.
   running a command that would settle a factual question directly; oppose
   what is actually a judgment call, not something a test could answer.
 - Report which of the two happened, and why, rather than folding the
-  result into "reviewed, looks good." A devil's-advocate pass that isn't
+  result into "reviewed, looks good." A devils-advocate pass that isn't
   distinguishable afterward from a rubber stamp did not do its job on the
   page even if it did it in the room.
 
