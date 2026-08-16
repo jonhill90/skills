@@ -109,7 +109,18 @@ kill "$POLL_PID"
 **Per-trigger flow:**
 
 1. Cron fires → supervisor agent receives the prompt.
-2. `capture-pane` — check supervised pane state.
+2. Classify the pane — **do not** eyeball `capture-pane` output against an ad
+   hoc idle check. Reuse `supervisor-watch.sh` for the classification itself,
+   with a short timeout so it returns immediately instead of blocking:
+   `supervisor-watch.sh -t "$TARGET" -T 1` (exit 0 = ready/idle, 2 = approval
+   pending, 1 = timeout = still busy). Its busy/ready split already defaults
+   to "not idle" for a pane that matches neither pattern — a real recurrence
+   this repo has hit: a spinner line the busy pattern didn't cover was read as
+   an empty prompt and reported idle, twice, in the same night. **An
+   incomplete "is it idle" check is unsafe in a way an incomplete "is it busy"
+   check is not** — a false idle dispatches new work onto a pane still
+   mid-task; a false busy just costs one extra poll. Default to busy/keep
+   waiting whenever the signals are ambiguous, never to idle.
 3. If idle, send next task per upward prompt flow.
 4. `supervisor-watch.sh -t "$TARGET" -T 300` — poll until READY/APPROVAL/TIMEOUT.
 5. Handle result, report status.
