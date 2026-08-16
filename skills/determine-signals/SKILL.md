@@ -150,8 +150,9 @@ transcripts are private evaluation evidence, not published here.
 This skill was named, alongside `determine-intent`, `devils-advocate`,
 `keep-me-honest`, and `sanity-check`, in a single design pass on
 2026-08-16 that set out explicit "not-this" boundaries for all five
-before any of the three missing ones were built — the boundary wording
-above was checked against that design and against the two siblings that
-shipped first (`determine-intent`, and `devils-advocate` — the latter
-merged under the misspelled name `devil-advocate`; see the note in this
-skill's PR) rather than invented independently.
+before the three missing ones were built (jonhill90/skills#190,
+jonhill90/skills#191, jonhill90/skills#192) — the boundary wording above
+was checked against that design and against `determine-intent` and
+`devils-advocate` as proposed in their own PRs (#193, #194), including
+the `devil-advocate` → `devils-advocate` naming correction #194 made to
+its own branch before merge, rather than invented independently.
