@@ -86,6 +86,80 @@ def snippet_around(raw: str, start: int, end: int, pad: int = 50) -> str:
     return redact(text)[:160]
 
 
+def _turn_text_from_content(content) -> str:
+    """Pull human-readable text out of a transcript message's `content`.
+
+    `content` is either a plain string (typical for a user turn) or a list
+    of content blocks (typical for an assistant turn). Only `text` and
+    `thinking` blocks are prose; `tool_use` (a JSON call) and `tool_result`
+    (often huge or binary) are structure, not vocabulary, and are skipped.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            block_type = block.get("type")
+            if block_type == "text":
+                parts.append(block.get("text", ""))
+            elif block_type == "thinking":
+                parts.append(block.get("thinking", ""))
+        return "\n".join(p for p in parts if p)
+    return ""
+
+
+def _read_transcript_text(path: Path) -> str:
+    """Read a file as mining input, extracting real turns from `.jsonl`.
+
+    Session transcripts like Claude Code's are JSON-per-line, and most of
+    that JSON is API request/response envelope (token counts, cache
+    metadata, UUIDs) rather than anything anyone said. Tokenizing that
+    envelope as prose drowns every real candidate in structural noise
+    (jonhill90/skills#199) — every line that parses as JSON and has the
+    shape of a transcript turn (`type` in user/assistant with a matching
+    `message.role`) contributes only its extracted text/thinking content.
+    A `.jsonl` file that is not transcript-shaped (plain text or logs that
+    merely use the `.jsonl` suffix) falls back to being read as-is, one
+    line at a time, so that existing non-transcript uses of this script
+    are unaffected.
+    """
+    if path.suffix != ".jsonl":
+        return path.read_text(encoding="utf-8", errors="ignore")
+
+    lines = []
+    with path.open("r", encoding="utf-8", errors="ignore") as fh:
+        for line in fh:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                record = json.loads(stripped)
+            except json.JSONDecodeError:
+                # Not JSON at all — a plain-text line in a `.jsonl`-named
+                # file. Keep it verbatim rather than silently dropping it.
+                lines.append(line)
+                continue
+            if not isinstance(record, dict):
+                continue
+            record_type = record.get("type")
+            if record_type not in ("user", "assistant"):
+                # Envelope/meta lines (file-history snapshots, session
+                # markers, ...) — structure, not vocabulary. Skip.
+                continue
+            message = record.get("message")
+            if not isinstance(message, dict) or message.get("role") not in (
+                "user",
+                "assistant",
+            ):
+                continue
+            turn_text = _turn_text_from_content(message.get("content"))
+            if turn_text.strip():
+                lines.append(turn_text)
+    return "\n".join(lines)
+
+
 def mine(root: Path, pattern: str, ngram_max: int, radius: int, sample_cap: int):
     counts: dict[str, int] = defaultdict(int)
     files: dict[str, set] = defaultdict(set)
@@ -94,7 +168,7 @@ def mine(root: Path, pattern: str, ngram_max: int, radius: int, sample_cap: int)
 
     for path in iter_files(root, pattern):
         try:
-            raw = path.read_text(encoding="utf-8", errors="ignore")
+            raw = _read_transcript_text(path)
         except OSError:
             continue
         tokens = list(WORD_RE.finditer(raw))
@@ -214,6 +288,36 @@ def self_test() -> bool:
             encoding="utf-8",
         )
 
+        # A Claude-Code-shaped transcript: mostly API envelope (tokens,
+        # cache, uuids), with a small amount of real turn text repeating a
+        # decision — the exact shape that swamped every candidate with
+        # noise before jonhill90/skills#199.
+        transcript_lines = []
+        for i in range(4):
+            transcript_lines.append(json.dumps({
+                "type": "user",
+                "message": {"role": "user", "content": "sanity-check the plan before merging"},
+                "uuid": f"turn-{i}",
+                "usage": {"input_tokens": 111, "cache_read_input_tokens": 222},
+            }))
+            transcript_lines.append(json.dumps({
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "thinking", "thinking": "sanity-check the diagnosis first"},
+                        {"type": "tool_use", "name": "Bash", "input": {"command": "pytest"}},
+                    ],
+                },
+                "usage": {"cache_creation_input_tokens": 333, "ephemeral_5m_input_tokens": 0},
+            }))
+            transcript_lines.append(json.dumps({
+                "type": "system",
+                "subtype": "file-history-snapshot",
+                "isSnapshotUpdate": False,
+            }))
+        (root / "d.jsonl").write_text("\n".join(transcript_lines) + "\n", encoding="utf-8")
+
         results = mine(root, "*", ngram_max=2, radius=6, sample_cap=25)
         by_term = {r["term"]: r for r in results}
 
@@ -236,6 +340,18 @@ def self_test() -> bool:
         dumped = json.dumps(results)
         checks.append(("secret redacted", "ghp_ABCDEFGHIJ" not in dumped))
         checks.append(("redaction marker present", "[REDACTED]" in dumped))
+
+        # jsonl transcript extraction (jonhill90/skills#199): envelope
+        # fields must not appear as candidates, and the real repeated turn
+        # text must be counted and ranked above noise-level consistency.
+        checks.append(("jsonl envelope keys excluded", "usage" not in by_term and "uuid" not in by_term))
+        checks.append(("jsonl cache/token noise excluded", "tokens" not in by_term and "cache" not in by_term))
+        checks.append(("jsonl real turn text counted", "sanity-check" in by_term))
+        if "sanity-check" in by_term:
+            checks.append((
+                "jsonl turn text has real consistency, not noise",
+                by_term["sanity-check"]["consistency"] > 0,
+            ))
 
         passed = True
         for name, ok in checks:
