@@ -22,6 +22,26 @@ PARSE_ERRORS = (OSError, UnicodeError, ValueError) + YAML_ERRORS
 
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+MD_LINK_TARGET_RE = re.compile(r"\]\(([^)]+)\)")
+BARE_URL_RE = re.compile(r"https?://[^\s)]+")
+
+# Repositories known to be private. This repository is public deliberately
+# (see AGENTS.md "Scope"/"Guardrails"), so a clickable link into one of
+# these is simply broken for every public reader -- plain-text provenance
+# (naming the repo without linking it) is the convention instead
+# (jonhill90/skills#201). Update this list when a new private repository
+# enters the estate; the "-private" suffix check below catches the naming
+# convention already used for one (skills-private) without needing every
+# such repo enumerated by hand.
+KNOWN_PRIVATE_REPOS = ("agent-evals",)
+
+
+def _is_private_repo_link(target: str) -> bool:
+    owner_repo = re.search(r"jonhill90/([A-Za-z0-9._-]+)", target)
+    if not owner_repo:
+        return False
+    repo = owner_repo.group(1).rstrip("/")
+    return repo in KNOWN_PRIVATE_REPOS or repo.endswith("-private")
 PORTABLE_FIELDS = {
     "name",
     "description",
@@ -318,6 +338,33 @@ def validate_privacy(root: Path) -> list[Finding]:
     return findings
 
 
+def validate_no_private_links(root: Path) -> list[Finding]:
+    """A public repo must never contain a clickable link -- a Markdown
+    link or a bare URL -- into a private repository. Plain-text provenance
+    (naming the repo without linking to it) is fine; only URLs are flagged
+    here (jonhill90/skills#201)."""
+    skip_parts = {".git", "apm_modules", "node_modules"}
+    findings: list[Finding] = []
+    for md in sorted(root.rglob("*.md")):
+        if skip_parts & set(md.parts) or not md.is_file():
+            continue
+        text = md.read_text(encoding="utf-8", errors="ignore")
+        # A Markdown link's URL also matches the bare-URL pattern; dedupe
+        # so `[text](url)` reports once, not twice.
+        targets = dict.fromkeys(MD_LINK_TARGET_RE.findall(text) + BARE_URL_RE.findall(text))
+        for target in targets:
+            if _is_private_repo_link(target):
+                findings.append(
+                    Finding(
+                        "error",
+                        md,
+                        f"clickable link into a private repository: {target} "
+                        "-- use a plain-text provenance statement instead",
+                    )
+                )
+    return findings
+
+
 def validate_skill_collection(skill_dirs: list[Path]) -> list[Finding]:
     findings: list[Finding] = []
     names: dict[str, Path] = {}
@@ -352,6 +399,7 @@ def validate(root: Path, target: Path | None = None) -> list[Finding]:
 
     if target is None:
         findings.extend(validate_privacy(root))
+        findings.extend(validate_no_private_links(root))
 
     return findings
 

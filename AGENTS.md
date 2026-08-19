@@ -233,4 +233,13 @@ Do not:
 - claim validation without running the commands above;
 - publish private evaluation evidence or link to private repositories
   from this tree — plain provenance statements (what happened, when) are
-  fine; clickable links to private material are not.
+  fine; clickable links to private material are not. This repository is
+  public deliberately; a relative Markdown link or `https://` link into a
+  private repository (the companion behavioral-evaluation repository
+  mentioned in "Scope", `jonhill90/agent-evals`, or any repository named
+  by convention with a `-private` suffix) is simply broken for every
+  public reader. Name the private source in plain text instead — a repo
+  name and issue number a reader cannot click through to is provenance,
+  not a leak. `scripts/validate_repository.py`'s `validate_no_private_links`
+  check (jonhill90/skills#201) enforces this in CI so the convention does
+  not depend on anyone remembering it.

@@ -235,6 +235,48 @@ class PrivacyDenylistTests(unittest.TestCase):
             self.assertEqual(validator.validate_privacy(root), [])
 
 
+class NoPrivateLinksTests(unittest.TestCase):
+    """jonhill90/skills#201: a public repo must never carry a clickable
+    link into a private repository -- plain-text provenance is fine."""
+
+    def test_flags_markdown_link_into_known_private_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            docs = root / "docs"; docs.mkdir()
+            (docs / "note.md").write_text(
+                "See [the eval run](https://github.com/jonhill90/agent-evals/issues/9).\n"
+            )
+            findings = validator.validate_no_private_links(root)
+            self.assertEqual(len(findings), 1)
+            self.assertIn("note.md", str(findings[0].path))
+
+    def test_flags_bare_url_into_private_suffixed_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "note.md").write_text(
+                "Raw: https://raw.githubusercontent.com/jonhill90/skills-private/main/x.md\n"
+            )
+            findings = validator.validate_no_private_links(root)
+            self.assertEqual(len(findings), 1)
+
+    def test_plain_text_provenance_is_not_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "note.md").write_text(
+                "Verified in the private jonhill90/agent-evals repository, not linked here.\n"
+            )
+            self.assertEqual(validator.validate_no_private_links(root), [])
+
+    def test_links_into_public_repos_are_not_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "note.md").write_text(
+                "[skills#146](https://github.com/jonhill90/skills/issues/146) and "
+                "[agent-dotfiles](https://github.com/jonhill90/agent-dotfiles)\n"
+            )
+            self.assertEqual(validator.validate_no_private_links(root), [])
+
+
 class FallbackFrontmatterTests(unittest.TestCase):
     def test_mini_yaml_matches_real_yaml_for_skill_frontmatter(self) -> None:
         import yaml as real_yaml
