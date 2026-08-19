@@ -1,6 +1,6 @@
 ---
 name: mine-transcripts
-description: Mine your own agent transcripts for vocabulary you keep reaching for, to find candidates for the next skill — not to write one. Ranks terms by frequency and by whether they're explained the same way every time, separating a re-made decision from a repeated tool invocation. User-invoked only, for a deliberate periodic review; never fire this mid-task just because something feels repetitive.
+description: Mine your own agent transcripts for vocabulary you keep reaching for, to find candidates for the next skill — not to write one. Invokes the external mine_prompts.py extractor, then applies judgement the tool can't — separating a re-made decision from a repeated tool call or repeated boilerplate. User-invoked only, for a deliberate periodic review; never fire this mid-task just because something feels repetitive.
 ---
 
 # Mine Transcripts
@@ -27,118 +27,184 @@ someone happening to notice.
 - You already know what the next skill should be. Mining finds candidates
   when the pattern isn't obvious yet; it adds nothing once it is.
 
+## Extraction is a tool's job now, not the model's
+
+Filtering JSONL by shape — which turns are harness noise, which are
+site-specific recurring prompts, which look typed versus pasted, which fall
+in a date range or match a grep — is deterministic. It has one correct
+answer per input, and re-deriving that answer by reading transcripts by eye
+every run is a model doing a fixed job forever
+([jonhill90/skills#207](https://github.com/jonhill90/skills/issues/207)).
+
+That job now lives in `mine_prompts.py`, part of the
+[`agent-supervisor`](https://github.com/jonhill90/agent-supervisor) project
+— **not bundled in this collection**, because it is harness machinery, not
+skill content. Confirm it's on the machine before relying on it (`find
+</path/to/agent-supervisor> -name mine_prompts.py` or ask where that repo is
+checked out). If it isn't available, say so and stop — walking through its
+extraction logic by hand is exactly the fixed-job-forever this rewrite
+removes; don't reintroduce it because the tool is momentarily missing.
+
+The tool takes:
+
+- `--root` — transcript root (defaults to `~/.claude/projects`; override for
+  another harness).
+- `--since YYYY-MM-DD` — restrict to a date range.
+- `--grep <pattern>` — restrict to turns matching a regex.
+- `--typed-only` — heuristic: keep only turns that look typed (short, few
+  newlines, no code fence) and drop turns that look pasted (skill files,
+  briefs, API docs). It is a heuristic, not a guarantee — of one measured
+  corpus, roughly 46% of extracted turns were pasted, not typed, so a plain
+  `--grep` without `--typed-only` will hit pasted material too.
+- `--stats` — counts per day, plus a typed/pasted split. Use this first, see
+  [Verify the instrument](#verify-the-instrument-before-trusting-a-result).
+- `--json` — machine-readable rows (`at`, `text`, `typed`, `source`), for
+  reading programmatically instead of scrolling terminal output.
+
+What it will never do: reason about what a turn *means*, decide whether a
+repeated term is a re-made decision, or tell you a request recurred because
+it was never delivered. That's this skill's job, below — it starts only
+after the tool's output exists.
+
 ## What this reads, and what it must never emit
 
 Settle this before running anything — it governs every step below.
 
-- **Read-only.** This skill only opens files under the transcript directory
-  you point it at, and never writes, moves, or deletes them. If that
-  directory is under `$HOME` (it usually is — transcripts live wherever your
-  harness stores session history), say so out loud before scanning: *"reading
+- **Read-only.** Both the extractor and this skill only read transcript
+  files; neither writes, moves, or deletes them. If the transcript root is
+  under `$HOME` (it usually is), say so out loud before scanning: *"reading
   `~/...`, read-only."*
-- **No network calls, ever.** Nothing about a transcript's content leaves the
-  local machine. This includes not pasting raw snippets into an issue,
-  message, or any other outward-facing tool without redacting first.
-- **What it may quote.** A short (roughly one sentence) trimmed snippet as
-  evidence for a candidate term, already redacted by
-  [`scripts/mine-vocabulary.py`](scripts/mine-vocabulary.py) — never a full
-  message, a full file, or a full command line.
-- **What it must never emit.** Credentials, tokens, or keys (the script
-  redacts common shapes automatically, but treat that as a floor, not a
-  guarantee — re-check by eye); anything that reads as employer-owned or
-  project-specific material; third-party names beyond what the evidence
-  strictly needs; private repository content.
+- **No network calls, ever.** Nothing about a transcript's content leaves
+  the local machine. This includes not pasting raw extracted turns into an
+  issue, message, or any other outward-facing tool without redacting first.
+  `mine_prompts.py` does not redact — it prints operator turns verbatim, by
+  design, on the assumption its output stays local. Treat every row it
+  returns as unredacted until you've handled it.
+- **What you may quote outward.** A short (roughly one sentence) trimmed
+  snippet as evidence for a candidate, hand-checked for anything sensitive
+  before it leaves this skill's working notes — never a full turn, a full
+  file, or a full command line.
+- **What must never leave this machine.** Credentials, tokens, or keys;
+  anything that reads as employer-owned or project-specific material;
+  third-party names beyond what the evidence strictly needs; private
+  repository content.
 - **When in doubt, drop the quote.** A candidate is still evidenced by its
-  term, count, and file-spread alone. If a snippet looks sensitive after
-  redaction, keep the numbers and cut the quote rather than editing the
-  quote by hand — hand-editing a snippet you're unsure about is how a
-  partial redaction ships.
+  term, count, and file-spread alone. A preference can be *described*
+  without being *quoted* — characterise it, don't paste it, whenever the
+  description carries the same evidence.
 - **The output stays local until you decide otherwise.** Write the ranked
   list to a scratch file. Do not open an issue, send a message, or commit
   the list anywhere without a separate, deliberate decision to do so — and
   redact again at that boundary, because the bar for something staying on
   your own disk is lower than the bar for something leaving it.
 
-## What counts as a candidate
+## Verify the instrument before trusting a result
 
-Raw frequency is the wrong metric — "the", "file", "run" will dominate any
-transcript. A candidate is a term that is **both** frequent **and** followed
-by the same kind of explanation each time. That second condition is what
-separates two reasons a term repeats:
+Run `mine_prompts.py --stats` with no filters before anything else. It must
+return a nonzero count for turns you already know exist. If it doesn't,
+the tool's harness-noise filter or your `--root` is wrong — fix that before
+believing any downstream zero or thin result.
 
-- **A tool is used often.** `gh`, `pytest`, `git` recur because they're
-  invoked, not because a decision gets re-made. Not a candidate.
-- **A decision is re-made every time.** The term shows up attached to the
-  same reasoning, the same trade-off, the same check, regardless of which
-  transcript it's in. That repetition is the signal — an unnamed practice
-  that has earned a name.
+This was a real failure, not a hypothetical: the extractor's predecessor
+returned 80 "candidates" that were all JSON envelope noise (`tokens`,
+`cache`, `sessionId`) because raw transcript bytes are JSON-per-line and
+most byte volume is API metadata, not anything a human typed
+([jonhill90/skills#199](https://github.com/jonhill90/skills/issues/199)).
+The instrument was wrong, not the corpus. `mine_prompts.py` itself refuses
+to print an empty, confident-looking result — an unfiltered, no-match run
+exits nonzero with a message on stderr telling you to verify the instrument
+first — but that only catches the *total-absence* case. A `--grep` or
+`--since` filter that quietly returns nothing looks identical to "he never
+said that" and to "the filter is wrong"; treat both as open until you've
+checked the unfiltered stats.
 
-[`scripts/mine-vocabulary.py`](scripts/mine-vocabulary.py) approximates the
-second condition with a **consistency score**: for each occurrence of a
-term, it takes the surrounding words as a small context set, then measures
-how much those context sets overlap across occurrences. A term whose context
-keeps overlapping is explained the same way each time; a term whose context
-is different every time is just common. The script also flags common CLI
-tool names as `likely_tool` and excludes them from the ranked output by
-default — a deterministic prior on the first false-positive class, not a
-verdict on the second.
+**The corpus itself is also incomplete**, separately from any tool bug: one
+measured phrase — said and quoted verbatim elsewhere (a personal vault) —
+had **no matching original turn** across 1,150 transcript files. Transcripts
+are one record of what was said, not the only one. Before reporting "never
+said" or "no evidence of," check whatever other record exists (notes,
+vault, prior write-ups) — an absence in `mine_prompts.py`'s output is
+evidence about the corpus's coverage, not about what the operator did or
+didn't say.
 
 ## Split deterministic from judgement
 
-Counting, clustering, and redaction are deterministic — they live in the
-script and their output is inspectable JSON, not a claim you have to trust.
-Deciding "this term names a procedure" is judgement, and it happens next,
-by reading that JSON, not by re-scanning the transcripts yourself.
+Counting, filtering, and typed/pasted classification are deterministic —
+`mine_prompts.py`'s job, and its output is inspectable text or JSON, not a
+claim you have to trust. Deciding "this term names a procedure" is
+judgement, and it happens next, by reading that output, not by re-scanning
+transcripts yourself.
 
-### 1. Run the script
+### 1. Run the tool
 
 ```bash
-python3 scripts/mine-vocabulary.py <transcript-dir> --min-count 3 --min-files 2
+python3 /path/to/agent-supervisor/scripts/supervisor/mine_prompts.py --stats
+python3 /path/to/agent-supervisor/scripts/supervisor/mine_prompts.py --typed-only --json > /tmp/mined.json
+python3 /path/to/agent-supervisor/scripts/supervisor/mine_prompts.py --since 2026-08-01 --grep '<term>'
 ```
 
-- `<transcript-dir>` — wherever your harness stores session transcripts.
-  There is no default; point it explicitly, and say read-only when you do.
-- `--min-count` / `--min-files` — raise these on a large transcript set to
-  cut noise before you start reading; the defaults (3 occurrences, 2 files)
-  are a floor, not a target.
-- `--include-tools` — keep `likely_tool`-flagged terms in the output, for
-  when you want to sanity-check the denylist itself rather than trust it.
-- `--self-test` — run the bundled fixture check with no transcripts
-  involved; use it to confirm the script works in this environment before
-  pointing it at real data.
+Start broad (`--stats`, no filters) as the positive control above, then
+narrow with `--typed-only`, `--since`, and `--grep` once you trust the
+instrument. `--typed-only` cuts pasted briefs and skill files out of a
+plain word search; keep both typed and pasted runs in view when a term
+might genuinely appear in either.
 
-Each result carries `term`, `count`, `distinct_files`, `consistency`,
-`likely_tool`, and up to three redacted `sample_snippets`.
+### 2. Cluster and count by eye
 
-### 2. Judge the candidates
+Unlike the old bundled script, `mine_prompts.py` does not compute a
+consistency score — it hands you rows, not a ranked table. Group the rows
+that share a term or phrase yourself (grep, or read `--json` output) and
+for each candidate note: how many times it appears, across how many
+distinct sessions (`source`), and whether the surrounding text reads the
+same way each time.
 
-Read the JSON, highest `count × (1 + consistency)` first (that is already
-the script's sort order). For each term worth a look:
+### 3. Judge the candidates
 
-1. **Read the sample snippets.** Do they show the same kind of explanation,
-   or unrelated sentences that happen to share a word? High `consistency`
-   is a hint, not a verdict — read the evidence before trusting the number.
-2. **Ask the tool-vs-decision question directly**, even for terms the script
-   didn't flag `likely_tool`. A term can name a decision-shaped *use* of a
-   tool ("always confirm before force-push") that the script's denylist
-   can't see, or can be a project-specific noun that isn't a CLI tool but
-   still isn't a procedure (a file name, a person's name).
-3. **Check it isn't already a skill.** If an existing skill already covers
-   the term, it's evidence that skill's `description` is doing its job, not
-   a new candidate.
-4. **Drop what you can't evidence.** A term with three occurrences and no
-   readable pattern in the snippets is a lead, not a candidate — leave it
-   out rather than padding the list.
+For each term worth a look:
 
-### 3. Report the ranked list
+1. **Read the actual rows**, not just the count. Do they show the same
+   kind of explanation each occurrence, or unrelated sentences that happen
+   to share a word?
+2. **Ask the tool-vs-decision question.** `gh`, `pytest`, `git` recur
+   because they're invoked, not because a decision gets re-made — not a
+   candidate. A term can also name a decision-shaped *use* of a tool
+   ("always confirm before force-push") that no denylist catches; judge the
+   use, not just the noun.
+3. **Ask the decision-vs-boilerplate question — this is what a tool
+   cannot do.** A phrase repeated across many dispatch briefs or templates
+   can look exactly like a re-made decision by count and file-spread alone.
+   Tell them apart by reading what surrounds the phrase each time: template
+   boilerplate is copied verbatim, same wording, same slot, from a fixed
+   source (a brief template, a prompt skeleton); a re-made decision is
+   re-derived — worded differently each time, appearing in reasoning or
+   correction, not in a fixed template slot. This distinction was a real
+   finding in a prior run and the reason judgement stays a model's job
+   here.
+4. **Check whether a request recurred because it was never delivered**,
+   not because it's a recurring practice. A term repeated across sessions
+   can mean "the same fix keeps getting asked for" rather than "the same
+   procedure keeps getting used" — read whether the surrounding turns show
+   the request being satisfied, or being asked again.
+5. **Check whether a decision was settled and later reopened**, and
+   whether a correction repeats. Both are visible only in the surrounding
+   text, not in the count.
+6. **Check it isn't already a skill.** If an existing skill already covers
+   the term, that's evidence the skill's `description` is doing its job,
+   not a new candidate.
+7. **Drop what you can't evidence.** A term with a few occurrences and no
+   readable pattern in the rows is a lead, not a candidate — leave it out
+   rather than padding the list.
+
+### 4. Report the ranked list
 
 One entry per surviving candidate:
 
-- the term
-- count and distinct-file spread
+- the term or phrase
+- count and distinct-source spread
 - one sentence on *why* it looks like a re-made decision rather than a
-  repeated tool call
-- one or two redacted sample snippets as evidence
+  repeated tool call or repeated boilerplate
+- one or two hand-checked, trimmed snippets as evidence (see
+  [What this reads, and what it must never emit](#what-this-reads-and-what-it-must-never-emit))
 
 This list is the deliverable. It names candidates for the next skill; it is
 not one. Turning a candidate into a skill is a separate, deliberate step —
@@ -147,27 +213,21 @@ in this collection, that means opening an issue the way
 records `distill` having been proposed, not filing one automatically from
 this run.
 
-## Bundled scripts
+## Worked example
 
-| Script | Use |
-|---|---|
-| `mine-vocabulary.py` | deterministic counting, clustering, and redaction pass over a transcript directory; read-only |
-
-`.jsonl` files get one extra step first: session transcripts like Claude
-Code's are JSON-per-line, and most of that JSON is API envelope (token
-counts, cache metadata, UUIDs) rather than anything anyone said. The script
-parses each line, keeps only `user`/`assistant` turns, and extracts their
-`text`/`thinking` content before counting — pointed straight at raw
-transcript bytes, envelope fields alone filled every ranked slot
-(jonhill90/skills#199). A `.jsonl` file that doesn't parse as transcript
-JSON is scanned as plain text, unchanged from before.
+[`references/eval-case.md`](references/eval-case.md) walks a small,
+synthetic set of extracted rows through the judgement steps above —
+including a term that's boilerplate, one that's a repeated tool call, and
+one that's a genuine re-made decision — with the expected classification
+for each. Use it to sanity-check that this skill's judgement guidance
+actually discriminates before trusting it on a real transcript set.
 
 ## Notes
 
 - This skill is public opt-in, not part of any default roster — rostering a
-  skill and adding it here are separate decisions, and this one has not
-  been measured against real transcripts yet.
-- The script's stopword and tool-token lists are deliberately small and
-  generic. They will under-filter on a first run; tune `--min-count` and
-  read the snippets rather than growing the lists to fit one transcript
-  set.
+  skill and adding it here are separate decisions.
+- `mine_prompts.py` lives outside this collection because it's harness
+  machinery (transcript root, site-specific exclude list) not skill
+  content. If a project needs an extractor bundled instead of external,
+  that's a different skill for a different repository, not a reason to
+  re-embed extraction logic here.
