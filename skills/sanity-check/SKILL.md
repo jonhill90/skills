@@ -1,6 +1,6 @@
 ---
 name: sanity-check
-description: Check reasoning with a second mind — dispatch a reviewer whose prompt is built for the specific question, with a lens it can fail on and evidence required for every finding. Use before acting on a plan, decision, diagnosis, or rationale whose cost of being wrong is high and whose only support so far is your own reasoning.
+description: Check reasoning with a second mind — dispatch a reviewer whose prompt is built for the specific question, with a lens it can fail on and evidence required for every finding. Use before acting on a plan, decision, diagnosis, or rationale whose cost of being wrong is high and whose only support so far is your own reasoning. TRIGGER, even when the surrounding work otherwise reads as routine: a number, count, or ratio about to be stated (in a report, a PR body, a closing comment) that you cannot point to a command, log line, or fixture for — an inherited figure is exactly this, not an exception to it.
 ---
 
 # Sanity Check
@@ -21,12 +21,22 @@ three reviewers the same question, buys agreement rather than verification.
   approach, a rationale for a decision.
 - Being wrong is expensive — the work proceeds on this, or the record keeps
   it.
-- Nothing outside your own reasoning currently supports it.
+- Nothing outside your own reasoning currently supports it. **A number
+  counts as unsupported reasoning, not as evidence, until you can name what
+  produced it.** A figure that arrived already-written — copied from an
+  earlier report, a prior PR, a teammate's summary — reads as settled and
+  is exactly the case this rule means to catch, not an exception carved out
+  of it. Before repeating it, name the counter, log line, or fixture behind
+  it; if you cannot, that gap is itself the finding to hand a reviewer, not
+  a detail to smooth over.
 
 Do not reach for it when a command would settle the question. If the doubt
 is "does this file exist on `main`", "does this test pass", "did the write
 apply" — run the check. That is a test, not a reviewer, and a reviewer asked
-to reason about it will guess.
+to reason about it will guess. A number is different: there is no command to
+run when the number's origin is simply unknown, only a search that may
+itself fail to turn one up — that failure is what the reviewer above exists
+to press on.
 
 ## Build the prompt with intent
 
@@ -144,6 +154,20 @@ the claim each anecdote was supporting is marked accordingly.
   from the two entries above, not from a run that varied it.
 - **The eight prompt properties.** *Not evidenced individually.* Rules 3, 5,
   6 and 8 have no recorded instance behind them. They are practice.
+- **A number counts as unsupported reasoning until its origin is named.**
+  *Evidenced.* `jonhill90/agent-supervisor#434`'s PR body asserted "65 of
+  258 passes discarded" as the measured scale of a bug. A council seat
+  given the mechanism lens searched `git log -S`, `git grep`, fixtures, and
+  live supervisor state for anything the figure could have come from and
+  found none — no counter, no log, no fixture. The number had been
+  inherited and repeated, not measured, and was removed; the defect stood
+  on its own without it (two smoke-test durations that provably exceed the
+  window). This is the evidence behind the TRIGGER clause added to this
+  skill's description and the explicit bullet above
+  (`jonhill90/skills#186`). **Untested here:** whether "a conclusion that
+  reverses a previously-recorded fact" is a distinct trigger condition
+  worth naming the same way — no measured case for it was found during
+  that same research pass, so it is not added as a claim this skill makes.
 
 The technique as a whole has never been measured: the sentence-rung scenario
 scores whether an outside check was **sought**, not whether the way it was
