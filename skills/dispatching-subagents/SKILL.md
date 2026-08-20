@@ -66,6 +66,27 @@ The maker never grades its own work. If a verifier is itself an agent,
 it must be given the artifact and the criterion, not the maker's
 reasoning.
 
+**An author cannot audit its own bookkeeping.** This is narrower than
+"the maker never grades its own work" and it is the case people skip,
+because the bookkeeping does not feel like the work. A plan that assigns
+files to parallel workers, a manifest of what each one owns, a dependency
+order, a per-task validation block — the author wrote each of those while
+holding the intent in mind, and re-reads them the same way. Two tasks
+claiming the same file, a step whose stated dependency exists only in
+prose, a command named in the plan that is not a real command: none of
+these are visible from inside the head that wrote them.
+
+A separate context reading the *finished* artifact finds them in one
+pass, and finds them mechanically rather than by insight — intersect the
+file sets, resolve every named command, check that each declared
+dependency appears in something the scheduler can read. Where the audit
+is mechanical, prefer a script to a reviewer; a duplicate-path detector
+that runs before every dispatch beats an agent asked to be careful.
+
+Budget for this as its own dispatch, after the artifact is complete and
+before anything executes it. It is usually the cheapest reviewer in a
+fan-out and the one that finds the defects that would have collided.
+
 ## When independence is not available
 
 Sometimes no genuinely independent reviewer exists — only one reviewing

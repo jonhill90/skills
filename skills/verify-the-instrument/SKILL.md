@@ -108,6 +108,30 @@ check actually iterated something:
 Where possible, make the check assert a nonzero baseline — "examined N
 files" or "N assertions ran" — so an empty run is loud instead of quiet.
 
+**Give the check a third exit code.** A check with only pass and fail has
+no way to say *I could not see*, so blindness has to borrow one of the two
+— and it always borrows "pass", because that is what an empty result
+looks like. Reserve a distinct code for it:
+
+```
+0  clean          — the check ran and found nothing
+1  violation      — the check ran and found something
+3  could-not-measure — the check could not see; do not read this as clean
+```
+
+Two shapes make this concrete, both observed rather than imagined. A gate
+compared a count that came back empty — `[ "$n" -gt 0 ]` with an unset `n`
+prints `integer expected` to stderr, and an enclosing `if` swallows the
+error, so the gate printed GREEN over a database it could not open. And a
+staleness check computed a negative age, because a UTC timestamp was parsed
+as local time; a negative age is not a small error, it is a branch that can
+never be taken.
+
+The caller then has somewhere honest to put the third case. A missing input
+file, an unresolvable ref, an unreadable database, a zero-length manifest:
+each is a 3. Refusing to answer is a real answer, and it is the one this
+whole skill exists to make sayable.
+
 ### 4. Distinguish a changed source from a changed output
 
 A diff of what's deployed, rendered, or generated is not a diff of what
