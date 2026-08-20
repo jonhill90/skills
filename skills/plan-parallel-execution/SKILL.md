@@ -1,6 +1,6 @@
 ---
 name: plan-parallel-execution
-description: Turn a task list into groups several agents can execute concurrently without colliding — derive file ownership mechanically, then supply the judgement a file-intersection cannot: shared resources that are not files, dependencies stated only in prose, and what each group's gate must prove. Use when work will be split across concurrent agents or worktrees, or when reviewing such a plan before it runs. Not for deciding how many agents or what each may see (dispatching-subagents), not for testing whether the plan's reasoning holds (sanity-check), and not for whether a step should be a tool at all (mechanize).
+description: "Turn a task list into groups several agents can execute concurrently without colliding — derive file ownership mechanically, then supply the judgement a file-intersection cannot: shared resources that are not files, dependencies stated only in prose, and what each group's gate must prove. Use when work will be split across concurrent agents or worktrees, or when reviewing such a plan before it runs. Not for deciding how many agents or what each may see (dispatching-subagents), not for testing whether the plan's reasoning holds (sanity-check), and not for whether a step should be a tool at all (mechanize)."
 ---
 
 # Plan Parallel Execution
