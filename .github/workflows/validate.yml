@@ -27,18 +27,24 @@ jobs:
     # jonhill90/skills#162: advisory only. The roster this compares against
     # lives in a different repository (agent-dotfiles), so this job can
     # never be authoritative and must never gate a merge -- a red run here
-    # means "look", not "fix required". continue-on-error is what makes
-    # that true regardless of the script's own exit code, which stays
-    # meaningful (0 clean, 1 orphans found, 2 could not check) for a human
-    # reading the log.
+    # means "look", not "fix required". continue-on-error must live on the
+    # STEP, not the job (jonhill90/skills#219): job-level continue-on-error
+    # only keeps the overall *workflow run* green -- the job's own check-run
+    # conclusion still reports failure, which is what a PR's merge-state
+    # rollup and `gh pr checks` read, so job-level continue-on-error alone
+    # left every PR touching this repo permanently UNSTABLE. Step-level
+    # continue-on-error is what actually flips the job's check-run to
+    # success (with a neutral/warning annotation) while the script's own
+    # exit code stays meaningful in the log (0 clean, 1 orphans found, 2
+    # could not check).
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Report skills neither rostered nor benched in agent-dotfiles
+        continue-on-error: true
         run: python scripts/check_orphan_skills.py
 
   plugin-conformance:
