@@ -116,6 +116,45 @@ class ValidateRepositoryTests(unittest.TestCase):
             )
 
 
+class EmptySkillsDirectoryTests(unittest.TestCase):
+    """jonhill90/skills#216: a full-repo scan that discovers zero skill
+    directories must be a hard error, not a silent clean pass -- an
+    emptied skills/ would otherwise validate every other rule against an
+    empty list and report "0 errors" for a catastrophic loss of content.
+    (A wholesale-missing skills/ already crashes discover_skill_dirs with
+    FileNotFoundError -- that path was never blind; only "exists but
+    matched nothing" was.)"""
+
+    def messages(self, findings: list[object]) -> list[str]:
+        return [finding.message for finding in findings]
+
+    def test_emptied_skills_directory_is_an_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "skills").mkdir()
+            findings = validator.validate(root)
+            self.assertTrue(
+                any("no skill directories found" in message for message in self.messages(findings))
+            )
+
+    def test_populated_skills_directory_is_not_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            skill_dir = root / "skills" / "example-skill"
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\n"
+                "name: example-skill\n"
+                "description: Run an example workflow. Use for validator tests.\n"
+                "---\n\n# Example\n\nRun the example.\n",
+                encoding="utf-8",
+            )
+            findings = validator.validate(root)
+            self.assertFalse(
+                any("no skill directories found" in message for message in self.messages(findings))
+            )
+
+
 class SpecConformanceTests(unittest.TestCase):
     """Gaps found by diffing this validator against the spec's own reference
     tool, `skills-ref` from github.com/agentskills/agentskills, on 2026-08-11
