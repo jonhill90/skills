@@ -365,6 +365,28 @@ def validate_no_private_links(root: Path) -> list[Finding]:
     return findings
 
 
+def validate_skill_directories_found(
+    skill_dirs: list[Path], skills_root: Path
+) -> list[Finding]:
+    """A full-repo scan that discovers zero skill directories is not a
+    clean repository -- it is a validator that stopped seeing its own
+    input (a renamed/emptied skills/, a broken discover_skill_dirs) and
+    every other check in this file would report a false "no findings"
+    (jonhill90/skills#216: the class of check that cannot fail because
+    its matcher matched nothing)."""
+    if skill_dirs:
+        return []
+    return [
+        Finding(
+            "error",
+            skills_root,
+            "no skill directories found -- this almost certainly means "
+            "the scan is blind (skills/ missing, emptied, or renamed), "
+            "not that the repository is clean",
+        )
+    ]
+
+
 def validate_skill_collection(skill_dirs: list[Path]) -> list[Finding]:
     findings: list[Finding] = []
     names: dict[str, Path] = {}
@@ -395,13 +417,15 @@ def validate_skill_collection(skill_dirs: list[Path]) -> list[Finding]:
 
 def validate(root: Path, target: Path | None = None) -> list[Finding]:
     skill_dirs = discover_skill_dirs(root, target)
-    findings = validate_skill_collection(skill_dirs)
 
     if target is None:
+        findings = validate_skill_directories_found(skill_dirs, root / "skills")
+        findings.extend(validate_skill_collection(skill_dirs))
         findings.extend(validate_privacy(root))
         findings.extend(validate_no_private_links(root))
+        return findings
 
-    return findings
+    return validate_skill_collection(skill_dirs)
 
 
 def main() -> int:
