@@ -1,6 +1,6 @@
 ---
 name: sanity-check
-description: Check reasoning with a second mind — dispatch a reviewer whose prompt is built for the specific question, with a lens it can fail on and evidence required for every finding. Use before acting on a plan, decision, diagnosis, or rationale whose cost of being wrong is high and whose only support so far is your own reasoning. TRIGGER, even when the surrounding work otherwise reads as routine: a number, count, or ratio about to be stated (in a report, a PR body, a closing comment) that you cannot point to a command, log line, or fixture for — an inherited figure is exactly this, not an exception to it.
+description: "Check reasoning with a second mind — dispatch a reviewer whose prompt is built for the specific question, with a lens it can fail on and evidence required for every finding. Use before acting on a plan, decision, diagnosis, or rationale whose cost of being wrong is high and whose only support so far is your own reasoning. TRIGGER, even when the surrounding work otherwise reads as routine: a number, count, or ratio about to be stated (in a report, a PR body, a closing comment) that you cannot point to a command, log line, or fixture for — an inherited figure is exactly this, not an exception to it."
 ---
 
 # Sanity Check
