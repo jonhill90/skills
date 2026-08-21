@@ -30,8 +30,8 @@ reference.
 
 This repository is also an [Agent Plugins
 1.0.0](https://agent-plugins.org/specification) plugin: `plugin.json` at the
-root, 25 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
-verified 2026-08-16T02:15Z), which is the standard's own discovery convention.
+root, 38 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
+verified 2026-08-21), which is the standard's own discovery convention.
 Any conformant client can consume the collection whole, with no bespoke
 tooling.
 
@@ -42,39 +42,56 @@ remains the way to install individual skills, and nothing here replaces it.
 
 ## Skills in this collection
 
-All 25, flat and alphabetical — matching `skills/`'s own layout (see
+All 38, flat and alphabetical — matching `skills/`'s own layout (see
 [Where a skill belongs](#where-a-skill-belongs) for why this repository does
-not bucket by category). Measured `ls -d skills/*/`, verified
-2026-08-16T02:15Z; this table previously listed 13 and was 12 skills short of
-the tree for five days (`069e2c4`, 2026-08-09, through this correction).
+not bucket by category). Measured `ls -d skills/*/`, verified 2026-08-21.
+This table has drifted from the tree twice: 12 skills short for five days
+(`069e2c4`, 2026-08-09) and, a second time, 13 skills short until this
+correction (skills#224) — `scripts/validate_repository.py`'s
+`validate_readme_table` check now fails CI when the table and `skills/`
+disagree, so a hand-edit that drops or misnames a row is caught before it
+reaches the public repository.
 
 | Skill | Purpose |
 |---|---|
+| [`adopt-or-build`](skills/adopt-or-build/) | Decide, per component, whether to adopt an existing dependency or build it in-house, weighing blast radius over convenience |
 | [`ask-a-council`](skills/ask-a-council/) | Convene several harnesses or models against one question, each given a distinct lens it can fail on |
 | [`close-the-loop`](skills/close-the-loop/) | Confirm you have everything needed to finish a change before starting it |
 | [`create-skill`](skills/create-skill/) | Design, create, and validate portable Agent Skills |
+| [`decide-by-variant`](skills/decide-by-variant/) | Build several genuinely different real artifacts with fake data and let the human pick by looking |
+| [`derive-independently-then-compare`](skills/derive-independently-then-compare/) | Derive an answer from the source corpus a second time, blind to the first derivation, then compare |
+| [`determine-intent`](skills/determine-intent/) | Work out what the user actually wants before starting the work, and state that reading so it can be corrected |
+| [`determine-signals`](skills/determine-signals/) | Find out what has already been said before asking a question or restating a fact as current |
+| [`devils-advocate`](skills/devils-advocate/) | Argue the strongest honest case against a plan or decision before it is committed |
 | [`dispatching-subagents`](skills/dispatching-subagents/) | Decide whether to delegate to subagents and verify their output with external evidence |
 | [`distill`](skills/distill/) | Reduce a large body of source material to the smallest thing a reader can act on |
+| [`durable-fact-before-label`](skills/durable-fact-before-label/) | Write the durable record before the label that points at it, so a crash leaves a stale label, not a broken record |
 | [`failing-test-first`](skills/failing-test-first/) | Reproduce a bug with a failing test before fixing it |
 | [`github-cli`](skills/github-cli/) | Manage GitHub PRs, issues, workflows, actions, and releases via `gh` |
 | [`keep-me-honest`](skills/keep-me-honest/) | Push back when the user's stated belief conflicts with what you actually observed |
 | [`linear`](skills/linear/) | Manage Linear issues, teams, and projects via the Linear CLI |
 | [`loop-contract`](skills/loop-contract/) | Design a loop before running one — trigger, verification, stop conditions, terminal states |
 | [`loop-memory`](skills/loop-memory/) | Keep the run state a repeating or long-running loop needs between iterations on disk |
+| [`mechanize`](skills/mechanize/) | Decide whether a step done by AI inference should become a deterministic tool instead |
 | [`memory-conventions`](skills/memory-conventions/) | Read and write durable agent memory in a personal Obsidian vault |
 | [`mine-transcripts`](skills/mine-transcripts/) | Mine your own agent transcripts for vocabulary that's a candidate for the next skill, judging what an extractor tool hands back |
 | [`notify`](skills/notify/) | Send a short message to a human on a configured outbound channel from the terminal |
 | [`obsidian`](skills/obsidian/) | Read, write, search, and manage notes in Obsidian vaults |
+| [`plan-parallel-execution`](skills/plan-parallel-execution/) | Turn a task list into groups several agents can execute concurrently without colliding |
 | [`prd`](skills/prd/) | Author or review a Product Requirements Document |
 | [`primer`](skills/primer/) | Orient in an unfamiliar codebase before starting work |
+| [`prompt-corpus`](skills/prompt-corpus/) | Turn a transcript history into a queryable record of decisions |
+| [`refuse-invented-identity`](skills/refuse-invented-identity/) | Refuse and report unrecoverable when a recovery path cannot positively confirm the prior identity it is restoring |
 | [`research-the-limit`](skills/research-the-limit/) | Check a primary source before asserting a tool or system cannot do something |
 | [`safe-deletion`](skills/safe-deletion/) | Verify contents or state match their described purpose before deleting or killing anything |
 | [`sanity-check`](skills/sanity-check/) | Build a second-opinion reviewer prompt for high-cost reasoning |
 | [`spec`](skills/spec/) | Author or review a technical specification — architecture, interfaces, trade-offs |
 | [`supervised-lane-loop`](skills/supervised-lane-loop/) | Run a long-lived supervisor loop over one or more worker-agent lanes |
 | [`tdd`](skills/tdd/) | Red-green-refactor for code that has never worked yet |
+| [`test-in-the-consumer-context`](skills/test-in-the-consumer-context/) | Run a check where the thing that depends on it runs, before believing its verdict |
 | [`tmux`](skills/tmux/) | Operate tmux safely from an agent: pane targeting, verified input, recovery |
 | [`verify-the-instrument`](skills/verify-the-instrument/) | Check the measuring device before trusting what it reports |
+| [`wire-it-when-you-write-it`](skills/wire-it-when-you-write-it/) | Ship a mechanism and its caller in the same change, and add the check that fails when the caller disappears |
 
 Each skill's `description` frontmatter is the actual trigger contract —
 read the skill itself for exact wording and preconditions. This repository
