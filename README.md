@@ -30,7 +30,7 @@ reference.
 
 This repository is also an [Agent Plugins
 1.0.0](https://agent-plugins.org/specification) plugin: `plugin.json` at the
-root, 38 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
+root, 39 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
 verified 2026-08-21), which is the standard's own discovery convention.
 Any conformant client can consume the collection whole, with no bespoke
 tooling.
@@ -42,7 +42,7 @@ remains the way to install individual skills, and nothing here replaces it.
 
 ## Skills in this collection
 
-All 38, flat and alphabetical — matching `skills/`'s own layout (see
+All 39, flat and alphabetical — matching `skills/`'s own layout (see
 [Where a skill belongs](#where-a-skill-belongs) for why this repository does
 not bucket by category). Measured `ls -d skills/*/`, verified 2026-08-21.
 This table has drifted from the tree twice: 12 skills short for five days
@@ -86,6 +86,7 @@ reaches the public repository.
 | [`safe-deletion`](skills/safe-deletion/) | Verify contents or state match their described purpose before deleting or killing anything |
 | [`sanity-check`](skills/sanity-check/) | Build a second-opinion reviewer prompt for high-cost reasoning |
 | [`spec`](skills/spec/) | Author or review a technical specification — architecture, interfaces, trade-offs |
+| [`spec-driven-development`](skills/spec-driven-development/) | Write a falsifiable acceptance criterion and its mutation check before writing any code |
 | [`supervised-lane-loop`](skills/supervised-lane-loop/) | Run a long-lived supervisor loop over one or more worker-agent lanes |
 | [`tdd`](skills/tdd/) | Red-green-refactor for code that has never worked yet |
 | [`test-in-the-consumer-context`](skills/test-in-the-consumer-context/) | Run a check where the thing that depends on it runs, before believing its verdict |
