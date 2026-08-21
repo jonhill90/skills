@@ -63,6 +63,7 @@ reaches the public repository.
 | [`determine-intent`](skills/determine-intent/) | Work out what the user actually wants before starting the work, and state that reading so it can be corrected |
 | [`determine-signals`](skills/determine-signals/) | Find out what has already been said before asking a question or restating a fact as current |
 | [`devils-advocate`](skills/devils-advocate/) | Argue the strongest honest case against a plan or decision before it is committed |
+| [`dispatch-brief`](skills/dispatch-brief/) | Write the brief that hands work to a lane or subagent — name the failure, demand two-directional mutation, forbid weakening the guard |
 | [`dispatching-subagents`](skills/dispatching-subagents/) | Decide whether to delegate to subagents and verify their output with external evidence |
 | [`distill`](skills/distill/) | Reduce a large body of source material to the smallest thing a reader can act on |
 | [`durable-fact-before-label`](skills/durable-fact-before-label/) | Write the durable record before the label that points at it, so a crash leaves a stale label, not a broken record |
