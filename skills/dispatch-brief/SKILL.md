@@ -117,7 +117,15 @@ exactly that gap.
   green) but apply one step later: they are what a brief demands *of a
   worker*, once the work has already been scoped and a criterion already
   chosen. A brief that follows rules 2 and 4 is enforcing a criterion this
-  skill assumes was already written — it does not write one itself.
+  skill assumes was already written — it does not write one itself. Rule 5
+  is the same one-step-later relationship applied to that skill's "three
+  outcomes, never two": that skill decides, while writing the criterion,
+  what "could not measure" would look like for *this specific* check — the
+  missing fixture, the environment that can't be reached. This skill's rule
+  5 does not define that; it is the sentence in the brief that tells the
+  worker, before it starts, that reporting the already-defined third
+  outcome is allowed and complete, so a worker under pressure to close the
+  ticket does not quietly fold "could not measure" into "holds."
 
 If a future rule cannot be placed cleanly against these five, that is a
 reason to fold it into one of them rather than add a sixth skill that
