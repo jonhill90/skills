@@ -24,6 +24,9 @@ NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 MD_LINK_TARGET_RE = re.compile(r"\]\(([^)]+)\)")
 BARE_URL_RE = re.compile(r"https?://[^\s)]+")
+# One row of README.md's "Skills in this collection" table:
+# | [`name`](skills/name/) | purpose |
+README_TABLE_ROW_RE = re.compile(r"^\|\s*\[`([a-z0-9-]+)`\]\(skills/([a-z0-9-]+)/\)", re.MULTILINE)
 
 # Repositories known to be private. This repository is public deliberately
 # (see AGENTS.md "Scope"/"Guardrails"), so a clickable link into one of
@@ -387,6 +390,40 @@ def validate_skill_directories_found(
     ]
 
 
+def validate_readme_table(root: Path, skill_dirs: list[Path]) -> list[Finding]:
+    """README.md's "Skills in this collection" table is maintained by hand
+    and has drifted from skills/ twice in two weeks (jonhill90/skills#224,
+    following the `069e2c4` (2026-08-09) correction) -- each time
+    silently, because nothing compared the two. This diffs the table's
+    linked skill names against skills/*/SKILL.md directly, never against
+    what the table already says, so a hand-edit that drops or misnames a
+    row fails here instead of reaching the public repository unnoticed."""
+    readme = root / "README.md"
+    if not readme.is_file():
+        return [Finding("error", root, "README.md is missing -- cannot check its skills table")]
+
+    text = readme.read_text(encoding="utf-8")
+    table_names = sorted({match.group(2) for match in README_TABLE_ROW_RE.finditer(text)})
+    tree_names = sorted(path.name for path in skill_dirs)
+
+    findings: list[Finding] = []
+    for name in sorted(set(tree_names) - set(table_names)):
+        findings.append(
+            Finding(
+                "error", readme,
+                f"skills/{name} exists but is not listed in the README table",
+            )
+        )
+    for name in sorted(set(table_names) - set(tree_names)):
+        findings.append(
+            Finding(
+                "error", readme,
+                f"README table lists {name!r}, which does not exist under skills/",
+            )
+        )
+    return findings
+
+
 def validate_skill_collection(skill_dirs: list[Path]) -> list[Finding]:
     findings: list[Finding] = []
     names: dict[str, Path] = {}
@@ -421,6 +458,7 @@ def validate(root: Path, target: Path | None = None) -> list[Finding]:
     if target is None:
         findings = validate_skill_directories_found(skill_dirs, root / "skills")
         findings.extend(validate_skill_collection(skill_dirs))
+        findings.extend(validate_readme_table(root, skill_dirs))
         findings.extend(validate_privacy(root))
         findings.extend(validate_no_private_links(root))
         return findings

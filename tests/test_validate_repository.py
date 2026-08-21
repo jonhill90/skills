@@ -549,5 +549,75 @@ class NoDanglingEvalReferenceTests(unittest.TestCase):
         self.assertEqual(offenders, [])
 
 
+class ReadmeTableTests(unittest.TestCase):
+    """jonhill90/skills#224: README.md's skills table is maintained by hand
+    and had drifted from skills/ twice in two weeks. This checks the table
+    against skills/*/SKILL.md directly, not against what the table itself
+    already claims."""
+
+    def _skill_dirs(self, root: Path, names: list[str]) -> list[Path]:
+        dirs = []
+        for name in names:
+            skill_dir = root / "skills" / name
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                f"---\nname: {name}\ndescription: does a thing.\n---\n\nBody.\n",
+                encoding="utf-8",
+            )
+            dirs.append(skill_dir)
+        return dirs
+
+    def messages(self, findings: list[object]) -> list[str]:
+        return [finding.message for finding in findings]
+
+    def test_skill_missing_from_table_is_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            skill_dirs = self._skill_dirs(root, ["alpha", "beta"])
+            (root / "README.md").write_text(
+                "| Skill | Purpose |\n|---|---|\n"
+                "| [`alpha`](skills/alpha/) | does a thing |\n",
+                encoding="utf-8",
+            )
+            findings = validator.validate_readme_table(root, skill_dirs)
+            self.assertTrue(
+                any("beta" in message and "not listed" in message for message in self.messages(findings))
+            )
+
+    def test_bogus_table_row_is_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            skill_dirs = self._skill_dirs(root, ["alpha"])
+            (root / "README.md").write_text(
+                "| Skill | Purpose |\n|---|---|\n"
+                "| [`alpha`](skills/alpha/) | does a thing |\n"
+                "| [`ghost`](skills/ghost/) | does not exist |\n",
+                encoding="utf-8",
+            )
+            findings = validator.validate_readme_table(root, skill_dirs)
+            self.assertTrue(
+                any("'ghost'" in message and "does not exist" in message for message in self.messages(findings))
+            )
+
+    def test_matching_table_is_clean(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            skill_dirs = self._skill_dirs(root, ["alpha", "beta"])
+            (root / "README.md").write_text(
+                "| Skill | Purpose |\n|---|---|\n"
+                "| [`alpha`](skills/alpha/) | does a thing |\n"
+                "| [`beta`](skills/beta/) | does another thing |\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(validator.validate_readme_table(root, skill_dirs), [])
+
+    def test_missing_readme_is_an_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            skill_dirs = self._skill_dirs(root, ["alpha"])
+            findings = validator.validate_readme_table(root, skill_dirs)
+            self.assertTrue(any("README.md is missing" in message for message in self.messages(findings)))
+
+
 if __name__ == "__main__":
     unittest.main()
