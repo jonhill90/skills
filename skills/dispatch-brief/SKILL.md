@@ -109,9 +109,18 @@ exactly that gap.
   skill's rule 2 has, incidentally, done the first half of that skill's
   check 1 — but the two are written for different moments and different
   audiences (a brief's author, versus whoever is about to trust a result).
+- **`spec-driven-development`** writes the falsifiable acceptance criterion
+  and its mutation check as part of *scoping the work itself*, before any
+  brief exists — the criterion has to hold whether or not the work is ever
+  handed to a separate worker. Rules 2 and 4 above look like the same
+  discipline (mutation in both directions, no weakening the guard to reach
+  green) but apply one step later: they are what a brief demands *of a
+  worker*, once the work has already been scoped and a criterion already
+  chosen. A brief that follows rules 2 and 4 is enforcing a criterion this
+  skill assumes was already written — it does not write one itself.
 
-If a future rule cannot be placed cleanly against these four, that is a
-reason to fold it into one of them rather than add a fifth skill that
+If a future rule cannot be placed cleanly against these five, that is a
+reason to fold it into one of them rather than add a sixth skill that
 partially overlaps all of them.
 
 ## What this skill does not claim
