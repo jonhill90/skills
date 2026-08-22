@@ -73,6 +73,16 @@ change limit, ~50 iterations before real cost data exists.
 `failed-unrecoverable`. An unnamed exit is what makes a run log
 unreadable later.
 
+State each condition as one row, not a paragraph — a reviewer scans a
+list for a missing case faster than prose, and it forces every row to
+actually carry a terminal state rather than trailing off without one:
+
+```
+- {type: goal,       name: ...,          check: ...,  terminal_state: verified-complete}
+- {type: safety,     name: iteration-cap, limit: N,    terminal_state: budget-exhausted}
+- {type: behavioral, name: idle-detection, check: ..., terminal_state: blocked-needs-human}
+```
+
 ## Verification sets the autonomy ceiling
 
 A loop's real autonomy equals the highest verification level it passes
