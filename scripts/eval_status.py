@@ -28,11 +28,22 @@ Exit codes:
   1  drift found -- printed as findings, one per line.
   2  could not check at all -- docs/eval-status.json missing or not
      valid JSON, or skills/ not found. Never read as "consistent."
+
+--record (jonhill90/skills#230, estate-loop/agent-b2.md's own rule: "Update
+docs/eval-status.json through scripts/eval_status.py, never by hand"): the
+one write path this record has. Every prior pass hand-edited the JSON
+directly -- fine for a handful of entries, but a hand edit cannot be
+stopped from writing a malformed one (a verdict this file wouldn't accept,
+an evidence path that doesn't exist, a stray date on "unevaluated"). This
+validates the SAME rules `check()` above enforces before it ever touches
+the file, so a --record call can never produce a record its own `check()`
+would then reject. See do_record's own docstring for the exact contract.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import sys
 from pathlib import Path
@@ -42,13 +53,18 @@ RECORD_PATH = REPO / "docs" / "eval-status.json"
 SKILLS_ROOT = REPO / "skills"
 
 VERDICTS = {"keep", "improve", "rename", "drop", "could_not_measure", "unevaluated"}
+RECORDABLE_VERDICTS = VERDICTS - {"unevaluated"}
 
 
 class RecordError(RuntimeError):
     """The record itself could not be read at all -- exit 2, never 0 or 1."""
 
 
-def load_record(path: Path) -> dict:
+def load_full_doc(path: Path) -> dict:
+    """The whole parsed docs/eval-status.json -- $comment and all. Kept
+    separate from load_record (below, which most callers want: just the
+    skills mapping) because --record needs to rewrite the file and must
+    not lose the $comment or any other top-level key while doing it."""
     if not path.is_file():
         raise RecordError(f"no record at {path}")
     try:
@@ -57,7 +73,90 @@ def load_record(path: Path) -> dict:
         raise RecordError(f"{path} is not valid JSON: {exc}") from exc
     if "skills" not in doc or not isinstance(doc["skills"], dict):
         raise RecordError(f"{path} has no top-level \"skills\" object")
-    return doc["skills"]
+    return doc
+
+
+def load_record(path: Path) -> dict:
+    return load_full_doc(path)["skills"]
+
+
+def dump_record(doc: dict, path: Path) -> None:
+    """Writes doc back in the exact one-line-per-skill shape the file has
+    always shipped in (sorted keys, compact per-entry JSON) -- NOT
+    json.dump(doc, indent=2), which would reformat every line and turn a
+    one-skill change into a whole-file diff. Verified byte-identical on a
+    no-op round trip of the real file (tests/test_eval_status.py's own
+    test_dump_record_is_a_noop_round_trip_on_the_real_file)."""
+    lines = ["{", f'  "$comment": {json.dumps(doc["$comment"])},', '  "skills": {']
+    names = sorted(doc["skills"].keys())
+    for i, name in enumerate(names):
+        comma = "," if i < len(names) - 1 else ""
+        lines.append(f"    {json.dumps(name)}: {json.dumps(doc['skills'][name])}{comma}")
+    lines.append("  }")
+    lines.append("}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def do_record(skill: str, verdict: str | None, evidence: str | None, date: str | None) -> int:
+    """Writes docs/eval-status.json's entry for `skill` -- the one path
+    --record exposes, and the one this script wants every future pass to
+    use instead of a hand edit (see this module's own docstring).
+
+    Refuses (exit 2, prints why) rather than writing anything when:
+      - `skill` has no skills/<name>/ directory -- never record a verdict
+        for something that doesn't exist.
+      - `verdict` is not one of RECORDABLE_VERDICTS -- "unevaluated" is
+        not recordable THROUGH this flag; it is the record's own default
+        for an entry nobody has touched, never something to write back
+        (recording "unevaluated" on purpose is indistinguishable from
+        never having called this at all, so there is nothing for this
+        path to do for it).
+      - `evidence` is missing, or does not point at a real file in this
+        repo -- the same "date/evidence load-bearing, not decoration"
+        rule `check()` already enforces; recording an entry `check()`
+        would then flag as drift is exactly what this flag exists to stop.
+
+    `date` defaults to today (real wall-clock date; this is an ordinary
+    script run by a human/agent, not a Workflow script, so datetime.date.
+    today() is the right tool) -- overridable for tests and for a
+    deliberate backdate, never read by production callers.
+    """
+    if not (SKILLS_ROOT / skill).is_dir():
+        print(f"--record {skill}: no skills/{skill}/ directory -- refusing to "
+              "record a verdict for a skill that doesn't exist", file=sys.stderr)
+        return 2
+    if verdict is None:
+        print(f"--record {skill}: --verdict is required "
+              f"(one of {sorted(RECORDABLE_VERDICTS)})", file=sys.stderr)
+        return 2
+    if verdict not in RECORDABLE_VERDICTS:
+        print(f"--record --verdict {verdict!r}: not one of {sorted(RECORDABLE_VERDICTS)} "
+              "(unevaluated is not recordable through this flag -- see --help)",
+              file=sys.stderr)
+        return 2
+    if not evidence:
+        print(f"--record {skill}: --verdict {verdict!r} requires --evidence "
+              "(a repo-relative path)", file=sys.stderr)
+        return 2
+    if not (REPO / evidence).is_file():
+        print(f"--record {skill}: evidence path {evidence!r} does not exist "
+              "in this repo -- write the file first", file=sys.stderr)
+        return 2
+
+    try:
+        doc = load_full_doc(RECORD_PATH)
+    except RecordError as exc:
+        print(f"COULD-NOT-CHECK: {exc}", file=sys.stderr)
+        return 2
+
+    doc["skills"][skill] = {
+        "verdict": verdict,
+        "date": date or datetime.date.today().isoformat(),
+        "evidence": evidence,
+    }
+    dump_record(doc, RECORD_PATH)
+    print(f"recorded {skill}: {verdict} ({doc['skills'][skill]['date']}, {evidence})")
+    return 0
 
 
 def discover_skill_names(skills_root: Path) -> set[str]:
@@ -121,7 +220,20 @@ def main(argv: list[str]) -> int:
                           "are unevaluated -- an empty list is a real, checkable answer)")
     ap.add_argument("--summary", action="store_true",
                      help="print a count per verdict and exit")
+    ap.add_argument("--record", metavar="SKILL",
+                     help="record a verdict for SKILL -- the only supported "
+                          "write path for docs/eval-status.json, requires "
+                          "--verdict and --evidence")
+    ap.add_argument("--verdict", choices=sorted(RECORDABLE_VERDICTS),
+                     help="verdict to record (with --record)")
+    ap.add_argument("--evidence",
+                     help="repo-relative path to the evidence file (with --record)")
+    ap.add_argument("--date",
+                     help="YYYY-MM-DD to record (with --record; default: today)")
     args = ap.parse_args(argv)
+
+    if args.record:
+        return do_record(args.record, args.verdict, args.evidence, args.date)
 
     try:
         record = load_record(RECORD_PATH)
