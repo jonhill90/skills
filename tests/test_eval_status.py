@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import datetime
 import importlib.util
 import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -143,6 +145,149 @@ class TestMainCLI(unittest.TestCase):
         against the real file, not only a synthetic fixture."""
         rc = eval_status.main([])
         self.assertEqual(rc, 0)
+
+
+class TestDumpRecord(unittest.TestCase):
+    def test_dump_record_is_a_noop_round_trip_on_the_real_file(self):
+        """--record's whole safety case rests on dump_record reproducing
+        this file's existing one-line-per-skill shape exactly -- a
+        formatter that reindented the whole file on every write would
+        turn a one-skill change into an unreviewable whole-file diff.
+        Checked against the REAL shipped file, not a synthetic one."""
+        doc = eval_status.load_full_doc(eval_status.RECORD_PATH)
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "roundtrip.json"
+            eval_status.dump_record(doc, out)
+            self.assertEqual(out.read_text(encoding="utf-8"),
+                              eval_status.RECORD_PATH.read_text(encoding="utf-8"))
+
+    def test_dump_record_sorts_and_updates_one_entry(self):
+        doc = {"$comment": "c", "skills": {
+            "z": {"verdict": "unevaluated", "date": None, "evidence": None},
+            "a": {"verdict": "keep", "date": "2026-01-01", "evidence": "README.md"},
+        }}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "r.json"
+            eval_status.dump_record(doc, out)
+            text = out.read_text(encoding="utf-8")
+            # "a" sorts before "z"
+            self.assertLess(text.index('"a":'), text.index('"z":'))
+            reloaded = eval_status.load_full_doc(out)
+            self.assertEqual(reloaded, doc)
+
+
+class TestRecordCLI(unittest.TestCase):
+    """--record is the one supported write path for docs/eval-status.json
+    (estate-loop/agent-b2.md's own rule: "never by hand") -- these tests
+    run against a throwaway copy of the record and skills tree, never the
+    real shipped file, restoring eval_status's module globals afterward."""
+
+    def _sandbox(self):
+        tmp = Path(tempfile.mkdtemp())
+        (tmp / "skills" / "a-skill" / "references").mkdir(parents=True)
+        (tmp / "skills" / "a-skill" / "references" / "eval-result.md").write_text(
+            "evidence\n", encoding="utf-8")
+        (tmp / "docs").mkdir()
+        (tmp / "docs" / "eval-status.json").write_text(json.dumps({
+            "$comment": "c",
+            "skills": {"a-skill": {"verdict": "unevaluated", "date": None, "evidence": None}},
+        }), encoding="utf-8")
+        return tmp
+
+    def setUp(self):
+        self.orig_repo = eval_status.REPO
+        self.orig_record = eval_status.RECORD_PATH
+        self.orig_skills = eval_status.SKILLS_ROOT
+        self.tmp = self._sandbox()
+        eval_status.REPO = self.tmp
+        eval_status.RECORD_PATH = self.tmp / "docs" / "eval-status.json"
+        eval_status.SKILLS_ROOT = self.tmp / "skills"
+
+    def tearDown(self):
+        eval_status.REPO = self.orig_repo
+        eval_status.RECORD_PATH = self.orig_record
+        eval_status.SKILLS_ROOT = self.orig_skills
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_record_writes_a_valid_entry(self):
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22",
+        ])
+        self.assertEqual(rc, 0)
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["a-skill"], {
+            "verdict": "keep", "date": "2026-08-22",
+            "evidence": "skills/a-skill/references/eval-result.md",
+        })
+        # what it just wrote must itself pass this script's own check.
+        self.assertEqual(eval_status.main([]), 0)
+
+    def test_record_defaults_date_to_today(self):
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "improve",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+        ])
+        self.assertEqual(rc, 0)
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["a-skill"]["date"], datetime.date.today().isoformat())
+
+    def test_record_refuses_nonexistent_skill(self):
+        rc = eval_status.main([
+            "--record", "no-such-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+        ])
+        self.assertEqual(rc, 2)
+        # nothing written -- the record is untouched.
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertNotIn("no-such-skill", record)
+
+    def test_record_refuses_unevaluated_as_a_verdict_to_record(self):
+        """unevaluated is the record's own default for a never-touched
+        entry, not something --record should ever be asked to write --
+        see do_record's own docstring for why."""
+        with self.assertRaises(SystemExit):
+            # argparse itself refuses: "unevaluated" is not in --verdict's
+            # choices (RECORDABLE_VERDICTS excludes it).
+            eval_status.main([
+                "--record", "a-skill", "--verdict", "unevaluated",
+                "--evidence", "skills/a-skill/references/eval-result.md",
+            ])
+
+    def test_record_refuses_missing_evidence_file(self):
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/does-not-exist.md",
+        ])
+        self.assertEqual(rc, 2)
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["a-skill"]["verdict"], "unevaluated")
+
+    def test_record_requires_verdict(self):
+        rc = eval_status.main([
+            "--record", "a-skill",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+        ])
+        self.assertEqual(rc, 2)
+
+    def test_record_preserves_other_entries(self):
+        # add a second, already-recorded skill directly, bypassing --record,
+        # to prove recording "a-skill" doesn't clobber it.
+        (self.tmp / "skills" / "b-skill").mkdir()
+        doc = eval_status.load_full_doc(eval_status.RECORD_PATH)
+        doc["skills"]["b-skill"] = {"verdict": "keep", "date": "2020-01-01", "evidence": "README.md"}
+        eval_status.dump_record(doc, eval_status.RECORD_PATH)
+
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "drop",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22",
+        ])
+        self.assertEqual(rc, 0)
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["b-skill"]["verdict"], "keep")
+        self.assertEqual(record["a-skill"]["verdict"], "drop")
 
 
 if __name__ == "__main__":

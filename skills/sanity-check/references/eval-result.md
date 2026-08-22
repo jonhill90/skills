@@ -1,62 +1,66 @@
 # Eval result
 
-Recorded 2026-08-22, fourth pass of jonhill90/skills#230's evaluation
-loop, run against the keep/improve/rename/drop harness that lives in the
-agent-evals repository (private evaluation evidence, not published
-here). Tracked in docs/eval-status.json alongside this pass's other two
-results.
+Recorded 2026-08-22, sixth pass of jonhill90/skills#230's evaluation
+loop (estate-loop/agent-b2.md), superseding this file's own fourth-pass
+result. Run against the keep/improve/rename/drop harness that lives in
+the agent-evals repository (private evaluation evidence, not published
+here). The scenario itself is committed at
+`skills/sanity-check/references/eval-scenario/` so it can be re-run.
 
-## Verdict: could_not_measure (n=1)
+## Verdict: could_not_measure (still)
+
+## The new scenario
+
+`docs/eval-harness-findings.md`'s Cause A named this skill's own
+fourth-pass scenario as too easy: the planted mismatch (47 vs. 9, ~5x)
+was large enough that a glance revealed it, without needing to actually
+re-derive the number. This pass's fixture narrows the gap to 134
+(claimed) vs. 131 (the real sum of seven daily figures in
+`weekly-failures.log`) -- a ~2% difference, plausible as a rounding slip
+or a small arithmetic error, not visible without actually adding the
+seven numbers.
 
 ## What was measured
-
-This skill's own trigger case: "a number counts as unsupported reasoning
-until its origin is named" (jonhill90/skills#186, the real
-`agent-supervisor#434` incident — a PR body asserted "65 of 258 passes
-discarded" as a measured figure that had actually been inherited and
-repeated, never measured). The scenario gives the run a draft PR body
-asserting a specific, confident, wrong number ("47 of 312 production
-requests ... returned stale cached values") and exactly one file that
-could have produced it (`incident-log.txt`, the real sampled data: 340
-requests, 9 stale) — then asks whether the draft is ready to publish.
 
 Run twice, live, same task, same fixture, once with `sanity-check`
 installed and once with it removed via the harness's `no-skill:<name>`
 arm:
 
-- **With the skill:** read `incident-log.txt`, caught the mismatch,
-  answered "Needs a correction before publishing" with a table comparing
-  the draft's claimed 47/312 against the log's real 9/340. 3 turns,
-  61,793 tokens.
-- **Without the skill:** same result — read the log, caught the same
-  mismatch, answered "Needs a correction before publishing" with the same
-  comparison. 3 turns, 65,599 tokens.
+- **With the skill:** read `weekly-failures.log`, ran
+  `awk '{s+=$4} END {print "sum:", s, "days:", NR}'`, got 131, stated
+  the draft needs correction with the arithmetic shown. 5 turns,
+  132,443 tokens.
+- **Without the skill:** same -- read the log, summed it (`18 + 22 + 15
+  + 19 + 24 + 17 + 16 = 131`), same correction, same evidence shown.
+  5 turns, 129,903 tokens (1.02x -- inside the harness's own ×1.5
+  tolerance).
 
-Both answers are genuinely correct, not a scorer artifact — quoted in
-full in each arm's own transcript, both name the actual log figures (9,
-340) against the actual draft figures (47, 312) and state the mismatch in
-plain language. Cost was also a wash (65,599 vs 61,793 tokens, ~1.06x;
-3 turns each) — well inside the ×1.5 ratio this harness's own `verdict()`
-uses before it will call a cost delta real.
+## Why this is still could_not_measure
 
-## Why `could_not_measure`, not `drop`
+Even at a 2% gap requiring an actual sum rather than a glance, both arms
+did the arithmetic and caught it. This is a real result about Opus 5 at
+this model tier on this specific kind of check (summing seven small
+integers from a log) -- not evidence the skill's actual target (an
+inherited, unsourced FIGURE with no source at all to check, this skill's
+own TRIGGER clause) doesn't matter. This scenario, even narrowed, is
+still fundamentally "there is a source, and checking it is a single
+`awk` call" -- exactly the kind of check the skill's own text says NOT
+to reach for it for ("if a command would settle the question... run the
+check"). The skill's own hardest case -- a number with NO command that
+could settle it, only a search that may fail to turn one up -- has not
+been built as a fixture yet.
 
-The mechanical scorer's own decision table returns `drop` for an
-identical-outcome, no-cost-delta pair (both arms "solved it the same
-way"). Not passed through, same reasoning as this loop's own prior
-results for `durable-fact-before-label` and `determine-signals`
-(jonhill90/skills#233): nothing failed. Opus 5 caught this specific,
-concrete numeric mismatch without needing the skill's own prompting —
-that is a real result about this model on this task, not evidence the
-skill is dead. `jonhill90/skills#230`'s own framing is explicit that an
-unevaluated (or, per this task, a badly-evaluated) skill is unproven, not
-disproven; a single wash does not clear that bar in either direction.
+## Why could_not_measure, not drop
+
+Nothing failed in either arm; both produced the correct, evidenced
+correction. Matches this skill's own prior result and
+`docs/eval-harness-findings.md`'s Cause A.
 
 ## What is not evidenced
 
-Whether a weaker model, a subtler numeric discrepancy (this scenario's
-mismatch is large and immediately visible — 47 vs 9 is not a rounding
-error), or a scenario with no single obvious file to check would still
-resolve correctly without the skill. This result says only: on this
-concrete instance of the skill's own named trigger, at this model tier,
-the skill made no observable difference.
+Whether this skill changes behavior on its own actual hardest case: a
+number with no single source to check at all -- where the correct move
+is naming the absence of provenance as the finding itself, not running
+one more command. That is a harder, and more faithful, fixture than
+either this pass's or the prior pass's own scenario, and has not been
+built yet.

@@ -1,63 +1,91 @@
 # Eval result
 
-Recorded 2026-08-22, second pass of jonhill90/skills#230's evaluation
-loop, run against the keep/improve/rename/drop harness that landed in the
-agent-evals repository (not published here; see "Scope" above). This
-file states the verdict and what was measured, not the scenario or
-transcript.
+Recorded 2026-08-22, sixth pass of jonhill90/skills#230's evaluation
+loop (estate-loop/agent-b2.md), superseding this file's own second-pass
+result. Run against the keep/improve/rename/drop harness that lives in
+the agent-evals repository (private evaluation evidence, not published
+here). The scenario itself is committed at
+`skills/ask-a-council/references/eval-scenario/` so it can be re-run.
 
-## Verdict: could not measure a reliable skill-attributable difference on this scenario — not dropped
+## Verdict: could_not_measure (still)
 
-The harness's own mechanical decision table returned `drop` for this run
-(its rule: both arms solved the task the same way, within its cost-delta
-tolerance, so the skill made no observable difference). That number is
-reported here, but not passed through as this skill's verdict: a `drop`
-verdict must rest on an eval that ran and *failed*, and nothing failed
-here — both arms independently caught the fabrication correctly. "Neither
-arm needed the skill for this one task" is a real result about this
-scenario's discriminating power, not a finding about the skill's value.
+## Why this pass exists
+
+`docs/eval-harness-findings.md`'s Cause A named this skill's own second-
+pass scenario as single-lens-solvable by design: a fabrication citing a
+corpus that plainly didn't support it, catchable by one grep-shaped step.
+Both arms took that one step and the scenario never put the skill's own
+actual claim -- that some artifacts need genuinely different lenses to
+surface everything wrong with them -- at any real risk.
+
+## The new scenario
+
+`monitor.py` plus two real logs, engineered with two INDEPENDENT,
+different-kind defects instead of one single-lens-solvable one:
+
+1. **Mechanism**: `check_backlog()`'s `n > THRESHOLD` never pages at
+   exactly the documented threshold (100) -- a real off-by-one, findable
+   by reading the code, and directly evidenced in `last-night.log`
+   itself ("queue backlog 100 -- within limits").
+2. **Legibility**: `page_oncall()`'s exception handler logs "SENT" even
+   when the outbound call fails -- `last-night.log` claims a page went
+   out; `webhook-attempts.log` (a separate file) shows that same request
+   actually returned `500`. Reading the code alone does not surface this;
+   only cross-referencing the log's own claim against a second source
+   does.
+
+Finding one does not make finding the other more likely -- they are
+independent questions about independent parts of the same artifact,
+matching the shape of this skill's own worked example (`watchdog.sh`,
+jonhill90/skills#147: the highest-value finding came from the legibility
+lens, not from either bug-hunter).
 
 ## What was measured
 
-This skill's own SKILL.md ships a written eval case ("the fabrication
-incident"): an agent write-up confidently attributes a specific,
-invented requirement to "prior instructions," and the acceptance test is
-whether a review catches that the cited source doesn't actually support
-the claim. Turned into a fixture: a write-up citing a corpus, and the
-corpus itself containing nothing that supports the claim.
+Run twice, live, same task, same fixture, once with `ask-a-council`
+installed and once with it removed via the harness's `no-skill:<name>`
+arm:
 
-Run twice, live, same task, same fixture, once with the skill installed
-and once with it removed via the harness's `no-skill:<name>` arm:
+- **With the skill:** found both defects. Its own answer states it
+  "settled both with direct runs rather than a review panel, since the
+  boundary and the failure path are both cheaply testable" -- i.e., it
+  read `ask-a-council`'s own text, correctly applied the skill's OWN
+  "check the frame before convening" rule (RULE B2), and concluded a
+  council was not warranted for this specific case. 7 turns, 171,296
+  tokens.
+- **Without the skill:** found both defects independently, same
+  reasoning depth, no council convened (there was nothing to convene
+  with the skill absent). 7 turns, 165,181 tokens (1.04x -- inside the
+  harness's ×1.5 tolerance).
 
-- **Without the skill:** the run read the corpus itself, found no support
-  for the claim, and correctly flagged it as unsupported.
-- **With the skill:** the same — corpus checked, same correct verdict,
-  similar cost (tokens/turns within the harness's own no-flag tolerance).
+## Why this is still could_not_measure, and what it actually shows
 
-## Why this scenario didn't discriminate, and what would
-
-This skill's own framing is explicit that a council earns its cost when
-"the failure modes genuinely differ in kind — a single reviewer's prompt
-would only catch what its own lens looks for." The fabrication-incident
-scenario, as written and as fixtured here, is catchable by a single
-check: read the cited corpus, see it doesn't contain the claim. That is
-exactly the kind of task a capable model does not need multiple lenses
-or evidence-partitioned reviewers to get right — it needed one grep-shaped
-step, which both arms took unprompted. This scenario proves the
-mechanism's own worked example is *sound* (an evidence-blind, persona-only
-review would have missed it, per the skill's own text) without proving
-the *skill* changes behavior on a task that only needs one lens to solve.
-
-A scenario that would actually discriminate needs a task where the
-failure modes genuinely differ in kind — e.g. one requiring a
-mechanism-level read AND a legitimacy-level read AND a portability-level
-read to converge, where a single-lens review plausibly stops after
-finding the first thing and never looks for the others. That is a
-harder fixture to build than this pass had time for.
+Both arms found both defects unassisted. This is a genuinely different,
+and more interesting, non-result than the first pass's: it is not that
+the scenario was single-lens-solvable -- it has two real, independent,
+different-kind issues -- it is that **a single capable model, given
+enough turns to actually read both logs carefully, does not need to
+literally dispatch separate reviewers to check two different things**.
+The skill's own text already anticipates this ("run cheap deterministic
+checks before convening anyone... convene only once cheap checks are
+exhausted") -- and the WITH arm's own transcript shows it correctly
+choosing NOT to convene, for exactly the reason the skill gives. That is
+the skill working as designed on this task, not the skill failing to
+matter: a well-applied `ask-a-council` on a two-defect, both-cheaply-
+checkable artifact is supposed to conclude "no council needed" -- which
+means this scenario, even redesigned around the skill's own documented
+gap, still cannot show what a GENUINE multi-agent convening changes,
+because the artifact was never one this skill's own rules would dispatch
+a council against in the first place.
 
 ## What is not evidenced
 
-Whether `ask-a-council` changes behavior on a task that genuinely needs
-multiple distinct lenses remains untested. This result is specific to a
-single-lens-solvable case; it does not generalize to the skill's actual
-target use case.
+Whether `ask-a-council` changes behavior on an artifact large or complex
+enough that ONE context window cannot hold everything needed to check
+both a mechanism-level and a legibility-level question thoroughly in one
+continuous pass -- e.g. a real multi-file service where the log
+cross-reference requires following state across several systems, not two
+small files in one directory. That is a harder fixture to build than
+this pass had time for, and per this skill's own step 5, may be the only
+kind of case where a council is genuinely warranted over one careful
+pass.
