@@ -11,7 +11,7 @@
     "determine-signals": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/determine-signals/references/eval-result.md"},
     "devils-advocate": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/devils-advocate/references/eval-result.md"},
     "dispatch-brief": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/dispatch-brief/references/eval-result.md"},
-    "dispatching-subagents": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "dispatching-subagents": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/dispatching-subagents/references/eval-result.md"},
     "distill": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/distill/references/eval-result.md"},
     "durable-fact-before-label": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/durable-fact-before-label/references/eval-result.md"},
     "failing-test-first": {"verdict": "unevaluated", "date": null, "evidence": null},

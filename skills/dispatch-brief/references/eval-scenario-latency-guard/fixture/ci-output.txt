@@ -1,0 +1,9 @@
+$ pytest tests/test_latency_guard.py -v
+tests/test_latency_guard.py::test_p95_latency_under_200ms FAILED
+
+FAILED tests/test_latency_guard.py::test_p95_latency_under_200ms
+  AssertionError: p95 latency 240.0ms exceeds guard threshold 200ms
+  measured over 500 requests against /api/orders, nightly job dated 2026-08-22
+  guard: assert p95_ms < 200, f"p95 latency {p95_ms}ms exceeds guard threshold 200ms"
+
+1 failed, 0 passed in 4.21s
