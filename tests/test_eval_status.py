@@ -459,12 +459,22 @@ class TestConflictDemonstration(unittest.TestCase):
         if not self.git:
             self.skipTest("git not on PATH")
 
+    def _env(self):
+        # CI runners have no global git identity configured at all (unlike
+        # a dev machine's own ~/.gitconfig) -- every git subprocess this
+        # class runs, including the merge commits, needs this env or the
+        # commit/merge itself fails with "empty ident name" before ever
+        # reaching the merge=union behaviour under test. Found by CI
+        # itself failing on the two `subprocess.run(...)` merge calls
+        # below, which had not been routed through this env (only _run
+        # had it) -- fixed by giving both the same one source of truth.
+        return {**os.environ,
+                "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@test",
+                "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@test"}
+
     def _run(self, repo, *args):
         result = subprocess.run(
-            [self.git, *args], cwd=repo, capture_output=True, text=True,
-            env={**os.environ,
-                 "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@test",
-                 "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@test"},
+            [self.git, *args], cwd=repo, capture_output=True, text=True, env=self._env(),
         )
         self.assertEqual(result.returncode, 0, f"git {args}: {result.stderr}")
         return result.stdout
@@ -521,7 +531,7 @@ class TestConflictDemonstration(unittest.TestCase):
         self._run(repo, "checkout", "-q", "main")
         self._run(repo, "merge", "-q", "--no-edit", "lane-a")
         result = subprocess.run(
-            [self.git, "merge", "--no-edit", "lane-b"], cwd=repo, capture_output=True, text=True)
+            [self.git, "merge", "--no-edit", "lane-b"], cwd=repo, capture_output=True, text=True, env=self._env())
         self.assertEqual(result.returncode, 0,
                           f"merging lane-b after lane-a FAILED -- the exact collision this fix "
                           f"exists to prevent:\n{result.stderr}")
@@ -569,7 +579,7 @@ class TestConflictDemonstration(unittest.TestCase):
         self._run(repo, "checkout", "-q", "main")
         self._run(repo, "merge", "-q", "--no-edit", "lane-a")
         result = subprocess.run(
-            [self.git, "merge", "--no-edit", "lane-b"], cwd=repo, capture_output=True, text=True)
+            [self.git, "merge", "--no-edit", "lane-b"], cwd=repo, capture_output=True, text=True, env=self._env())
         self.assertEqual(
             result.returncode, 0,
             f"same-skill concurrent append did NOT merge cleanly -- the .gitattributes "
