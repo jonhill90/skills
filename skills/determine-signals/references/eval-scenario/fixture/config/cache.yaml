@@ -1,5 +1,0 @@
-redis:
-  host: cache.internal
-  port: 6379
-  ttl_seconds: 900
-  max_connections: 50
