@@ -1,4 +1,4 @@
-# Eval harness findings (2026-08-23, supersedes its own earlier 2026-08-23 version)
+# Eval harness findings (2026-08-23, supersedes its own earlier 2026-08-23 version; extended same day by "Closing the coverage gap" below)
 
 **This file supersedes its own earlier 2026-08-23 version (the "five
 distinct obstacles" account, written after #244's 20-skill population),
@@ -313,6 +313,193 @@ entirely (`prd`, `primer` — no external tool at all), and record
 `could_not_measure` rather than trust a result once contamination was
 found, rather than attempting to harden `eval_skill.py` itself for this
 category inside this pass's own scope.
+
+## Closing the coverage gap: classifying the remaining 23 `could_not_measure` skills not directly escalated (2026-08-23)
+
+A devils-advocate pass on this file's own sequencing flagged a real gap:
+`create-skill`, `distill`, and `loop-memory` were each escalated (§3
+above) because each was the STRONGEST candidate for the structural-
+mismatch hypothesis on its own escalation axis (leaked-fixture repair,
+three-axis single-shot hardening, genuine cross-session longitudinal).
+Nothing had checked whether the other `could_not_measure` skills share
+that same habit/consistency shape, or whether some of them are a
+different, already-named, fixable failure class (§1, §3-§5 above already
+name four such classes). This section closes that gap by reading every
+remaining skill's own `eval-result.md` directly and classifying it
+against its own evidence, not its name or topic.
+
+`python3 scripts/eval_status.py --summary`, run for this section:
+**could_not_measure 26** (up from the 25 this file's own table above was
+built against — `tmux` landed since, as "Cause D" already documents).
+Excluding the three already-escalated skills leaves **23** to classify
+here.
+
+**Result: all 23 already fall into one of the five failure classes this
+file has already named (§1-§5, Cause D) — none is a newly-discovered
+sixth class.** 6 of the 23 add real, direct evidence to the
+habit/consistency (clean no-discrimination) bucket the escalations were
+drawn from; the other 17 are fixable instrument problems this file
+already has a repair path for, not evidence the current design is the
+wrong instrument for them.
+
+### Habit/consistency class (structural-mismatch hypothesis applies) — 6 of 23
+
+Each of these has a specific line in its own `eval-result.md` stating
+both arms independently produced the same correct outcome, with no
+scorer bug, fixture defect, or scenario leak found:
+
+- **`ask-a-council`**: "Both arms found both defects unassisted... a
+  single capable model, given enough turns to actually read both logs
+  carefully, does not need to literally dispatch separate reviewers to
+  check two different things." (`skills/ask-a-council/references/eval-result.md`)
+- **`dispatching-subagents`**: "Both arms got every value correct...
+  Neither run's own tool calls include a `Task`-type subagent dispatch
+  (checked directly, not inferred from the prose) -- both did the work
+  inline, correctly, unprompted." (`skills/dispatching-subagents/references/eval-result.md`)
+- **`sanity-check`**: "Even at a 2% gap requiring an actual sum rather
+  than a glance, both arms did the arithmetic and caught it. This is a
+  real result about Opus 5 at this model tier on this specific kind of
+  check... not evidence the skill's actual target... doesn't matter."
+  (`skills/sanity-check/references/eval-result.md`)
+- **`tdd`**: "Both arms independently chose to write the test first,
+  unprompted by the skill in the without arm's case -- a real result
+  about Opus 5's own default habit on a small, clearly-scoped greenfield
+  function, not evidence the skill changes nothing." (`skills/tdd/references/eval-result.md`)
+- **`memory-conventions`**: "Identical, correct outcome (update-in-place,
+  no duplicate, index left alone, one log entry) in both arms... 'Find
+  the existing note for a concept and edit it rather than duplicating'
+  is evidently something the base model already does correctly given a
+  session that states the concept explicitly." (`skills/memory-conventions/references/eval-result.md`)
+- **`spec`**: "Structurally near-identical, correct-shaped output in both
+  arms... The base model already knows the shape of a good technical
+  spec... without this skill's explicit five-section list; the
+  PRD-flavored failure this skill names as its reason to exist did not
+  occur in either arm on this scenario." (`skills/spec/references/eval-result.md`)
+
+These 6 join the escalated three in the same bucket §2 above already
+named. They have **not** been escalated the way `create-skill`,
+`distill`, and `loop-memory` were — the honest status for each
+individually is still `could_not_measure`, not "confirmed wrong
+instrument." What they add is volume to the aggregate pattern §3 above
+already argues from: every one of these 9 skills (now including the 6
+here) is a discipline a competent engineer already has, and every one
+independently produced a clean, unforced correct answer on a first,
+unpressured attempt — exactly the shape the three direct escalations
+found could not be discriminated even after hardening.
+
+### Fixable instrument problems — 17 of 23 (four already-named classes, no new class)
+
+**Scorer/regex misread — 6.** Each file names the specific pattern that
+mismatched, not a case where both arms genuinely behaved identically
+under a working scorer:
+
+- `close-the-loop`: the regex matched a bad-example substring inside a
+  sentence where the model named that example *in order to decline it*
+  — "The regex matched the literal substring with no negation
+  awareness."
+- `determine-intent`: "A bare keyword match cannot tell 'discussed and
+  declined' apart from 'built'" — both runs mentioned the phantom
+  constraint to explain declining it, and the keyword check couldn't
+  tell that apart from having built it.
+- `failing-test-first`: `_SOURCE_PATH` (`shipping\.py$`) also matched
+  `test_shipping.py`, so the checker computed `test_before_source` as
+  `False` on a correctly-ordered run.
+- `mechanize`: "its keyword match for 'did this recommend mechanizing
+  anything' only recognized one vocabulary and missed an equivalent
+  proposal phrased in different, still entirely reasonable, words"
+  (`classifier`/`detector`/`design` vs. `script`/`tool`/`mechanize`/`automate`).
+- `plan-parallel-execution` (seventh pass): "the heuristic parser
+  flagged the WITH arm as having failed to avoid the 1∩3 collision,
+  because it grouped tasks 1 and 3 together under one batch label" — the
+  arm had actually merged them into one serialized task, not run them
+  concurrently.
+- `supervised-lane-loop` (eighth pass): `_NAMED_DEFECT` matched `"cannot
+  fail"` but not the contraction `"can't fail"`; a separate
+  `_AGREED_SAFE` check matched `"agree it's safe"` inside a negated
+  clause, "negation-blind."
+
+**Fixture/installation defect — 4.** Each was one of the 5 of 40 skills
+`~/.claude/skills/` doesn't symlink, or had an undocumented environment
+gap in the harness itself:
+
+- `durable-fact-before-label`: "was never installed on this machine's
+  shared skills path at all... a pre-existing gap, not something this
+  pass's own eval run broke."
+- `spec-driven-development`: "was not installed on this machine's shared
+  skills path at all... Symlinked it in for this pass's real run, then
+  removed the symlink again afterward."
+- `test-in-the-consumer-context`: `prompt.md` documented
+  `INTERACTIVE_SESSION=1` but "the harness never actually exported that
+  variable into the subprocess it launched," so the scenario's intended
+  failure condition (a misleading green light) was never actually
+  present in either arm.
+- `wire-it-when-you-write-it`: "was not installed on this skill's shared
+  skills path at all... The first live attempt was discarded entirely
+  once this was found -- both arms had silently run without the skill
+  either way."
+
+**Cost-signal noise across replicated pairs — 4.** Each file shows the
+outcome axis agreeing across arms while the cost/turn-ratio axis
+reversed direction between independent pairs — exactly the case the
+loop's own ×2/×3-repetitions bar exists to catch, working as designed,
+not a structural ceiling:
+
+- `decide-by-variant`: pair 2 replicated pair 1's outcome (both arms
+  correctly refused to build variants) but "a noisy-signal case."
+- `determine-signals`: "The cost axis moved sharply in pair 1 and not at
+  all in pair 2 -- the same scenario, same skill, same absence of it,
+  producing a large delta once and none the next time."
+- `devils-advocate`: "The SECOND pair inverts the direction entirely --
+  the skill-installed arm used *fewer* turns than the skill-absent one."
+- `keep-me-honest`: "The second, independent pair inverts the direction
+  entirely -- the skill-absent arm cost 1.8x more that time."
+
+**Scenario design defect — 2.** Each file names a specific way the
+prompt or framing prevented the skill from being given a fair chance to
+fire, not a case where the skill fired and made no difference:
+
+- `mine-transcripts`: "this scenario's own prompt inadvertently
+  prevented the test it was meant to run" — `prompt.md` scoped the
+  search to `transcripts/` only, and the instruction that mattered lived
+  in `vault/facts/`, so neither arm could find it regardless of the
+  skill.
+- `notify`: "in every OTHER scenario this pass and the prior one, the
+  skill-installed arm's very first or near-first tool call is `Skill`
+  naming the matching skill... For `notify`... the skill-installed arm
+  never once called the `Skill` tool" — framing the task as "modify this
+  skill's own script" didn't read as `notify`'s own trigger condition,
+  so the with/without conditions never actually differed.
+
+**Tool-skill side-effect / real-system contamination — 1.** Already
+documented in full as "Cause D" above; restated here only to place it in
+this section's count: `tmux` left two unaccounted-for tmux sessions on
+the host outside its own scenario's fixture boundary, so the result was
+recorded `could_not_measure` because the comparison's cleanliness itself
+could not be confirmed, not because the arms genuinely agreed under a
+trustworthy scenario.
+
+### What this does and doesn't settle
+
+**This is not a blanket "stop evaluating" conclusion, and does not
+change any verdict.** The finding is narrower and split by evidence:
+
+- For the 6 skills in the habit/consistency class above (plus the 3
+  already directly escalated), the two-arm single-turn design has
+  real, cited evidence it cannot discriminate them — the normal next
+  step, if anyone picks it up, is the same longitudinal-style escalation
+  §4 recommends, not another single-turn re-run.
+- For the 17 skills in the four fixable classes, the honest
+  recommendation is the ordinary per-skill instrument fix this file
+  already prescribes for each class (repair the regex/keyword check,
+  fix the install/fixture gap, treat the noisy cost pair as
+  `could_not_measure` and move on per protocol, rewrite the scenario so
+  the skill gets a fair chance to fire, or sandbox the tool-skill
+  scenario) — not a design change, and not evidence the current
+  two-arm design is wrong for this half of the population.
+
+No skill's verdict changed as part of this section. No skill was
+evaluated. No new tooling was built. `docs/eval-status.json` and its
+generating logs are untouched.
 
 ## What I did NOT do
 
