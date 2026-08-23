@@ -57,18 +57,70 @@ happen."*
 Both arms kept the flag even when directly told the check was a one-off
 that didn't need to be script-safe. No discrimination.
 
-## Why this counts as evidence about the question, even without a clean win
+## Why this is could_not_measure, not a confirmed "habit skill" result
 
-This is the same "habit skill" shape `docs/eval-harness-findings.md` and
-`docs/eval-cost-delta-recount.md` (skills#266/#267) already documented for
-behavioral-discipline skills, now extended to a different class: a capable
-baseline model already reaches for `--exit-status` on a `gh run watch`
-call by default, with or without the skill, and does not drop it even
-under a pressure that argues directly against needing it. The instrument
-itself worked as designed — it ran a real pair, logged real invocations,
-and would have caught a divergence if one existed (see `mechanize`'s own
-trial 2, skills#267, where the identical mechanical approach did catch a
-real split on a different skill). It found none here.
+**Correction (2026-08-23, cross-lane review, estate:2):** the paragraph
+this replaces claimed the null result confirmed a "habit skill" pattern
+and that the instrument "worked as designed." Neither claim is
+supportable from what this scenario actually logs, and stating them was
+an overclaim in the record itself, which is the artifact that matters
+here.
+
+`criteria.md`'s own "What would make this scenario invalid" section names
+exactly this failure mode: *"Arm A not actually being given `github-cli`'s
+`SKILL.md` to read — a wiring mistake; re-run rather than record."* That
+check was never actually performed, and nothing in this scenario's design
+CAN perform it after the fact: `$STUB_LOG` records only `gh` invocations,
+and `manifest.json`'s `actions_log` is self-reported by the arm — this
+scenario's own convention (matching `mechanize`'s, skills#266/#267)
+treats self-reported logs as informational, never as evidence a scored
+axis can rely on. There is no independent record anywhere of whether Arm
+A's `Read` of `skills/github-cli/SKILL.md` actually happened or silently
+no-op'd (a missing file, a permissions issue, a harness that swallowed
+the tool call) before the arm proceeded to solve the task unprompted.
+
+**Two hypotheses fit the observed data with equal support:**
+
+1. **Earned null.** A capable baseline model already reaches for
+   `--exit-status` on a `gh run watch` call by default, with or without
+   the skill, matching the "habit skill" pattern `docs/eval-harness-
+   findings.md`/`docs/eval-cost-delta-recount.md` (skills#266/#267)
+   documented for other skills.
+2. **Unconfirmed wiring.** Arm A's read of `SKILL.md` silently failed,
+   both arms ran as the no-skill condition, and the identical result is
+   an artifact of that failure rather than evidence about the skill at
+   all.
+
+Both trials (baseline and one-off-pressure framing) produced zero
+divergence on every axis this scenario measures, which is exactly the
+signature either hypothesis predicts — the data does not choose between
+them. **The verdict stays `could_not_measure`, and that label now covers
+both readings equally: this scenario cannot currently tell "the skill
+made no difference" apart from "the skill was never actually present in
+the arm meant to have it."** Closing that gap needs an independent
+confirmation that Arm A's read happened — e.g., a manifest field the arm
+cannot skip, or a scored assertion the arm must make about SKILL.md's own
+content — not present in this design and not something this correction
+adds retroactively. See "Known harness limitation" below.
+
+## Known harness limitation: an unlogged prompt-delivered read
+
+Distinct from skills#270's install-symlink audit (whether `~/.claude/
+skills/` has a current copy of the skill) — this is a different
+blindness. Every counting-measurement scenario built so far (this one,
+`linear`'s, `obsidian`'s, and `progressive-disclosure`/`mechanize`/
+`plan-parallel-execution`'s, skills#265/#266/#267) delivers the skill to
+Arm A via a `Read` tool call on an explicit path, instructed in
+`prompt.md`, never through `~/.claude/skills` — which is exactly what
+makes them immune to the install-symlink failure skills#270 audited.
+**But nothing in any of these scenarios' own fixtures logs whether that
+`Read` call actually happened and actually returned real content.**
+`#246`'s install check has no visibility into this either — it verifies
+repo-vs-installed file parity, not which tool calls a subagent made
+mid-run. A future scenario that wants "clean tie" to mean "confirmed
+earned null" rather than "confirmed earned null OR unconfirmed wiring
+failure" needs a mechanism that makes this read observable to the
+scorer, independent of the arm's own self-report.
 
 ## What is not evidenced
 

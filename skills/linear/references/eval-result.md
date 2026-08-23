@@ -54,15 +54,43 @@ re-run below is the one counted.
 Both arms still included `--sort` even when told explicitly not to
 overthink the flags. No discrimination.
 
-## Why this counts as evidence about the question, even without a clean win
+## Why this is could_not_measure, not a confirmed "habit skill" result
 
-Same "habit skill" shape as `github-cli`'s own result on this pass: a
-capable baseline model already knows (or discovers on the first error and
-would have corrected, had it made one) that `linear issue list` needs
-`--sort`, with or without the skill loaded, and the one-off framing did
-not change that. The instrument worked as designed — a real pair, a real
-mechanical scorer, a real invocation log — and found no divergence on
-this axis.
+**Correction (2026-08-23, cross-lane review, estate:2):** the paragraph
+this replaces claimed the null result confirmed a "habit skill" pattern
+and that the instrument "worked as designed." Neither claim is
+supportable from what this scenario actually logs — the same gap
+`github-cli`'s own eval-result.md now documents, and this scenario has it
+identically: `$STUB_LOG` only ever records `linear` invocations, and
+`manifest.json`'s `actions_log` is self-reported, never trusted as
+evidence. Nothing here confirms Arm A's `Read` of `skills/linear/
+SKILL.md` actually happened rather than silently no-op'd. `criteria.md`'s
+own "Arm A not actually being given `linear`'s `SKILL.md` to read" is
+listed as an invalidity condition; that check was never actually
+performed, and this scenario's design has no way to perform it after the
+fact.
+
+**Two hypotheses fit the observed data with equal support:**
+
+1. **Earned null.** A capable baseline model already knows (or discovers
+   on the first error and self-corrects) that `linear issue list` needs
+   `--sort`, with or without the skill loaded, and the one-off framing did
+   not change that.
+2. **Unconfirmed wiring.** Arm A's read of `SKILL.md` silently failed
+   (the same class of harness fragility that produced the trial 2 arm A
+   retry's own genuine setup failure, above — a different failure this
+   time, in a different place, but evidence this scenario's environment
+   setup is not perfectly reliable), both arms ran as the no-skill
+   condition, and the identical result reflects that rather than the
+   skill.
+
+Zero divergence on every measured axis, across two trials, is consistent
+with either reading. **The verdict stays `could_not_measure`, covering
+both readings equally — this scenario cannot currently distinguish "the
+skill made no difference" from "the skill was never actually present in
+Arm A."** See `github-cli`'s own eval-result.md, "Known harness
+limitation," for the general shape of this gap — it applies identically
+here and is not restated in full.
 
 ## What is not evidenced
 

@@ -70,14 +70,41 @@ for a verdict — stretching one off-target, unconfirmed sample into
 `improve` would be exactly the "manufacture a verdict to avoid returning
 `could_not_measure`" the brief warned against.
 
-## Why this counts as evidence about the question, even without a clean win on the designed axis
+## Why this is could_not_measure, not a confirmed "habit skill" result — with one exception this skill actually has and the other two don't
 
-Same "habit skill" shape as `github-cli`/`linear`'s own results on this
-pass: a capable baseline model already reaches for `append` over a blind
-`create` by default, with or without the skill, even under a pressure
-that argues directly for skipping the safe read-first step. The
-instrument worked as designed on the axis it was built for (gotcha #2)
-and found no divergence there.
+**Correction (2026-08-23, cross-lane review, estate:2):** the paragraph
+this replaces claimed the null result on the designed axis (gotcha #2)
+confirmed a "habit skill" pattern and that the instrument "worked as
+designed." As with `github-cli` and `linear`, nothing in this scenario
+independently logs whether Arm A's `Read` of `skills/obsidian/SKILL.md`
+actually happened — `$STUB_LOG` only records `obsidian` invocations, and
+`manifest.json`'s `actions_log` is self-reported. On the gotcha-#2 axis
+specifically, trial 1 and trial 2's clean ties are consistent with either
+an earned null OR an unconfirmed-wiring failure, exactly as for the other
+two skills.
+
+**But this skill has a piece of evidence `github-cli` and `linear` do
+not: the trial 2 divergence recorded above.** Arm A's single call used
+this skill's own documented `key=value` syntax
+(`file=daily-log.md`) correctly on the first try; Arm B's first call used
+a bare positional argument, which is not how this skill's own "Syntax
+Conventions" section documents the CLI's parameters, and Arm B paid for
+it with a failed call and a retry. That is real, if off-target (a
+different documented convention than the one this scenario's scoring
+rule measures) and unconfirmed (n=1, no second trial run to check it
+replicates) evidence that Arm A's read of `SKILL.md` produced a
+behavioral difference at least once — which the earned-null-vs-
+unconfirmed-wiring ambiguity above cannot explain away for THIS trial,
+because a silently-no-op'd read would have no mechanism to produce that
+difference. It does not rescue the gotcha-#2 axis's own clean tie into a
+confirmed result (that axis is still equally consistent with either
+reading, on its own), and it is exactly one data point — but it is
+real, asymmetric evidence in this skill's favor that the other two
+skills' write-ups cannot honestly claim.
+
+See `github-cli`'s own eval-result.md, "Known harness limitation," for
+the general shape of the unlogged-read gap — it applies here too, on the
+gotcha-#2 axis specifically, and is not restated in full.
 
 ## What is not evidenced
 
