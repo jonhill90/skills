@@ -1,1 +1,2 @@
 {"date": "2026-08-22", "evidence": "skills/distill/references/eval-result.md", "source": "docs/eval-status.json (pre-migration, single-record era)", "verdict": "could_not_measure"}
+{"date": "2026-08-23", "evidence": "skills/distill/references/eval-result.md", "source": "jonhill90/skills#230 (escalation pass, run after #248)", "verdict": "could_not_measure"}
