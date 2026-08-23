@@ -28,6 +28,17 @@ shipped). Both are real, working fixes to real problems this file
 diagnosed. **Neither moved the non-signal rate down.** That is the
 finding this version exists to explain, not paper over.
 
+**Note (updated after this PR's own rebase, pass 13 landed concurrently):**
+`docs/eval-status.json` now shows **could_not_measure 27, unevaluated 4**
+(40 total; `prd` and `primer`, #249) -- both read as further clean
+no-discrimination results on a first pass over their own write-ups,
+which would put the true current count nearer 11 of 27 (41%). The
+bucket table and percentages below are NOT re-derived against that
+newer count -- this PR's own scope is the escalation reported in the new
+section below, on the population as it stood when this file's numbers
+above were computed, not a fresh audit of pass 13. Re-deriving the full
+table against 27 is separate work for whoever picks this up next.
+
 ## Six obstacles now, one of them newly dominant
 
 | Obstacle | Count (of 25) | Share | Share at prior count (of 20) | Skills |
@@ -232,7 +243,11 @@ What the evidence actually supports, precisely:
 2. adversarial pressure (an explicit, plausible argument FOR the shortcut the skill exists to prevent -- urgency, "it's basically the same," a request that makes the correct behavior look like overkill); or
 3. ambiguity (a case genuinely closer to the skill's own stated boundary, not a clean instance of the failure).
 
-If hardening along any of these axes produces a real split between arms, "bad scenario" was the answer for that skill and the harder version is the one worth keeping. If a skill's scenario is hardened on all three axes and the arms still don't split, "wrong instrument for this skill" becomes as well-evidenced as it currently is for `create-skill` alone. **That escalation has not been run for the other eight in this PR** (out of scope, per this task's own "evaluate nothing new" constraint) -- so for those eight, the honest answer to which hypothesis explains them individually is **could not measure**, even though the aggregate pattern across all nine, plus the one directly-tested case, both point the same direction.
+If hardening along any of these axes produces a real split between arms, "bad scenario" was the answer for that skill and the harder version is the one worth keeping. If a skill's scenario is hardened on all three axes and the arms still don't split, "wrong instrument for this skill" becomes as well-evidenced as it currently is for `create-skill` alone.
+
+**Update, escalation run on a second skill (jonhill90/skills#230, run after this version was first written):** `distill` -- chosen specifically because its own ninth-pass write-up already named scale as the untested axis, the strongest candidate for the RIVAL hypothesis among the remaining eight, not the easiest confirmation -- was hardened on all three axes independently (scale: 3 files/23 lines → 8 files/~80 lines across a multi-threaded decision; adversarial pressure: same baseline corpus, urgency + explicit "no caveats" framing; ambiguity: request phrased as "summarize" rather than "distill," the disagreement between sources left unstated rather than named outright), each re-run against both arms, one axis changed at a time from the same baseline. **None of the three axes discriminated.** Full per-axis detail, including what would have had to be true for each to discriminate, is in `skills/distill/references/eval-result.md`'s own "Escalation pass" section.
+
+This makes **two directly-tested cases, not a proof** -- exactly the caveat this section already carried, held honestly in the direction that would have undercut it: `distill`'s scenario was hardened as aggressively as `create-skill`'s was fixed, and the aggregate "wrong instrument" reading survived a real chance to break. It still has not been run against the other seven (`ask-a-council`, `dispatching-subagents`, `sanity-check`, `tdd`, `loop-memory`, `memory-conventions`, `spec`) -- for those seven, the honest answer to which hypothesis explains them individually remains **could not measure**, even though the aggregate pattern across all nine, plus two of nine now directly tested, point the same direction. One escalation run also surfaced a defect worth naming on its own: a subagent independently invoked its own harness's `Skill` tool during a nominal no-skill run, silently crossing the experimental boundary -- caught by inspecting the agent's own literal tool-call log, not by anything #246's install check covers (that check verifies file-content parity between the repo and the installed copy; it has no visibility into which tools a subagent calls mid-run). Any future escalation on the remaining seven needs the same tool-call-log check, not just an install-check pass, to trust its no-skill arm.
 
 ### 4. What would actually measure these skills?
 

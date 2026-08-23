@@ -12,7 +12,7 @@
     "devils-advocate": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/devils-advocate/references/eval-result.md"},
     "dispatch-brief": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/dispatch-brief/references/eval-result.md"},
     "dispatching-subagents": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/dispatching-subagents/references/eval-result.md"},
-    "distill": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/distill/references/eval-result.md"},
+    "distill": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/distill/references/eval-result.md"},
     "durable-fact-before-label": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/durable-fact-before-label/references/eval-result.md"},
     "failing-test-first": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/failing-test-first/references/eval-result.md"},
     "github-cli": {"verdict": "unevaluated", "date": null, "evidence": null},
