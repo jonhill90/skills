@@ -1,0 +1,6 @@
+{
+  "name": "item01",
+  "owner": "ops-team",
+  "retention_days": "15",
+  "region": "us-east-1"
+}

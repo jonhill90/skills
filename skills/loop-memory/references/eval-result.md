@@ -89,3 +89,85 @@ final reports and the files they wrote) are reproducible from the eval
 pass's own worktree setup script; not attached verbatim here to keep
 this file short. Sandbox structure and prompts as described above are
 the complete specification needed to reproduce the run.
+
+## Longitudinal escalation (2026-08-23, jonhill90/skills#230, agent3's
+## own dynamic-loop task)
+
+`docs/eval-harness-findings.md` §4 recommended a longitudinal design for
+this skill class -- a genuine multi-session memory-loss boundary with an
+unannounced repeated pressure -- rather than a harder single-shot
+scenario (already run once, on `distill`, still `could_not_measure`).
+`loop-memory` was picked as the first candidate for this specific
+escalation, not another skill, because its own pass-12 result above
+already named the exact gap in its own words ("this skill's marginal
+value... would show up on a *longer* loop with actual repeated failures
+or a real crash/restart"). Full design rationale:
+`docs/eval-longitudinal-design.md`. Scenario definition:
+`references/eval-scenario/` (`prompt.md`, `criteria.md`, `fixture/`).
+
+**Design, briefly:** a 12-item config migration (`.cfg` -> `.json`), 4
+seeded done, 4 in a session-1 batch, 4 in a session-2 batch. One item per
+batch (`06.cfg`, `11.cfg`) contains an unannounced parsing trap -- a
+literal `#` character inside a value, which a naive "strip from first
+`#`" transform would truncate. Session 1 (one subagent, both arms) got a
+mid-session "context at 91%, wrap up" interrupt after the trap item had
+already been reached. Session 2 was a STRUCTURALLY FRESH subagent per
+arm -- no conversation continuity with session 1, only the sandbox's disk
+state -- told to check for and verify (not trust) whatever it found
+there, then given the session-2 batch containing the second trap.
+
+**What was found:** the trap fired for real (both sessions actually
+reached the item containing it, so this is not an invalid "design never
+fired" result) and **neither arm ever produced a wrong value for either
+trap item, in either session, on the first attempt** -- confirmed
+independently against `migrate_check.py`, not taken from either
+subagent's own self-report:
+
+- Session 1, both arms: `06.json` correct on the first write. Both arms
+  also, unprompted, wrote a handoff note (`PROGRESS.md` with-skill,
+  `HANDOFF.md` without) that explicitly named the `#`-mid-value trap by
+  its exact symptom and told whoever picked up 09-12 to check for it
+  again -- the without-skill arm's note is, line for line, nearly as
+  specific as the with-skill arm's, despite never having seen
+  `loop-memory`'s own "known failures become a regression set" section.
+- Session 2, both arms: read the handoff/progress note left by session
+  1, verified it against actual disk state (per instruction) rather than
+  trusting it blindly, then correctly preserved `11.json`'s own `#`
+  mid-value on the first attempt -- `12/12 passing` for both arms,
+  confirmed by re-running `migrate_check.py` independently in each
+  sandbox after both sessions completed.
+
+## Why `could_not_measure`, still, under the longitudinal instrument
+
+This is a real, harder trial than the single-shot one above -- it
+crosses an actual memory-loss boundary, the pressure was introduced
+after the boundary rather than stated up front, and the specific
+divergence-point question (`references/eval-scenario/criteria.md`) had a
+genuine chance to fire (both arms reached both trap items). It did not
+discriminate: **the base model already writes a specific, symptom-named
+handoff note when told generically to leave what the next session needs,
+without any of `loop-memory`'s own file-set or regression-log guidance.**
+This makes `loop-memory` the third skill directly tested against a
+harder-than-baseline scenario in this class (`create-skill`'s leaked-
+fixture fix, `distill`'s three-axis hardening, now this) and the third to
+survive without discriminating -- strengthening, not settling, the
+"wrong instrument for this skill class" reading in
+`docs/eval-harness-findings.md` §3, on a new axis (cross-session memory,
+not scenario difficulty) that hadn't been tested before. Not grounds for
+`drop`: the base model producing an adequate note at n=1, on a 12-item/
+2-session scale, says nothing about whether the same gap holds at the
+scale `loop-memory`'s own content targets (tens of files, real crash/
+restart, a genuinely repeated failure across three or more sessions, not
+two) -- this trial is evidence at the scale it ran, not proof the skill's
+marginal value doesn't exist at a larger one.
+
+## Evidence (longitudinal)
+
+Both arms' final `migrate_check.py` output (`12/12 passing`) and both
+handoff artifacts (`PROGRESS.md`, `HANDOFF.md`) were inspected directly
+from the sandbox filesystem after each session completed, not taken on
+either subagent's self-report alone -- reproduced above verbatim where
+it matters (the trap-item values). Full subagent transcripts are not
+committed to this repository; the fixture under
+`references/eval-scenario/fixture/` plus `prompt.md` fully specify how to
+reproduce the run.
