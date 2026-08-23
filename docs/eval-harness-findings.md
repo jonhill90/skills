@@ -74,6 +74,32 @@ falsified against a real run before being trusted, never assumed correct
 because it compiles.** This is the same discipline `verify-the-instrument`
 names for any check, applied to the checks this harness itself runs.
 
+### Cause C (found in the eleventh pass, one instance so far): a
+### committed scenario's own fixture file can silently vanish
+
+`notify`'s scenario fixture named its planted evidence file
+`deploy-attempts.log`. This repository's own `.gitignore` excludes
+`*.log` globally, so `git add -A` never staged it — the file existed on
+disk for the live run that produced this pass's own result, but a fresh
+checkout of the committed scenario (anyone re-running it later, per this
+loop's own "committed so it can be re-run" convention since #236) would
+find the fixture missing the one file its own prompt.md names by name.
+Caught before committing, not after, by checking `git status --porcelain`
+against what was expected rather than assuming `git add -A` staged
+everything it should have.
+
+This is the same class of defect as Cause B above, one layer earlier:
+Cause B is a scorer reading the RIGHT file and misinterpreting its
+content; this is a scenario whose own fixture reads as complete on the
+authoring machine (the file is right there) while silently shipping
+incomplete to anyone else, because nothing checks a scenario's own
+file list against what actually got committed. Renamed the file to
+`.txt` and confirmed it tracked before opening the PR — the mechanical
+fix for this one instance — but the general lesson is Cause B's own
+sentence with one word changed: **a scenario's own fixture list should
+be checked against `git status`, not assumed complete because `git add
+-A` ran without complaint.**
+
 ## What I did NOT do
 
 - Did not apply the fix described above to the harness itself. That
