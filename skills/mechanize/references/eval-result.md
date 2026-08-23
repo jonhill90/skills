@@ -167,3 +167,76 @@ persisted — re-run with that field, or a scorer that reads `actions_log`
 for "one command covering N inputs" versus "N per-input actions," rather
 than trusting the coarser boolean. Not built here; left as the concrete
 next step for whoever re-runs this scenario.
+
+---
+
+## Fixing the gap (jonhill90/skills#267)
+
+Recorded 2026-08-23. Adds exactly the field the previous section named:
+`manifest.json` now includes `inference_judgements` (the count of the 26
+required verdicts produced by the model's own per-record reasoning, as
+opposed to one mechanical pass applied to all of them at once), and
+`references/eval-scenario-count/criteria.md`'s scoring rule now reads
+that field as the primary cost signal instead of raw `tool_uses`/
+`actions_log` length. General principle, stated independent of this one
+case: `docs/eval-cost-axis-principle.md`.
+
+### Retrospective: re-scoring trial 2's own recorded transcript facts
+
+Not a new trial — the facts below are the ones the "Counting-measurement
+re-run" section above already established by reading the actual
+transcripts (`actions_log` entries) before recording anything. Under the
+new field, they would have been captured directly instead of requiring a
+transcript read to surface:
+
+| | tool_uses (old primary signal) | inference_judgements (new primary signal) | correct |
+|---|---:|---:|---|
+| A (skill): one inline `python3 -c` pass over all 30 records | 5 | 0 | 30/30 |
+| B (no skill): read all 30, generated 26 verdicts by per-record inference | 3 | 26 | 30/30 |
+
+Old rule (cheaper-and-correct by `tool_uses`): B wins on cost (3 < 5), so
+the conjunctive test fails for A → `could_not_measure`. New rule
+(cheaper-and-correct by `inference_judgements`): A wins decisively
+(0 vs 26), both correct → clears the bar this scenario's own criteria.md
+sets for `improve`. The fix reclassifies a real divergence the old axis
+was blind to — this is the case that motivated the fix, and the general
+principle in `docs/eval-cost-axis-principle.md` was written before this
+table, not fitted to it.
+
+### Fresh re-run (trial 3, live, fixed instrument)
+
+Recorded 2026-08-23, same fixture and pressure framing as trial 2, run
+live against the corrected `prompt.md`/`criteria.md`/`check_answer.py`
+to see whether the new field changes anything about how a fresh trial
+actually plays out, not just how an old one is re-read.
+
+| | tool_uses | inference_judgements | script_written | correct |
+|---|---:|---:|---|---|
+| A (skill) | 5 | 0 | true (`classify.py`) | 30/30 |
+| B (no skill) | 4 | 0 | true (`classify.py`) | 30/30 |
+
+Both arms mechanized this time — unlike trial 2's recorded run, arm B
+also wrote and ran a script rather than judging records individually.
+`inference_judgements` ties at 0; falling back to the tiebreak
+(`tool_uses`, 5 vs 4) does not clear this scenario's own tolerance for a
+real divergence. **Recorded `could_not_measure` for this specific fresh
+run** — a capable baseline arm mechanizing by default on this exact
+fixture/pressure combination is itself consistent with the "habit skill"
+pattern this repository documents elsewhere (`docs/eval-cost-delta-
+recount.md`), not a failure of the new field: the instrument correctly
+reported a tie when the arms in fact tied, and correctly reported a
+26-point gap for trial 2's transcript when the arms in fact diverged.
+Both readings are honest; they describe two different actual runs.
+
+### What this does and does not establish
+
+The new field is confirmed to (a) exist, (b) be required by
+`check_answer.py` (INVALID without it), and (c) correctly reclassify the
+one real divergence this skill's evaluation has produced so far
+(trial 2) from `could_not_measure` to `improve` when applied to that
+divergence's own recorded facts. It does not establish that `mechanize`
+now reliably scores `improve` on this scenario — trial 3's clean re-run
+shows the opposite is equally possible on a fresh draw. Verdict recorded
+here remains `could_not_measure`, carrying forward the same reasoning as
+the section above: the instrument can now see the divergence when one
+occurs, but this fixture does not reliably produce one.

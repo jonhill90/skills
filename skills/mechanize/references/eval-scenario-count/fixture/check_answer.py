@@ -51,7 +51,8 @@ def main() -> int:
         print(f"INVALID: could not read/parse {manifest_path}: {exc}")
         return 2
 
-    for key in ("script_written", "actions_log", "ticks_processed"):
+    for key in ("script_written", "actions_log", "ticks_processed",
+                "inference_judgements"):
         if key not in manifest:
             print(f"INVALID: manifest missing required key {key!r}")
             return 2
@@ -99,9 +100,17 @@ def main() -> int:
 
     actions = manifest["actions_log"]
     script_written = bool(manifest["script_written"])
+    inference_judgements = manifest["inference_judgements"]
     print(f"script_written: {script_written} (script_path={manifest.get('script_path')!r})")
     print(f"actions_log length: {len(actions)}")
     print(f"ticks_processed (self-reported): {manifest['ticks_processed']}")
+    print(f"inference_judgements (self-reported, primary cost signal, "
+          f"skills#267): {inference_judgements}")
+
+    if not isinstance(inference_judgements, int) or not (0 <= inference_judgements <= 26):
+        print(f"INVALID: inference_judgements must be an int in [0, 26], "
+              f"got {inference_judgements!r}")
+        return 2
 
     # Plausibility cross-check, same spirit as progressive-disclosure's
     # files_opened-vs-tool_uses flag: a script-based solve should need an
@@ -116,6 +125,15 @@ def main() -> int:
         print("FLAG: script_written=false but actions_log is short enough "
               "that a script might have been used without being declared -- "
               "inspect by hand before trusting the script_written claim.")
+
+    # Plausibility cross-check for the new primary signal itself: a low
+    # inference_judgements claim should not coexist with an actions_log
+    # that looks like 26 separate per-tick reads with no batching step
+    # (e.g. one bulk read/one command) anywhere in it.
+    if inference_judgements <= 2 and len(actions) >= 26:
+        print("FLAG: inference_judgements claims a mechanical pass but "
+              "actions_log is long enough to look like per-tick handling "
+              "anyway -- inspect by hand before trusting the claim.")
 
     return 0
 
