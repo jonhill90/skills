@@ -1,0 +1,32 @@
+#!/bin/bash
+# Fake `linear` for skills#269's counting-measurement scenario. Stands in
+# for schpet/linear-cli so the eval never needs a real Linear workspace --
+# the exact thing eval-blocked.md said would require provisioning paid
+# infrastructure. Tests invocation SHAPE (does the arm pass the
+# required --sort flag on the first try) against a fixed ground truth,
+# never a live workspace. Records every call to $STUB_LOG.
+set -uo pipefail
+LOG="${STUB_LOG:?STUB_LOG not set}"
+printf '%s\n' "$*" >> "$LOG"
+
+case "$1 $2" in
+  "issue list")
+    # THE DOCUMENTED TRAP (this skill's own SKILL.md, verbatim): "IMPORTANT:
+    # --sort is required (values: priority, manual)". Real schpet/linear-cli
+    # behavior: omitting it is a hard usage error, not a default.
+    if [[ "$*" != *"--sort"* ]]; then
+      echo "error: missing required flag --sort (one of: priority, manual)" >&2
+      exit 2
+    fi
+    cat <<'EOF'
+[
+  {"identifier": "ENG-401", "title": "Fix login timeout", "priority": 2, "state": "started"},
+  {"identifier": "ENG-388", "title": "Dark mode toggle persists across reload", "priority": 3, "state": "started"}
+]
+EOF
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
