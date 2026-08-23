@@ -59,6 +59,15 @@ tooling) -- it is regenerated to show each skill's LATEST observation
 same dump_record() this file has always used, so its own byte-for-byte
 round-trip property is unchanged. See regenerate_record()'s own docstring
 for exactly how "latest" is chosen.
+
+--record also runs `check_skill_install.check_installed` (jonhill90/skills#230,
+#244's full-population diagnosis: 4 of 20 could_not_measure results were a
+skill that was never actually on the machine's shared skills path, found
+by hand, one at a time, four separate times) before it will write a
+verdict, and refuses -- naming the skill and whether the installed copy is
+MISSING or DIVERGENT from this repo's own copy -- unless the caller passes
+--skip-install-check with a reason. See check_skill_install.py's own doc
+comment for what the check does and does not cover.
 """
 
 from __future__ import annotations
@@ -69,10 +78,20 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import check_skill_install  # noqa: E402
+
 REPO = Path(__file__).resolve().parents[1]
 RECORD_PATH = REPO / "docs" / "eval-status.json"
 SKILLS_ROOT = REPO / "skills"
 EVAL_LOG_DIR = REPO / "docs" / "eval-log"
+# Same pattern as REPO/RECORD_PATH/SKILLS_ROOT/EVAL_LOG_DIR above: a
+# module-level default, monkeypatchable by tests that sandbox the whole
+# record in a tmp dir (see tests/test_eval_status.py's own
+# TestRecordCLI.setUp) so those tests keep exercising the REAL
+# install-check pass-through path against a fixture, never quietly
+# skipping the check just because the test itself is sandboxed.
+CLAUDE_SKILLS_DIR = check_skill_install.default_claude_skills_dir()
 
 VERDICTS = {"keep", "improve", "rename", "drop", "could_not_measure", "unevaluated"}
 RECORDABLE_VERDICTS = VERDICTS - {"unevaluated"}
@@ -202,7 +221,7 @@ def regenerate_record(comment: str, skill_names: set[str]) -> dict:
 
 
 def do_record(skill: str, verdict: str | None, evidence: str | None, date: str | None,
-              source: str | None) -> int:
+              source: str | None, skip_install_check: str | None = None) -> int:
     """Appends ONE observation to docs/eval-log/<skill>.jsonl, then
     regenerates docs/eval-status.json from every skill's own log -- the
     one path --record exposes, and the one this script wants every future
@@ -230,6 +249,19 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
         this" decidable from the file itself rather than from memory
         (agent-b3.md's own bar). Never optional: an unattributed
         observation is exactly the ambiguity this fix exists to remove.
+      - the skill under test is not correctly installed on
+        ~/.claude/skills right now (jonhill90/skills#230, #244's own
+        full-population diagnosis: four independent passes each lost a
+        real pair to exactly this, discovered by hand each time, because
+        nothing MECHANICAL stood between a broken install and a recorded
+        verdict). `check_skill_install.check_installed` names MISSING vs
+        DIVERGENT specifically rather than one "bad install" message --
+        see that module's own doc comment for why the distinction
+        matters. `skip_install_check`, if given a non-empty reason,
+        overrides this refusal (the check may not apply -- e.g. this
+        machine's own install state is known to differ from whatever
+        machine actually ran the eval) but prints a loud stderr warning
+        naming the reason; the override is never silent.
 
     `date` defaults to today (real wall-clock date; this is an ordinary
     script run by a human/agent, not a Workflow script, so datetime.date.
@@ -261,6 +293,17 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
         print(f"--record {skill}: --source is required -- name the pass/PR "
               "this observation came from (e.g. \"PR #244\")", file=sys.stderr)
         return 2
+
+    if skip_install_check:
+        print(f"--record {skill}: install check SKIPPED -- {skip_install_check}",
+              file=sys.stderr)
+    else:
+        install = check_skill_install.check_installed(skill, CLAUDE_SKILLS_DIR, REPO)
+        if install.status != check_skill_install.OK:
+            print(f"--record {skill}: refusing -- {install.message}", file=sys.stderr)
+            print("  (pass --skip-install-check \"<reason>\" to override; "
+                  "never silent -- the reason is printed here)", file=sys.stderr)
+            return 2
 
     try:
         comment = load_full_doc(RECORD_PATH)["$comment"]
@@ -430,10 +473,15 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--history", metavar="SKILL",
                      help="print every observation ever recorded for SKILL, oldest "
                           "first, and exit")
+    ap.add_argument("--skip-install-check", metavar="REASON",
+                     help="override --record's own install-parity check (with --record) -- "
+                          "requires a non-empty REASON, printed to stderr, never silent; "
+                          "see check_skill_install.py for what this check verifies and why")
     args = ap.parse_args(argv)
 
     if args.record:
-        return do_record(args.record, args.verdict, args.evidence, args.date, args.source)
+        return do_record(args.record, args.verdict, args.evidence, args.date, args.source,
+                          skip_install_check=args.skip_install_check)
 
     if args.history:
         return do_history(args.history)

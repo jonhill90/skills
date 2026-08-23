@@ -107,6 +107,21 @@ was reinvented fresh each time rather than being a standing first step.
 consistently missing, unrelated to any single pass) means roughly one
 in eight skills drawn for evaluation will hit this by default.
 
+**Mechanical fix (jonhill90/skills#230, this repo's `scripts/
+check_skill_install.py`):** a local, network-free comparison of
+`~/.claude/skills/<name>` against this repo's own `skills/<name>`,
+reporting MISSING (never installed) and DIVERGENT (installed but
+drifted) as distinct verdicts rather than one collapsed "bad install."
+It is wired into `scripts/eval_status.py --record` -- recording a verdict
+refuses by default unless the skill under test passes this check, so the
+investigation this section describes as "reinvented fresh each time" no
+longer has to be. A hand override exists (`--skip-install-check
+"<reason>"`) for the case where the install-state assumption genuinely
+doesn't apply, and it prints the reason rather than skipping silently.
+This is scoped to the public loop's own record-writing step; the private
+`agent-evals` harness's own pre-run dispatch is out of scope for this
+repository and untouched here.
+
 ### 3. Cost-signal noise across replicated pairs — 4 of 20, NEW
 
 `decide-by-variant`, `determine-signals`, `devils-advocate`, and
