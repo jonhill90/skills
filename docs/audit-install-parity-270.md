@@ -74,8 +74,8 @@ file.
 | `wire-it-when-you-write-it` | MISSING | `could_not_measure` | **No.** Same pattern: "The first live attempt was discarded entirely once this was found... Symlinked the skill in for one real pair, then removed the symlink again afterward." |
 | `dispatch-brief` | MISSING | `keep` | **No.** Same pattern, and this is the highest-stakes case on this list because `keep` is a real, standing record, not a null result: "Discovered before trusting the first run's own 'with' arm: symlinked the skill in for the duration of this pass's real runs, then removed the symlink again afterward." Both of its two independent scenario passes (seventh, eighth) used the corrected, symlinked-in run. |
 | `test-in-the-consumer-context` | MISSING | `could_not_measure` | **Cannot fully confirm from the written record, but likely valid.** Its own `eval-result.md` documents a DIFFERENT, already-caught-and-fixed defect (a fixture env-var, `INTERACTIVE_SESSION`, never threaded into the harness subprocess) and never mentions an install-path check for itself. It was recorded the same "sixth pass," same session, as `durable-fact-before-label` (both files say "Tracked in docs/eval-status.json alongside this pass's other two results"), and that sibling's own write-up states the symlink state was checked and "confirmed restored... the same 35 skills" for the whole session, not just for itself — circumstantial but real corroboration. Recommend an explicit confirmation pass rather than treating this as settled by inference. |
-| `plan-parallel-execution` | MISSING | `could_not_measure` | **Mixed — but the CURRENT verdict does not need a re-run.** Three independent measurements exist: a "seventh pass" and "eighth pass" (both pre-#265-style, using the private agent-evals harness's own `installed`/`no-skill:<name>` arm mechanism) plus a later counting-measurement recount (skills#266/#267, `references/eval-scenario-count/`). The two older passes' own write-ups **never mention an install-path check for this skill specifically** — unlike their siblings above, neither documents finding or fixing a gap, and the note that PR #240 had to resolve a numbering conflict between the two sections ("both originally called themselves seventh pass") confirms they were dispatched by two *different, concurrent* lanes, not the same session as `dispatch-brief`'s batch, so I cannot extend that batch's documented fix to cover these two by inference either. **However**, the counting-measurement recount is independently confirmed clean: `references/eval-scenario-count/prompt.md`'s own "Arm A only" instruction reads `skills/plan-parallel-execution/SKILL.md` **directly from the repo checkout**, never through `~/.claude/skills` — structurally immune to this failure mode regardless of install state. All three measurements agree (`could_not_measure`), so the recorded verdict is adequately supported by the one confirmed-clean measurement alone, even setting the two unconfirmed older passes aside. |
-| `progressive-disclosure` | MISSING | `improve` | **No — structurally immune.** Only one scenario exists for this skill (`references/eval-scenario/`, the counting-measurement kind from #265, the skill's own origin PR), and its `prompt.md`'s "Arm A only" instruction reads `skills/progressive-disclosure/SKILL.md` directly from the repo checkout, the same as `plan-parallel-execution`'s and `mechanize`'s counting-measurement scenarios. Never depends on `~/.claude/skills` at all. This is the `improve` verdict skills#268's scorer fix work was built around — confirmed unaffected by this audit. |
+| `plan-parallel-execution` | MISSING | `could_not_measure` | **Mixed — but the CURRENT verdict does not need a re-run.** Three independent measurements exist: a "seventh pass" and "eighth pass" (both pre-#265-style, using the private agent-evals harness's own `installed`/`no-skill:<name>` arm mechanism) plus a later counting-measurement recount (skills#266/#267, `references/eval-scenario-count/`). The two older passes' own write-ups **never mention an install-path check for this skill specifically** — unlike their siblings above, neither documents finding or fixing a gap, and the note that PR #240 had to resolve a numbering conflict between the two sections ("both originally called themselves seventh pass") confirms they were dispatched by two *different, concurrent* lanes, not the same session as `dispatch-brief`'s batch, so I cannot extend that batch's documented fix to cover these two by inference either. **However**, the counting-measurement recount is independently confirmed clean *of install-absence specifically*: `references/eval-scenario-count/prompt.md`'s own "Arm A only" instruction reads `skills/plan-parallel-execution/SKILL.md` **directly from the repo checkout**, never through `~/.claude/skills`. All three measurements agree (`could_not_measure`), so the recorded verdict is adequately supported by the one confirmed-clean-of-this-failure-mode measurement alone, even setting the two unconfirmed older passes aside. **That immunity does not extend to a separate question — see the caveat below.** |
+| `progressive-disclosure` | MISSING | `improve` | **No, to install-absence specifically — see the caveat below.** Only one scenario exists for this skill (`references/eval-scenario/`, the counting-measurement kind from #265, the skill's own origin PR), and its `prompt.md`'s "Arm A only" instruction reads `skills/progressive-disclosure/SKILL.md` directly from the repo checkout, the same as `plan-parallel-execution`'s and `mechanize`'s counting-measurement scenarios. Never depends on `~/.claude/skills` at all. This is the `improve` verdict skills#268's scorer fix work was built around — confirmed unaffected by THIS audit's own failure mode; the separate prompt-delivery question below is not settled by this row. |
 
 ## The general rule this reconstructs, and why it matters for future passes
 
@@ -148,11 +148,17 @@ was genuinely absent from both arms.** Every skill currently missing from
 `~/.claude/skills/` either (a) explicitly documents catching the gap,
 discarding the broken first attempt, and re-running correctly (`durable-
 fact-before-label`, `spec-driven-development`, `wire-it-when-you-write-it`,
-`dispatch-brief`), or (b) is structurally immune because its scenario
-reads `SKILL.md` directly from the repo checkout regardless of install
-state (`progressive-disclosure`, and `plan-parallel-execution`'s one
-confirmed-clean measurement of three). **No verdict in this list needs to
-be re-run on the evidence available.**
+`dispatch-brief`), or (b) is immune **to install-absence specifically**
+because its scenario reads `SKILL.md` directly from the repo checkout
+regardless of install state (`progressive-disclosure`, and
+`plan-parallel-execution`'s one confirmed-clean measurement of three) —
+that immunity does not extend to whether the resulting `Read` call was
+itself confirmed to happen, a separate, unsettled question named in the
+caveat under "The general rule this reconstructs" above. **No verdict in
+this list needs to be re-run on the install-absence evidence this audit
+actually checked** — this audit does not, on its own, settle the
+prompt-delivery question for `progressive-disclosure` or
+`plan-parallel-execution` either.
 
 Two items are downgraded from "confirmed clean" to "likely clean, not
 independently confirmable from the written record" rather than either
@@ -187,18 +193,20 @@ $ python3 scripts/eval_status.py
 clean: 41 skill(s) recorded, record matches skills/
 
 $ python3 scripts/eval_status.py --summary
-could_not_measure: 26
+could_not_measure: 29
 drop: 1
 improve: 8
 keep: 3
 rename: 0
-unevaluated: 3
+unevaluated: 0
 ```
 
 (Unchanged from `origin/main` — this PR adds one audit document and
-touches nothing else. Note: this branch predates #269's merge, so its
-own could_not_measure/unevaluated counts (26/3) are `origin/main`'s
-current numbers, not #269's still-open 29/0 — this audit's own findings
-above are unaffected either way, since #269's three skills, `github-cli`/
+touches nothing else. Note: this branch originally predated #269's merge,
+carrying `origin/main`'s then-current 26/3; #269 has since merged
+(`b3cb430`) and this branch merged that update in so its own citation to
+`github-cli`'s `eval-result.md` resolves for anyone checking out this PR
+alone, which is why the counts above now read 29/0. This audit's own
+findings are unaffected either way, since #269's three skills, `github-cli`/
 `linear`/`obsidian`, are separately confirmed structurally immune to this
 failure mode in the "general rule" section above.)
