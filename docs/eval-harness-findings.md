@@ -314,6 +314,30 @@ entirely (`prd`, `primer` — no external tool at all), and record
 found, rather than attempting to harden `eval_skill.py` itself for this
 category inside this pass's own scope.
 
+## Standing requirement: confirm a prompt-delivered skill read, mechanically (skills#269 review)
+
+The #265-#269 eval lineage delivers skill content to Arm A via a prompt
+instruction ("Arm A only: read `skills/<name>/SKILL.md` before starting"),
+deliberately not via the Skill tool, to dodge Cause D above (the with-skill
+arm silently never receiving the skill via Skill/ToolSearch discovery).
+`skills#269`'s review found the mirror-image gap: nothing logged whether
+the model actually complied with that instruction — `$STUB_LOG` records
+only the fake CLI's own calls, and `manifest.json`'s `actions_log` is
+self-reported, which this harness already refuses to trust anywhere else.
+A genuine null and a silent wiring failure were indistinguishable from the
+committed record, biting hardest on `could_not_measure`, the majority
+verdict across this population.
+
+**Any eval PR that delivers a skill to an arm via prompt instruction
+rather than the Skill tool must populate a structured
+`arm_a_skill_read_confirmed: true|false` field in that skill's
+`eval-result.md`**, computed by `scripts/skill_read_confirmed.py`'s
+`skill_read_confirmed(transcript_path, skill_path)` against that trial's
+real transcript — never asserted in prose, and never read from
+`manifest.json`'s own self-reported log. A blank/missing field on a
+prompt-delivered scenario is the same gap `skills#269` had, and should
+read as one.
+
 ## What I did NOT do
 
 - Did not evaluate any new skill. All 25 `could_not_measure` counts, and
