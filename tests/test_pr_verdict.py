@@ -78,6 +78,38 @@ class MutationCheckFourDirections(unittest.TestCase):
         self.assertEqual(result["decision"], "none")
 
 
+class BlankReviewLaneSelfApprovalBypass(unittest.TestCase):
+    """Security regression, filed and fixed the same day it was found: a
+    BLANK `Review-Lane:` value let `_REVIEW_LANE_LINE_RE`'s post-colon
+    `\\s*` consume the line break and capture the NEXT line's text
+    (`Reviewed-SHA: ...`) instead of matching empty. That non-empty
+    garbage never equals a real `Author-Lane:` value, so the same-lane
+    self-review check below it silently never fired -- a same-lane author
+    posting a comment with a blank `Review-Lane:` trailer got treated as
+    a valid, different reviewer and the PR resolved `approved`. This
+    exact shape -- blank trailer, same lane as Author-Lane, real head SHA
+    on the very next line -- must never again resolve to anything but
+    `unknown`."""
+
+    def test_blank_review_lane_same_author_lane_is_not_approved(self):
+        payload = _payload(
+            body="Author-Lane: build-3\n",
+            comments=[_comment(f"Verdict: APPROVE\nAuthor-Lane: build-3\nReview-Lane: \nReviewed-SHA: {HEAD}\n")],
+        )
+        result = _resolve(payload)
+        self.assertEqual(result["decision"], "unknown")
+        self.assertIn("Review-Lane", result["detail"])
+
+    def test_blank_review_lane_does_not_capture_the_next_line(self):
+        # Direct regression on the regex itself, not just resolve()'s
+        # outcome -- pins the exact failure mode build-3 reported so a
+        # future refactor of the pattern can't silently reopen it while
+        # still passing the resolve()-level test above by coincidence.
+        body = "Verdict: APPROVE\nAuthor-Lane: build-3\nReview-Lane: \nReviewed-SHA: abc123\n"
+        value = pv._parse_trailer(pv._REVIEW_LANE_LINE_RE, body)
+        self.assertIsNone(value)
+
+
 class ExitCodesMatchDecision(unittest.TestCase):
     """A caller gates on the exit code alone (this module's own docstring
     contract) -- prove the mapping, not just resolve()'s return value."""
