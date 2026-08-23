@@ -447,6 +447,77 @@ class TestHistoryCLI(EvalLogSandboxTestCase):
         self.assertIn("improve", out)
 
 
+class TestLogDrift(EvalLogSandboxTestCase):
+    """find_log_drift -- the guard agent-b3.md's PR comment on #245
+    required: PR #245's own migration seeded docs/eval-log/ from a
+    pre-#243 copy of docs/eval-status.json, so tdd.jsonl was never
+    created. GitHub still reported the PR MERGEABLE, because the git
+    merge happened to land the correct TEXT in docs/eval-status.json
+    without the log entry that is supposed to back it -- nothing existing
+    (check() alone) compared the generated record against its own source
+    of truth. These tests reproduce that exact shape against a sandbox,
+    not the real tdd -- the real-tdd mutation check (empty the real file,
+    confirm scripts/eval_status.py fails; restore it, confirm clean) is
+    run once, live, and reported in the PR body, not re-run on every test
+    invocation against the shipped file."""
+
+    def _record_a_skill(self):
+        eval_status.main([
+            "--record", "a-skill", "--verdict", "could_not_measure",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22", "--source", "PR #239",
+        ])
+
+    def test_clean_when_record_matches_the_log(self):
+        self._record_a_skill()
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        findings = eval_status.find_log_drift(record, {"a-skill"})
+        self.assertEqual(findings, [])
+
+    def test_flags_a_real_verdict_backed_by_an_empty_log(self):
+        """The exact #245 shape: record() then wipe the log underneath
+        it, simulating a merge that regenerated the file from a stale
+        log."""
+        self._record_a_skill()
+        (self.tmp / "docs" / "eval-log" / "a-skill.jsonl").write_text("", encoding="utf-8")
+
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        findings = eval_status.find_log_drift(record, {"a-skill"})
+        self.assertEqual(len(findings), 1)
+        self.assertIn("a-skill", findings[0])
+        self.assertIn("NO observations", findings[0])
+
+    def test_flags_a_record_that_disagrees_with_the_logs_latest(self):
+        """The more general form: both have data, but they disagree --
+        not just the empty-log case."""
+        self._record_a_skill()
+        doc = eval_status.load_full_doc(eval_status.RECORD_PATH)
+        doc["skills"]["a-skill"]["verdict"] = "improve"  # hand-corrupt the record only
+        eval_status.dump_record(doc, eval_status.RECORD_PATH)
+
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        findings = eval_status.find_log_drift(record, {"a-skill"})
+        self.assertEqual(len(findings), 1)
+        self.assertIn("a-skill", findings[0])
+
+    def test_main_default_path_fails_on_drift_and_passes_once_reseeded(self):
+        """End to end, through scripts/eval_status.py's own default
+        (no-flag) path -- the exact command the PR's own verification
+        bar names ("scripts/eval_status.py reports clean"). Mutation
+        checked in both directions in the SAME test, not asserted only
+        one way."""
+        self._record_a_skill()
+        self.assertEqual(eval_status.main([]), 0)
+
+        log_path = self.tmp / "docs" / "eval-log" / "a-skill.jsonl"
+        original = log_path.read_text(encoding="utf-8")
+        log_path.write_text("", encoding="utf-8")
+        self.assertEqual(eval_status.main([]), 1, "guard did not fire with the log emptied")
+
+        log_path.write_text(original, encoding="utf-8")
+        self.assertEqual(eval_status.main([]), 0, "guard did not clear once the log was restored")
+
+
 class TestConflictDemonstration(unittest.TestCase):
     """agent-b3.md's own bar: demonstrate the conflict is gone by
     construction, not by argument. Runs a REAL git init/commit/branch/merge

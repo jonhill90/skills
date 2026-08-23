@@ -351,6 +351,61 @@ def check(record: dict, skill_names: set[str]) -> list[str]:
     return findings
 
 
+def find_log_drift(record: dict, skill_names: set[str]) -> list[str]:
+    """Catches the exact failure agent-b3.md's PR comment measured live on
+    PR #245: a git merge can leave docs/eval-status.json's TEXT looking
+    correct (because the merge happened to land in a region neither side
+    touched) while the skill's own docs/eval-log/<skill>.jsonl -- the
+    actual source of truth this record is regenerated from -- was never
+    updated to match. GitHub reported that PR MERGEABLE; nothing in
+    check() caught the drift, because check() only validates the record
+    against ITSELF (internally consistent) and against skills/ (every
+    skill has an entry), never against the logs it is supposed to be
+    GENERATED from. This closes that gap: for every skill, the record's
+    own verdict/date/evidence must equal that skill's log's own latest
+    observation, exactly. A skill whose record claims a real verdict but
+    whose log has zero observations is the specific shape the #245
+    incident took (regenerate_record() would silently produce
+    "unevaluated" the next time anyone actually ran it); a skill whose
+    record and log both have data but DISAGREE is the more general form
+    of the same defect.
+
+    Deliberately a SEPARATE function from check(), not folded into it:
+    check()'s own test suite (TestCheck) exercises it against synthetic
+    records for skill names that do not exist in the real
+    docs/eval-log/ -- folding a hard dependency on the real log directory
+    into check() itself would make every one of those tests fail for a
+    reason unrelated to what they test. main()'s default (no-flag) path
+    calls both, against the real record and the real logs."""
+    findings = []
+    for name in sorted(skill_names):
+        entry = record.get(name)
+        if not isinstance(entry, dict):
+            continue  # already flagged above (missing entry / not an object)
+        verdict, date, evidence = entry.get("verdict"), entry.get("date"), entry.get("evidence")
+        latest = latest_observation(read_observations(name))
+
+        if latest is None:
+            if verdict not in (None, "unevaluated"):
+                findings.append(
+                    f"{name}: record shows verdict {verdict!r} but docs/eval-log/{name}.jsonl "
+                    "has NO observations -- the generated record does not match its own source "
+                    "of truth (a merge likely landed a regenerated file without the log entry "
+                    "that backs it -- re-run --record, or regenerate from the logs, before this "
+                    "commit ships)"
+                )
+            continue
+
+        if (verdict, date, evidence) != (latest["verdict"], latest["date"], latest["evidence"]):
+            findings.append(
+                f"{name}: record shows {verdict!r}/{date!r}/{evidence!r} but "
+                f"docs/eval-log/{name}.jsonl's own latest observation is "
+                f"{latest['verdict']!r}/{latest['date']!r}/{latest['evidence']!r} -- "
+                "regenerate docs/eval-status.json from the logs"
+            )
+    return findings
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--unevaluated", action="store_true",
@@ -405,7 +460,7 @@ def main(argv: list[str]) -> int:
             print(f"{verdict}: {counts.get(verdict, 0)}")
         return 0
 
-    findings = check(record, skill_names)
+    findings = check(record, skill_names) + find_log_drift(record, skill_names)
     if not findings:
         print(f"clean: {len(record)} skill(s) recorded, record matches skills/")
         return 0
