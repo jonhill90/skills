@@ -550,3 +550,78 @@ evidence-backed, *not-yet-decided* option — the strongest candidate found by
 a wide margin, reopened by a genuine `devils-advocate` pass rather than
 rubber-stamped, gated on one bounded spike outside this PR's own
 no-implementation scope.
+
+## The spike ran — component 2 and 3's gate, closed
+
+The bounded spike this document gated components 2 (runner) and 3 (scorer)
+on has run (`spike/vally-spike.md`; the actual code, private, is
+`jonhill90/agent-evals#23` — cited by number only, per this repo's own rule
+against publishing scenario prompts/criteria/transcripts, none of which are
+reproduced here). One question, stated in advance, both outcomes stateable
+before starting: **can one `Executor` plugin drive our real Claude arm
+under `vally`, and does `vally compare` then produce a usable two-arm
+result?**
+
+**Answer: yes**, confirmed with a real run, not asserted. A ~215-line,
+zero-dependency `Executor` plugin — porting `eval_skill.py`'s own
+`run_agent()` NDJSON parsing to the interface, not rewriting it, exactly as
+the spike brief predicted would be the actual asset — drove a real two-arm
+run against `research-the-limit` (the one skill with a registered,
+mechanical scorer, so its result is directly comparable to the existing
+record). Real result: outcome tied, cost noisy with no consistent
+direction — **consistent with, not contradicting**, `research-the-limit`'s
+own already-recorded public verdict ("outcome axis a wash across all
+three [runs]... cost swung in both directions... read as noise",
+`skills/research-the-limit/references/eval-result.md`). One `vally`-driven
+trial landed inside that same described pattern.
+
+Two real integration gaps were found and fixed along the way, neither a
+defect in `vally`, both places the spike's own first assumption was wrong
+— full technical account in the private PR, summarized here because the
+*shape* of each finding matters for the record even though the fixture
+content does not:
+
+1. **Environment inheritance** — spawning `vally` with a hand-picked
+   environment subset silently stripped Claude Code's own credential state
+   several process layers down, failing every trial with an auth error
+   that looked at first like a `vally` or executor problem and was neither.
+2. **Fixture delivery** — `--work-dir` does not mean "run in this
+   directory" (`vally`'s own pipeline always allocates a fresh temp
+   sandbox per trial, unconditionally); the real, declarative path for
+   "materialize from a local git repo I already built" is
+   `environment.git` (`type: worktree`), which lines up with
+   `eval_skill.build_fixture()`'s own output with no redesign needed —
+   but only once you know to reach for it instead of the flag that reads
+   like it should mean exactly that.
+
+**What this does not resolve, stated as precisely as the first draft
+insisted on:** the `Executor` interface's own pre-1.0 version-instability
+risk (`devils-advocate` pass 2's own finding, 96→224 lines across four
+diffed versions) is untouched by one successful run on `0.13.0` — that risk
+still belongs to a full-adoption decision, not to this spike, and one
+green run does not retire it. n=1: one skill, one trial per arm, one
+machine, one session.
+
+**Components 2 and 3, unblocked:**
+
+- **Component 3 (scorer):** the weighted-advisory scoring rule is no
+  longer just described, it is real, tested, additive code —
+  `weighted_verdict()` in `eval_skill.py` (`agent-evals#23`), vally's own
+  `scoring.weights` shape, offered as an opt-in path alongside `verdict()`
+  without touching or risking that function's own existing, deliberately-
+  tested n=1-caution behavior. Taken regardless of the spike's outcome,
+  per the brief; the spike happened to succeed, and it was taken anyway,
+  exactly as instructed.
+- **Component 2 (runner):** the spike answers "can this work at all" —
+  yes — without resolving "should we commit to it long-term," which was
+  never this spike's question. The honest position is unchanged in kind
+  from the first draft, sharpened by real evidence instead of a
+  read-the-docs estimate: `vally` remains a real, evidence-backed,
+  *not-yet-decided* option for the runner. What changed is the confidence
+  behind "not-yet-decided" — from "unverified, gated on a spike" to
+  "verified to work on one real case, still carrying an unresolved
+  version-stability question that a single run cannot answer." Whether
+  that's enough to commit to full adoption, versus running the same spike
+  against one or two more skills first, is a call for whoever owns this
+  decision next — this document's job was answering whether the gate
+  could be passed at all, and it can.
