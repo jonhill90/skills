@@ -3,13 +3,16 @@ from __future__ import annotations
 import datetime
 import importlib.util
 import json
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPT_PATH = Path(__file__).parents[1] / "scripts" / "eval_status.py"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_PATH = REPO_ROOT / "scripts" / "eval_status.py"
 SPEC = importlib.util.spec_from_file_location("eval_status", SCRIPT_PATH)
 assert SPEC and SPEC.loader
 eval_status = importlib.util.module_from_spec(SPEC)
@@ -176,11 +179,11 @@ class TestDumpRecord(unittest.TestCase):
             self.assertEqual(reloaded, doc)
 
 
-class TestRecordCLI(unittest.TestCase):
-    """--record is the one supported write path for docs/eval-status.json
-    (estate-loop/agent-b2.md's own rule: "never by hand") -- these tests
-    run against a throwaway copy of the record and skills tree, never the
-    real shipped file, restoring eval_status's module globals afterward."""
+class EvalLogSandboxTestCase(unittest.TestCase):
+    """Shared sandbox for every test touching docs/eval-log/ and/or
+    --record: a throwaway copy of the record, skills tree and log
+    directory, never the real shipped ones, with eval_status's module
+    globals restored afterward."""
 
     def _sandbox(self):
         tmp = Path(tempfile.mkdtemp())
@@ -198,22 +201,93 @@ class TestRecordCLI(unittest.TestCase):
         self.orig_repo = eval_status.REPO
         self.orig_record = eval_status.RECORD_PATH
         self.orig_skills = eval_status.SKILLS_ROOT
+        self.orig_log_dir = eval_status.EVAL_LOG_DIR
         self.tmp = self._sandbox()
         eval_status.REPO = self.tmp
         eval_status.RECORD_PATH = self.tmp / "docs" / "eval-status.json"
         eval_status.SKILLS_ROOT = self.tmp / "skills"
+        eval_status.EVAL_LOG_DIR = self.tmp / "docs" / "eval-log"
 
     def tearDown(self):
         eval_status.REPO = self.orig_repo
         eval_status.RECORD_PATH = self.orig_record
         eval_status.SKILLS_ROOT = self.orig_skills
+        eval_status.EVAL_LOG_DIR = self.orig_log_dir
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+
+class TestObservationLog(EvalLogSandboxTestCase):
+    """append_observation/read_observations/latest_observation --
+    docs/eval-log/'s own read/write primitives, independent of --record's
+    CLI-level validation."""
+
+    def test_read_observations_missing_log_is_empty_not_an_error(self):
+        self.assertEqual(eval_status.read_observations("a-skill"), [])
+
+    def test_append_then_read_round_trips(self):
+        entry = {"verdict": "keep", "date": "2026-08-22", "evidence": "README.md", "source": "PR #244"}
+        eval_status.append_observation("a-skill", entry)
+        self.assertEqual(eval_status.read_observations("a-skill"), [entry])
+
+    def test_append_never_overwrites_an_earlier_observation(self):
+        """The property that makes two independent evaluations of the same
+        skill both survive: appending a second observation must leave the
+        first one, byte for byte, still readable back."""
+        first = {"verdict": "could_not_measure", "date": "2026-08-20", "evidence": "README.md", "source": "PR #239"}
+        second = {"verdict": "improve", "date": "2026-08-22", "evidence": "README.md", "source": "PR #244"}
+        eval_status.append_observation("a-skill", first)
+        eval_status.append_observation("a-skill", second)
+
+        observations = eval_status.read_observations("a-skill")
+        self.assertEqual(len(observations), 2)
+        self.assertEqual(observations[0], first)
+        self.assertEqual(observations[1], second)
+        # both distinguishable by source, not merged into one.
+        self.assertEqual({o["source"] for o in observations}, {"PR #239", "PR #244"})
+
+    def test_latest_observation_of_empty_is_none(self):
+        self.assertIsNone(eval_status.latest_observation([]))
+
+    def test_latest_observation_picks_the_newest_date_not_the_last_line(self):
+        """Two passes appending near-simultaneously can land in either
+        order once git merges their branches -- latest_observation must
+        pick by DATE, not by file position, so this is safe regardless of
+        merge order."""
+        observations = [
+            {"verdict": "improve", "date": "2026-08-22", "evidence": "e", "source": "newer, appended first"},
+            {"verdict": "keep", "date": "2026-08-15", "evidence": "e", "source": "older, appended second"},
+        ]
+        latest = eval_status.latest_observation(observations)
+        self.assertEqual(latest["date"], "2026-08-22")
+
+    def test_regenerate_record_uses_latest_per_skill(self):
+        eval_status.append_observation("a-skill", {
+            "verdict": "could_not_measure", "date": "2026-08-15", "evidence": "README.md", "source": "PR #239"})
+        eval_status.append_observation("a-skill", {
+            "verdict": "keep", "date": "2026-08-22", "evidence": "README.md", "source": "PR #244"})
+        (self.tmp / "skills" / "b-skill").mkdir()
+
+        doc = eval_status.regenerate_record("the comment", {"a-skill", "b-skill"})
+        self.assertEqual(doc["$comment"], "the comment")
+        self.assertEqual(doc["skills"]["a-skill"], {
+            "verdict": "keep", "date": "2026-08-22", "evidence": "README.md"})
+        # never evaluated -- unevaluated default, no "source" key leaked
+        # from the log shape into the generated record's own schema.
+        self.assertEqual(doc["skills"]["b-skill"], {
+            "verdict": "unevaluated", "date": None, "evidence": None})
+        self.assertNotIn("source", doc["skills"]["a-skill"])
+
+
+class TestRecordCLI(EvalLogSandboxTestCase):
+    """--record is the one supported write path for docs/eval-log/ and,
+    through regeneration, docs/eval-status.json (estate-loop/agent-b2.md's
+    own rule: "never by hand")."""
 
     def test_record_writes_a_valid_entry(self):
         rc = eval_status.main([
             "--record", "a-skill", "--verdict", "keep",
             "--evidence", "skills/a-skill/references/eval-result.md",
-            "--date", "2026-08-22",
+            "--date", "2026-08-22", "--source", "PR #244",
         ])
         self.assertEqual(rc, 0)
         record = eval_status.load_record(eval_status.RECORD_PATH)
@@ -221,6 +295,10 @@ class TestRecordCLI(unittest.TestCase):
             "verdict": "keep", "date": "2026-08-22",
             "evidence": "skills/a-skill/references/eval-result.md",
         })
+        # the log itself carries the attribution the generated record does not.
+        observations = eval_status.read_observations("a-skill")
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0]["source"], "PR #244")
         # what it just wrote must itself pass this script's own check.
         self.assertEqual(eval_status.main([]), 0)
 
@@ -228,6 +306,7 @@ class TestRecordCLI(unittest.TestCase):
         rc = eval_status.main([
             "--record", "a-skill", "--verdict", "improve",
             "--evidence", "skills/a-skill/references/eval-result.md",
+            "--source", "PR #244",
         ])
         self.assertEqual(rc, 0)
         record = eval_status.load_record(eval_status.RECORD_PATH)
@@ -237,6 +316,7 @@ class TestRecordCLI(unittest.TestCase):
         rc = eval_status.main([
             "--record", "no-such-skill", "--verdict", "keep",
             "--evidence", "skills/a-skill/references/eval-result.md",
+            "--source", "PR #244",
         ])
         self.assertEqual(rc, 2)
         # nothing written -- the record is untouched.
@@ -253,41 +333,336 @@ class TestRecordCLI(unittest.TestCase):
             eval_status.main([
                 "--record", "a-skill", "--verdict", "unevaluated",
                 "--evidence", "skills/a-skill/references/eval-result.md",
+                "--source", "PR #244",
             ])
 
     def test_record_refuses_missing_evidence_file(self):
         rc = eval_status.main([
             "--record", "a-skill", "--verdict", "keep",
             "--evidence", "skills/a-skill/references/does-not-exist.md",
+            "--source", "PR #244",
         ])
         self.assertEqual(rc, 2)
         record = eval_status.load_record(eval_status.RECORD_PATH)
         self.assertEqual(record["a-skill"]["verdict"], "unevaluated")
 
+    def test_record_refuses_missing_source(self):
+        """source is the one field this shape adds over the old
+        single-record entry -- never optional, since an unattributed
+        observation is exactly the ambiguity this fix exists to remove."""
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+        ])
+        self.assertEqual(rc, 2)
+        self.assertEqual(eval_status.read_observations("a-skill"), [])
+
     def test_record_requires_verdict(self):
         rc = eval_status.main([
             "--record", "a-skill",
             "--evidence", "skills/a-skill/references/eval-result.md",
+            "--source", "PR #244",
         ])
         self.assertEqual(rc, 2)
 
-    def test_record_preserves_other_entries(self):
-        # add a second, already-recorded skill directly, bypassing --record,
-        # to prove recording "a-skill" doesn't clobber it.
+    def test_record_preserves_other_skills_own_logs(self):
+        # b-skill already has a real observation of its own, recorded the
+        # same way -- proves recording "a-skill" doesn't touch it.
         (self.tmp / "skills" / "b-skill").mkdir()
-        doc = eval_status.load_full_doc(eval_status.RECORD_PATH)
-        doc["skills"]["b-skill"] = {"verdict": "keep", "date": "2020-01-01", "evidence": "README.md"}
-        eval_status.dump_record(doc, eval_status.RECORD_PATH)
+        eval_status.append_observation("b-skill", {
+            "verdict": "keep", "date": "2020-01-01", "evidence": "README.md", "source": "PR #1"})
+        eval_status.dump_record(
+            eval_status.regenerate_record("c", {"a-skill", "b-skill"}), eval_status.RECORD_PATH)
 
         rc = eval_status.main([
             "--record", "a-skill", "--verdict", "drop",
             "--evidence", "skills/a-skill/references/eval-result.md",
-            "--date", "2026-08-22",
+            "--date", "2026-08-22", "--source", "PR #244",
         ])
         self.assertEqual(rc, 0)
         record = eval_status.load_record(eval_status.RECORD_PATH)
         self.assertEqual(record["b-skill"]["verdict"], "keep")
         self.assertEqual(record["a-skill"]["verdict"], "drop")
+        # b-skill's own log is untouched -- still exactly its one entry.
+        self.assertEqual(len(eval_status.read_observations("b-skill")), 1)
+
+    def test_record_twice_on_the_same_skill_keeps_both_observations(self):
+        """The requirement this whole fix exists for: two evaluations of
+        the same skill both survive and stay attributed to their pass,
+        rather than the second silently overwriting the first."""
+        rc1 = eval_status.main([
+            "--record", "a-skill", "--verdict", "could_not_measure",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-20", "--source", "PR #239",
+        ])
+        rc2 = eval_status.main([
+            "--record", "a-skill", "--verdict", "improve",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22", "--source", "PR #244",
+        ])
+        self.assertEqual((rc1, rc2), (0, 0))
+
+        observations = eval_status.read_observations("a-skill")
+        self.assertEqual(len(observations), 2)
+        self.assertEqual([o["source"] for o in observations], ["PR #239", "PR #244"])
+        self.assertEqual([o["verdict"] for o in observations], ["could_not_measure", "improve"])
+
+        # the generated record shows the LATEST -- current-status readers
+        # (check(), --summary, --unevaluated) see one verdict per skill,
+        # unchanged contract.
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["a-skill"]["verdict"], "improve")
+
+
+class TestHistoryCLI(EvalLogSandboxTestCase):
+    def test_history_nonexistent_skill(self):
+        rc = eval_status.main(["--history", "no-such-skill"])
+        self.assertEqual(rc, 2)
+
+    def test_history_never_evaluated_skill(self):
+        rc = eval_status.main(["--history", "a-skill"])
+        self.assertEqual(rc, 0)
+
+    def test_history_prints_every_observation(self):
+        eval_status.main([
+            "--record", "a-skill", "--verdict", "could_not_measure",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-20", "--source", "PR #239",
+        ])
+        eval_status.main([
+            "--record", "a-skill", "--verdict", "improve",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22", "--source", "PR #244",
+        ])
+        import io
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = eval_status.main(["--history", "a-skill"])
+        self.assertEqual(rc, 0)
+        out = buf.getvalue()
+        self.assertIn("PR #239", out)
+        self.assertIn("PR #244", out)
+        self.assertIn("could_not_measure", out)
+        self.assertIn("improve", out)
+
+
+class TestLogDrift(EvalLogSandboxTestCase):
+    """find_log_drift -- the guard agent-b3.md's PR comment on #245
+    required: PR #245's own migration seeded docs/eval-log/ from a
+    pre-#243 copy of docs/eval-status.json, so tdd.jsonl was never
+    created. GitHub still reported the PR MERGEABLE, because the git
+    merge happened to land the correct TEXT in docs/eval-status.json
+    without the log entry that is supposed to back it -- nothing existing
+    (check() alone) compared the generated record against its own source
+    of truth. These tests reproduce that exact shape against a sandbox,
+    not the real tdd -- the real-tdd mutation check (empty the real file,
+    confirm scripts/eval_status.py fails; restore it, confirm clean) is
+    run once, live, and reported in the PR body, not re-run on every test
+    invocation against the shipped file."""
+
+    def _record_a_skill(self):
+        eval_status.main([
+            "--record", "a-skill", "--verdict", "could_not_measure",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22", "--source", "PR #239",
+        ])
+
+    def test_clean_when_record_matches_the_log(self):
+        self._record_a_skill()
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        findings = eval_status.find_log_drift(record, {"a-skill"})
+        self.assertEqual(findings, [])
+
+    def test_flags_a_real_verdict_backed_by_an_empty_log(self):
+        """The exact #245 shape: record() then wipe the log underneath
+        it, simulating a merge that regenerated the file from a stale
+        log."""
+        self._record_a_skill()
+        (self.tmp / "docs" / "eval-log" / "a-skill.jsonl").write_text("", encoding="utf-8")
+
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        findings = eval_status.find_log_drift(record, {"a-skill"})
+        self.assertEqual(len(findings), 1)
+        self.assertIn("a-skill", findings[0])
+        self.assertIn("NO observations", findings[0])
+
+    def test_flags_a_record_that_disagrees_with_the_logs_latest(self):
+        """The more general form: both have data, but they disagree --
+        not just the empty-log case."""
+        self._record_a_skill()
+        doc = eval_status.load_full_doc(eval_status.RECORD_PATH)
+        doc["skills"]["a-skill"]["verdict"] = "improve"  # hand-corrupt the record only
+        eval_status.dump_record(doc, eval_status.RECORD_PATH)
+
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        findings = eval_status.find_log_drift(record, {"a-skill"})
+        self.assertEqual(len(findings), 1)
+        self.assertIn("a-skill", findings[0])
+
+    def test_main_default_path_fails_on_drift_and_passes_once_reseeded(self):
+        """End to end, through scripts/eval_status.py's own default
+        (no-flag) path -- the exact command the PR's own verification
+        bar names ("scripts/eval_status.py reports clean"). Mutation
+        checked in both directions in the SAME test, not asserted only
+        one way."""
+        self._record_a_skill()
+        self.assertEqual(eval_status.main([]), 0)
+
+        log_path = self.tmp / "docs" / "eval-log" / "a-skill.jsonl"
+        original = log_path.read_text(encoding="utf-8")
+        log_path.write_text("", encoding="utf-8")
+        self.assertEqual(eval_status.main([]), 1, "guard did not fire with the log emptied")
+
+        log_path.write_text(original, encoding="utf-8")
+        self.assertEqual(eval_status.main([]), 0, "guard did not clear once the log was restored")
+
+
+class TestConflictDemonstration(unittest.TestCase):
+    """agent-b3.md's own bar: demonstrate the conflict is gone by
+    construction, not by argument. Runs a REAL git init/commit/branch/merge
+    sequence -- not a mock, not an assertion that it "should" work.
+    Skips if git is not on PATH rather than failing an environment that
+    lacks it."""
+
+    def setUp(self):
+        self.git = shutil.which("git")
+        if not self.git:
+            self.skipTest("git not on PATH")
+
+    def _env(self):
+        # CI runners have no global git identity configured at all (unlike
+        # a dev machine's own ~/.gitconfig) -- every git subprocess this
+        # class runs, including the merge commits, needs this env or the
+        # commit/merge itself fails with "empty ident name" before ever
+        # reaching the merge=union behaviour under test. Found by CI
+        # itself failing on the two `subprocess.run(...)` merge calls
+        # below, which had not been routed through this env (only _run
+        # had it) -- fixed by giving both the same one source of truth.
+        return {**os.environ,
+                "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@test",
+                "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@test"}
+
+    def _run(self, repo, *args):
+        result = subprocess.run(
+            [self.git, *args], cwd=repo, capture_output=True, text=True, env=self._env(),
+        )
+        self.assertEqual(result.returncode, 0, f"git {args}: {result.stderr}")
+        return result.stdout
+
+    def _init_repo(self):
+        """A throwaway repo carrying the REAL shipped .gitattributes (not
+        a re-typed copy that could silently drift from what actually
+        ships) -- the union merge driver it declares is what this whole
+        test class exists to prove is load-bearing, not decoration."""
+        repo = Path(tempfile.mkdtemp())
+        self._run(repo, "init", "-q", "-b", "main")
+        (repo / "docs" / "eval-log").mkdir(parents=True)
+        real_gitattributes = REPO_ROOT / ".gitattributes"
+        (repo / ".gitattributes").write_text(
+            real_gitattributes.read_text(encoding="utf-8"), encoding="utf-8")
+        self._run(repo, "add", "-A")
+        self._run(repo, "commit", "-q", "-m", "base: .gitattributes")
+        return repo
+
+    def _write_observation(self, repo, skill, entry):
+        # git does not track empty directories -- a checkout onto a branch
+        # that never committed anything under docs/eval-log/ can leave it
+        # missing on disk, so this recreates it every time rather than
+        # trusting _init_repo's own mkdir to have survived a branch switch.
+        path = repo / "docs" / "eval-log" / f"{skill}.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, sort_keys=True) + "\n")
+
+    def test_two_disjoint_skills_merge_without_conflict(self):
+        """Lane A evaluates skill-x, lane B evaluates skill-y, on branches
+        off the same base -- disjoint files, must merge with zero
+        conflict, exactly the collision the old single
+        docs/eval-status.json produced three times in one night
+        (#239/#240/#243)."""
+        repo = self._init_repo()
+        self.addCleanup(shutil.rmtree, repo, ignore_errors=True)
+        base_x = repo / "docs" / "eval-log" / "skill-x.jsonl"
+        base_y = repo / "docs" / "eval-log" / "skill-y.jsonl"
+
+        self._run(repo, "checkout", "-q", "-b", "lane-a")
+        self._write_observation(repo, "skill-x", {
+            "verdict": "keep", "date": "2026-08-22", "evidence": "e", "source": "PR #239 (lane A)"})
+        self._run(repo, "add", "-A")
+        self._run(repo, "commit", "-q", "-m", "lane A: skill-x evaluated")
+
+        self._run(repo, "checkout", "-q", "main")
+        self._run(repo, "checkout", "-q", "-b", "lane-b")
+        self._write_observation(repo, "skill-y", {
+            "verdict": "improve", "date": "2026-08-22", "evidence": "e", "source": "PR #240 (lane B)"})
+        self._run(repo, "add", "-A")
+        self._run(repo, "commit", "-q", "-m", "lane B: skill-y evaluated")
+
+        self._run(repo, "checkout", "-q", "main")
+        self._run(repo, "merge", "-q", "--no-edit", "lane-a")
+        result = subprocess.run(
+            [self.git, "merge", "--no-edit", "lane-b"], cwd=repo, capture_output=True, text=True, env=self._env())
+        self.assertEqual(result.returncode, 0,
+                          f"merging lane-b after lane-a FAILED -- the exact collision this fix "
+                          f"exists to prevent:\n{result.stderr}")
+
+        x_obs = [json.loads(line) for line in base_x.read_text(encoding="utf-8").splitlines() if line]
+        y_obs = [json.loads(line) for line in base_y.read_text(encoding="utf-8").splitlines() if line]
+        self.assertEqual(x_obs[-1]["source"], "PR #239 (lane A)")
+        self.assertEqual(y_obs[-1]["source"], "PR #240 (lane B)")
+
+    def test_two_evaluations_of_the_same_skill_both_survive_a_merge(self):
+        """Lane A and lane B BOTH evaluate skill-z independently, off the
+        same base -- both observations must survive the merge, distinct
+        and attributed, not one silently discarding the other.
+
+        FOUND, NOT ASSUMED, while writing this test: git's DEFAULT text
+        merge does NOT resolve two pure appends to the end of the same
+        file automatically -- both sides' hunks anchor on the same
+        trailing context line, so git reports a real content conflict
+        even though the two changes are logically disjoint (verified by
+        running exactly this sequence with .gitattributes deleted: exit
+        1, `<<<<<<< HEAD` markers). Reported rather than worked around by
+        loosening this test (agent-b3.md's own bar) -- the actual fix is
+        `merge=union` in .gitattributes (docs/eval-log/*.jsonl), git's own
+        built-in driver for "keep every line either side added." This
+        test exercises the REAL shipped .gitattributes (via _init_repo)
+        and must see zero conflict, both observations present, in commit
+        order."""
+        repo = self._init_repo()
+        self.addCleanup(shutil.rmtree, repo, ignore_errors=True)
+        log = repo / "docs" / "eval-log" / "skill-z.jsonl"
+
+        self._run(repo, "checkout", "-q", "-b", "lane-a")
+        self._write_observation(repo, "skill-z", {
+            "verdict": "could_not_measure", "date": "2026-08-20", "evidence": "e", "source": "PR #239 (lane A)"})
+        self._run(repo, "add", "-A")
+        self._run(repo, "commit", "-q", "-m", "lane A: skill-z, first independent evaluation")
+
+        self._run(repo, "checkout", "-q", "main")
+        self._run(repo, "checkout", "-q", "-b", "lane-b")
+        self._write_observation(repo, "skill-z", {
+            "verdict": "improve", "date": "2026-08-22", "evidence": "e", "source": "PR #244 (lane B)"})
+        self._run(repo, "add", "-A")
+        self._run(repo, "commit", "-q", "-m", "lane B: skill-z, second independent evaluation")
+
+        self._run(repo, "checkout", "-q", "main")
+        self._run(repo, "merge", "-q", "--no-edit", "lane-a")
+        result = subprocess.run(
+            [self.git, "merge", "--no-edit", "lane-b"], cwd=repo, capture_output=True, text=True, env=self._env())
+        self.assertEqual(
+            result.returncode, 0,
+            f"same-skill concurrent append did NOT merge cleanly -- the .gitattributes "
+            f"merge=union driver did not take effect:\n{result.stderr}",
+        )
+
+        observations = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines() if line]
+        sources = [o["source"] for o in observations]
+        self.assertEqual(
+            sources, ["PR #239 (lane A)", "PR #244 (lane B)"],
+            f"expected BOTH independent evaluations to survive the merge, in order, got: {observations}",
+        )
 
 
 if __name__ == "__main__":

@@ -38,6 +38,27 @@ an evidence path that doesn't exist, a stray date on "unevaluated"). This
 validates the SAME rules `check()` above enforces before it ever touches
 the file, so a --record call can never produce a record its own `check()`
 would then reject. See do_record's own docstring for the exact contract.
+
+STORAGE, since agent-b3.md's own fix (three PRs -- #239, #240, #243 --
+conflicted on this one shared file the same night): docs/eval-status.json
+is no longer hand-authored data. It is GENERATED, by this script, from
+docs/eval-log/<skill>.jsonl -- one APPEND-ONLY file per skill, one JSON
+line per observation ({"verdict", "date", "evidence", "source"}, "source"
+naming the pass/PR that produced it, the attribution the single-record
+shape had no room for). A pass that evaluates skill X now touches only
+docs/eval-log/X.jsonl -- two passes over disjoint skills touch disjoint
+files and cannot conflict at the git level at all; two independent
+evaluations of the SAME skill both survive as separate lines in that
+skill's own log, distinguishable by --history, rather than the second one
+silently overwriting the first the way a single-record entry always did.
+docs/eval-status.json itself keeps its EXACT pre-existing shape ($comment
++ one current entry per skill, no "source" field) for every reader that
+already depends on it (`check()`, --summary, --unevaluated, downstream
+tooling) -- it is regenerated to show each skill's LATEST observation
+(by date, ties broken by log order) every time --record runs, via the
+same dump_record() this file has always used, so its own byte-for-byte
+round-trip property is unchanged. See regenerate_record()'s own docstring
+for exactly how "latest" is chosen.
 """
 
 from __future__ import annotations
@@ -51,6 +72,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 RECORD_PATH = REPO / "docs" / "eval-status.json"
 SKILLS_ROOT = REPO / "skills"
+EVAL_LOG_DIR = REPO / "docs" / "eval-log"
 
 VERDICTS = {"keep", "improve", "rename", "drop", "could_not_measure", "unevaluated"}
 RECORDABLE_VERDICTS = VERDICTS - {"unevaluated"}
@@ -97,24 +119,117 @@ def dump_record(doc: dict, path: Path) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def do_record(skill: str, verdict: str | None, evidence: str | None, date: str | None) -> int:
-    """Writes docs/eval-status.json's entry for `skill` -- the one path
-    --record exposes, and the one this script wants every future pass to
-    use instead of a hand edit (see this module's own docstring).
+def log_path(skill: str) -> Path:
+    """docs/eval-log/<skill>.jsonl -- the ONE file a pass evaluating
+    `skill` ever writes to. Two passes over disjoint skills touch two
+    disjoint files here and cannot conflict at the git level; this is the
+    property that makes this storage shape the fix for the file-per-PR
+    conflict agent-b3.md's own brief measured (three PRs, one night, all
+    on the old single docs/eval-status.json)."""
+    return EVAL_LOG_DIR / f"{skill}.jsonl"
+
+
+def read_observations(skill: str) -> list[dict]:
+    """Every observation ever recorded for `skill`, in the order its own
+    log file has them (append order) -- oldest first. A skill with no log
+    file yet (never evaluated) returns [], not an error: absence is a
+    typed value here the same way "unevaluated" already is in the
+    generated record (this module's own top-of-file doc comment)."""
+    path = log_path(skill)
+    if not path.is_file():
+        return []
+    observations = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        observations.append(json.loads(line))
+    return observations
+
+
+def append_observation(skill: str, entry: dict) -> None:
+    """Appends entry as one JSON line to skill's own log file -- the ONLY
+    write this module performs against docs/eval-log/. Never rewrites or
+    reorders a line already there: two independent evaluations of the
+    same skill both survive as two separate lines, not one overwriting
+    the other, which is exactly what the single-record shape could not
+    do (agent-b3.md's own brief: "independent second evaluations are the
+    most valuable thing the loop produces and are currently the ones most
+    at risk of being merged away")."""
+    EVAL_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    with log_path(skill).open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, sort_keys=True) + "\n")
+
+
+def latest_observation(observations: list[dict]) -> dict | None:
+    """The most recently DATED observation, not simply the last line in
+    the file -- two passes appending to the same skill's log on separate
+    branches can land in either order once git merges them (both are pure
+    additions at end-of-file; nothing here assumes one branch's commit
+    lands before the other's), so trusting file order alone could let a
+    genuinely older evaluation win a comparison it should have lost.
+    Ties (identical date) keep log order, on the assumption that within
+    one calendar day, appended-later means observed-later. None for an
+    empty list -- "never evaluated," not a KeyError waiting to happen."""
+    if not observations:
+        return None
+    return max(enumerate(observations), key=lambda pair: (pair[1]["date"], pair[0]))[1]
+
+
+def regenerate_record(comment: str, skill_names: set[str]) -> dict:
+    """Rebuilds the FULL docs/eval-status.json doc ($comment + skills)
+    from every skill's own log file under docs/eval-log/ -- the
+    "mechanical, not manual" regeneration agent-b3.md's own brief
+    requires. Each skill's entry is its LATEST observation's own
+    verdict/date/evidence, in the EXACT shape the record has always had
+    (no "source" key here -- source lives only in the log; adding it to
+    the generated record would change a schema every existing reader,
+    including dump_record's own round-trip test, depends on). A skill
+    with no observations at all gets the same "unevaluated" default the
+    hand-authored record always used."""
+    skills: dict[str, dict] = {}
+    for name in sorted(skill_names):
+        latest = latest_observation(read_observations(name))
+        if latest is None:
+            skills[name] = {"verdict": "unevaluated", "date": None, "evidence": None}
+        else:
+            skills[name] = {
+                "verdict": latest["verdict"],
+                "date": latest["date"],
+                "evidence": latest["evidence"],
+            }
+    return {"$comment": comment, "skills": skills}
+
+
+def do_record(skill: str, verdict: str | None, evidence: str | None, date: str | None,
+              source: str | None) -> int:
+    """Appends ONE observation to docs/eval-log/<skill>.jsonl, then
+    regenerates docs/eval-status.json from every skill's own log -- the
+    one path --record exposes, and the one this script wants every future
+    pass to use instead of a hand edit (see this module's own docstring).
+    Writing only ever APPENDS to skill's own log file; an earlier
+    observation for the same skill is never touched, so two independent
+    evaluations of one skill both survive as separate lines, distinct
+    from and never overwriting each other (--history reads them back).
 
     Refuses (exit 2, prints why) rather than writing anything when:
       - `skill` has no skills/<name>/ directory -- never record a verdict
         for something that doesn't exist.
       - `verdict` is not one of RECORDABLE_VERDICTS -- "unevaluated" is
         not recordable THROUGH this flag; it is the record's own default
-        for an entry nobody has touched, never something to write back
-        (recording "unevaluated" on purpose is indistinguishable from
-        never having called this at all, so there is nothing for this
-        path to do for it).
+        for an entry no log has an observation for yet, never something
+        to write back (recording "unevaluated" on purpose is
+        indistinguishable from never having called this at all, so there
+        is nothing for this path to do for it).
       - `evidence` is missing, or does not point at a real file in this
         repo -- the same "date/evidence load-bearing, not decoration"
         rule `check()` already enforces; recording an entry `check()`
         would then flag as drift is exactly what this flag exists to stop.
+      - `source` is missing -- the one field this shape adds over the old
+        single-record entry, and the one that makes "which pass produced
+        this" decidable from the file itself rather than from memory
+        (agent-b3.md's own bar). Never optional: an unattributed
+        observation is exactly the ambiguity this fix exists to remove.
 
     `date` defaults to today (real wall-clock date; this is an ordinary
     script run by a human/agent, not a Workflow script, so datetime.date.
@@ -142,20 +257,44 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
         print(f"--record {skill}: evidence path {evidence!r} does not exist "
               "in this repo -- write the file first", file=sys.stderr)
         return 2
+    if not source:
+        print(f"--record {skill}: --source is required -- name the pass/PR "
+              "this observation came from (e.g. \"PR #244\")", file=sys.stderr)
+        return 2
 
     try:
-        doc = load_full_doc(RECORD_PATH)
+        comment = load_full_doc(RECORD_PATH)["$comment"]
+        skill_names = discover_skill_names(SKILLS_ROOT)
     except RecordError as exc:
         print(f"COULD-NOT-CHECK: {exc}", file=sys.stderr)
         return 2
 
-    doc["skills"][skill] = {
+    resolved_date = date or datetime.date.today().isoformat()
+    append_observation(skill, {
         "verdict": verdict,
-        "date": date or datetime.date.today().isoformat(),
+        "date": resolved_date,
         "evidence": evidence,
-    }
-    dump_record(doc, RECORD_PATH)
-    print(f"recorded {skill}: {verdict} ({doc['skills'][skill]['date']}, {evidence})")
+        "source": source,
+    })
+    dump_record(regenerate_record(comment, skill_names), RECORD_PATH)
+    print(f"recorded {skill}: {verdict} ({resolved_date}, {evidence}, source={source!r})")
+    return 0
+
+
+def do_history(skill: str) -> int:
+    """Prints every observation ever recorded for `skill`, oldest first --
+    the demonstration that two independent evaluations of the same skill
+    both survive and stay distinguishable (agent-b3.md's own bar), not
+    just an assertion that the log format allows it."""
+    if not (SKILLS_ROOT / skill).is_dir():
+        print(f"--history {skill}: no skills/{skill}/ directory", file=sys.stderr)
+        return 2
+    observations = read_observations(skill)
+    if not observations:
+        print(f"{skill}: no observations recorded")
+        return 0
+    for obs in observations:
+        print(f"{obs['date']}  {obs['verdict']:<18} source={obs['source']!r}  evidence={obs['evidence']}")
     return 0
 
 
@@ -212,6 +351,61 @@ def check(record: dict, skill_names: set[str]) -> list[str]:
     return findings
 
 
+def find_log_drift(record: dict, skill_names: set[str]) -> list[str]:
+    """Catches the exact failure agent-b3.md's PR comment measured live on
+    PR #245: a git merge can leave docs/eval-status.json's TEXT looking
+    correct (because the merge happened to land in a region neither side
+    touched) while the skill's own docs/eval-log/<skill>.jsonl -- the
+    actual source of truth this record is regenerated from -- was never
+    updated to match. GitHub reported that PR MERGEABLE; nothing in
+    check() caught the drift, because check() only validates the record
+    against ITSELF (internally consistent) and against skills/ (every
+    skill has an entry), never against the logs it is supposed to be
+    GENERATED from. This closes that gap: for every skill, the record's
+    own verdict/date/evidence must equal that skill's log's own latest
+    observation, exactly. A skill whose record claims a real verdict but
+    whose log has zero observations is the specific shape the #245
+    incident took (regenerate_record() would silently produce
+    "unevaluated" the next time anyone actually ran it); a skill whose
+    record and log both have data but DISAGREE is the more general form
+    of the same defect.
+
+    Deliberately a SEPARATE function from check(), not folded into it:
+    check()'s own test suite (TestCheck) exercises it against synthetic
+    records for skill names that do not exist in the real
+    docs/eval-log/ -- folding a hard dependency on the real log directory
+    into check() itself would make every one of those tests fail for a
+    reason unrelated to what they test. main()'s default (no-flag) path
+    calls both, against the real record and the real logs."""
+    findings = []
+    for name in sorted(skill_names):
+        entry = record.get(name)
+        if not isinstance(entry, dict):
+            continue  # already flagged above (missing entry / not an object)
+        verdict, date, evidence = entry.get("verdict"), entry.get("date"), entry.get("evidence")
+        latest = latest_observation(read_observations(name))
+
+        if latest is None:
+            if verdict not in (None, "unevaluated"):
+                findings.append(
+                    f"{name}: record shows verdict {verdict!r} but docs/eval-log/{name}.jsonl "
+                    "has NO observations -- the generated record does not match its own source "
+                    "of truth (a merge likely landed a regenerated file without the log entry "
+                    "that backs it -- re-run --record, or regenerate from the logs, before this "
+                    "commit ships)"
+                )
+            continue
+
+        if (verdict, date, evidence) != (latest["verdict"], latest["date"], latest["evidence"]):
+            findings.append(
+                f"{name}: record shows {verdict!r}/{date!r}/{evidence!r} but "
+                f"docs/eval-log/{name}.jsonl's own latest observation is "
+                f"{latest['verdict']!r}/{latest['date']!r}/{latest['evidence']!r} -- "
+                "regenerate docs/eval-status.json from the logs"
+            )
+    return findings
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--unevaluated", action="store_true",
@@ -221,19 +415,28 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--summary", action="store_true",
                      help="print a count per verdict and exit")
     ap.add_argument("--record", metavar="SKILL",
-                     help="record a verdict for SKILL -- the only supported "
-                          "write path for docs/eval-status.json, requires "
-                          "--verdict and --evidence")
+                     help="append an observation for SKILL to docs/eval-log/SKILL.jsonl "
+                          "and regenerate docs/eval-status.json -- the only supported "
+                          "write path for either, requires --verdict, --evidence and --source")
     ap.add_argument("--verdict", choices=sorted(RECORDABLE_VERDICTS),
                      help="verdict to record (with --record)")
     ap.add_argument("--evidence",
                      help="repo-relative path to the evidence file (with --record)")
     ap.add_argument("--date",
                      help="YYYY-MM-DD to record (with --record; default: today)")
+    ap.add_argument("--source",
+                     help="which pass/PR produced this observation, e.g. \"PR #244\" "
+                          "(with --record; required -- see do_record's own docstring)")
+    ap.add_argument("--history", metavar="SKILL",
+                     help="print every observation ever recorded for SKILL, oldest "
+                          "first, and exit")
     args = ap.parse_args(argv)
 
     if args.record:
-        return do_record(args.record, args.verdict, args.evidence, args.date)
+        return do_record(args.record, args.verdict, args.evidence, args.date, args.source)
+
+    if args.history:
+        return do_history(args.history)
 
     try:
         record = load_record(RECORD_PATH)
@@ -257,7 +460,7 @@ def main(argv: list[str]) -> int:
             print(f"{verdict}: {counts.get(verdict, 0)}")
         return 0
 
-    findings = check(record, skill_names)
+    findings = check(record, skill_names) + find_log_drift(record, skill_names)
     if not findings:
         print(f"clean: {len(record)} skill(s) recorded, record matches skills/")
         return 0
