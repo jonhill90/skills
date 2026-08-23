@@ -1,0 +1,4 @@
+2026-08-22T02:00:11Z DEPLOY ATTEMPT 1 FAILED -- missing env var DATABASE_URL in deploy step, exit 1
+2026-08-22T02:05:33Z DEPLOY ATTEMPT 2 FAILED -- missing env var DATABASE_URL in deploy step, exit 1
+2026-08-22T02:11:02Z DEPLOY ATTEMPT 3 FAILED -- missing env var DATABASE_URL in deploy step, exit 1
+2026-08-22T02:11:03Z THIRD FAILURE -- paging on-call next if this doesn't resolve
