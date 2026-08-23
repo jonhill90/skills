@@ -1,5 +1,0 @@
-Reconcile job crashed partway through last night's run (OOM-killed by the
-host, per dmesg). This morning: item-102's claim file is gone (looks
-released, looks done) but there's no results/item-102.json anywhere. The
-other two items in the queue are fine -- claim released AND result
-present for both.
