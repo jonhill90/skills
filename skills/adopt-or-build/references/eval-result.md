@@ -43,10 +43,15 @@ the skill installed than without.
 ## Why `improve`, not `keep`
 
 Same reasoning as this loop's own prior `loop-contract`/`safe-deletion`/
-`research-the-limit` results (jonhill90/skills#231/#233): identical
+`research-the-limit` results (jonhill90/skills#232/#233 -- `safe-deletion`
+was recorded in #232, not #231; #231 covered `verify-the-instrument`,
+`prompt-corpus`, and `mechanize` instead): identical
 correct outcome plus a real turn/token delta is `improve`, not `keep`
 (nothing changed about whether the collision was caught) — and, per
-`docs/evals.md`'s own ×2/×3-repetitions bar, one accidental extra pair
+`docs/evals.md`'s own ×2/×3-repetitions bar (that file was removed from
+this repo 2026-08-09, before this pass ran -- could not be re-checked
+against the current tree; the same ×2/×3 threshold is described, without
+a specific file citation, in `docs/eval-harness-findings.md`), one accidental extra pair
 landing in the same direction is suggestive, not confirmatory; this is
 still recorded as an n=1 result per this task's own instruction not to
 deliberately chase a ×2/×3 pass, with the second pair noted as

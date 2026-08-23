@@ -120,7 +120,8 @@ checked the unfiltered stats.
 
 **The corpus itself is also incomplete**, separately from any tool bug: one
 measured phrase — said and quoted verbatim elsewhere (a personal vault) —
-had **no matching original turn** across 1,150 transcript files. Transcripts
+had **no matching original turn** across 1,150 transcript files (could not
+measure — no primary source found to confirm this count). Transcripts
 are one record of what was said, not the only one. Before reporting "never
 said" or "no evidence of," check whatever other record exists (notes,
 vault, prior write-ups) — an absence in `mine_prompts.py`'s output is

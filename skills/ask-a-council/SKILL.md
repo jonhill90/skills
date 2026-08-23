@@ -90,7 +90,7 @@ opposed to diversity of *tone* — actually costs:
 | (a) Withhold the conclusion | Each reviewer derives independently, before seeing any other reviewer's answer; compare only after. | Free — no extra dispatch, just discipline about ordering. |
 | (b) Different source material | One reviewer reads code, one reads transcripts, one reads external prior art. They cannot echo each other because they have not seen the same thing. | One dispatch per material source. |
 | (c) Opposing objectives | Not "be skeptical" — a job: "find the case against." This is precisely why `devils-advocate` works as a lens. | One dispatch with a stated adversarial objective. |
-| (d) A different model | Genuinely uncorrelated failure modes — a different model fails differently even given the identical lens. | Highest — needs a second harness or provider with quota. **Currently blocked**: codex is at 100% weekly usage with zero credits, copilot at 97.1%. Record this as available in principle and unavailable in practice, so it is not silently forgotten when quota returns. |
+| (d) A different model | Genuinely uncorrelated failure modes — a different model fails differently even given the identical lens. | Highest — needs a second harness or provider with quota. **Blocked as of the 2026-08-11 measured run** (could not measure current quota state from this pass): codex was at 100% weekly usage with zero credits, copilot at 97.1%. Record this as available in principle and unavailable in practice, so it is not silently forgotten when quota returns. |
 
 Personas do not appear in that table. Dropping persona assignment in favor
 of evidence-partitioning ((a)/(b)) and job-assignment ((c), and (d) when

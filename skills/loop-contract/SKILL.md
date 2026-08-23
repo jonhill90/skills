@@ -144,9 +144,8 @@ concatenated straight into the prompt.
 - Not a dispatcher — `dispatching-subagents` decides whether to fan work
   out, the isolation boundary, and what counts as external evidence.
 - Not a reviewer — `sanity-check` owns the reviewer's prompt.
-- Not run state — a `loop-memory` skill, if this collection gets one,
-  would own progress files, receipts, and handoff; this skill names the
-  State field and stops.
+- Not run state — `loop-memory` owns progress files, receipts, and
+  handoff; this skill names the State field and stops.
 - Not a wrapper for any harness's scheduling command. Mechanisms differ
   per harness and change often; the contract does not.
 - Not permission to run unattended. It produces a design; a human decides

@@ -173,7 +173,8 @@ one.
 Whether the two rules the WITHOUT arm missed here would still be missed
 on a second, independent pair -- this is n=1, not the ×2/×3 bar
 `docs/evals.md` sets before treating a result as settled beyond a
-single sample. Recorded as `keep` on the strength of a specific,
+single sample (that file was removed from this repo 2026-08-09, before
+this pass ran -- could not be re-checked against the current tree). Recorded as `keep` on the strength of a specific,
 readable, structural difference rather than a borderline cost delta;
 the eighth pass's own independent replication (below) is exactly that
 second pair, for a different fixture.

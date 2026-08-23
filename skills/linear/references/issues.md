@@ -120,7 +120,7 @@ linear issue title  # Fix login timeout
 
 ## PR Creation Details
 
-`linear issue pr` (alias: `issue pull-request`) creates a GitHub PR via `gh`:
+`linear issue pull-request` (alias: `issue pr`) creates a GitHub PR via `gh`:
 
 ```bash
 linear issue pr \

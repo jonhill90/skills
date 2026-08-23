@@ -48,7 +48,9 @@ The FIRST pair alone would have read as `improve` (turn ratio at this
 harness's 1.5x flag threshold). The SECOND pair inverts the direction
 entirely — the skill-installed arm used *fewer* turns than the
 skill-absent one. Two samples pointing opposite ways is exactly what
-`docs/evals.md`'s ×2/×3-repetitions bar exists to catch: n=1 would have
+`docs/evals.md`'s ×2/×3-repetitions bar (that file was removed from this
+repo 2026-08-09, before this pass ran -- could not be re-checked against
+the current tree) exists to catch: n=1 would have
 shipped a false `improve`. The outcome axis never moved across either
 pair — every one of the four runs solved the task the same, correct way
 — so this is a wash on both axes once measured properly, not a skill

@@ -127,7 +127,7 @@ gh search repos "org:github" --json fullName,description,stargazersCount
 ```bash
 gh search issues "memory leak" --language rust --state open
 gh search issues "label:good-first-issue" --language python --sort created
-gh search prs "author:@me" --state merged --merged ">2024-01-01"
+gh search prs "author:@me" --merged --merged-at ">2024-01-01"
 gh search prs "review:required" --repo OWNER/REPO
 ```
 

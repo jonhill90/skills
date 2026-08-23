@@ -50,9 +50,11 @@ break enough times to enumerate how," mechanize with confidence.
 This is the signal that a step has quietly outgrown stage 1-3 without
 anyone noticing: the shape is no longer unknown, watching has already
 happened, and the model is now paying inference cost for a lookup. The
-canonical instance in this estate: a watchdog re-derived six mechanical
-facts every tick across roughly twenty ticks before anyone caught it and
-wrote a fix.
+canonical instance cited in this estate: a watchdog re-derived six
+mechanical facts every tick across roughly twenty ticks before anyone
+caught it and wrote a fix (could not measure — no matching issue, PR, or
+commit found in jonhill90/agent-supervisor or jonhill90/agent-dotfiles to
+check the specific counts against).
 
 Catching the smell is itself an application of the test above — the fact
 that the answer is identical every time is direct evidence it was never
