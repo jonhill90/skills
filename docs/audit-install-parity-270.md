@@ -96,6 +96,28 @@ document finding and fixing it did so because their harness's own
 `with`/`no-skill:<name>` arm mechanism depends on the shared install path
 being correct, not because of anything specific to those four skills.
 
+**Caveat, added on cross-lane review (estate:4): "structurally immune" above
+is scoped to install-absence only, and does not settle a separate question
+for `progressive-disclosure` or `plan-parallel-execution`'s counting-
+measurement recount.** Both deliver the skill to Arm A the same way —
+a prompt instruction telling Arm A to read `skills/<name>/SKILL.md` in the
+repo checkout — and that is exactly the delivery mechanism this reviewer's
+own #269 write-up (`skills/github-cli/references/eval-result.md`, "Known
+harness limitation") found is never logged anywhere a scorer reads: neither
+scenario's fixture records whether that `Read` call actually happened and
+returned real content, the same way `$STUB_LOG` never would have. Being
+immune to install-absence (what this audit checks) and sitting inside the
+prompt-delivery-never-confirmed blindness (what #269 found, after this
+audit's own scenarios were designed) are two different, independent
+properties — this audit settles the first for both skills and does not
+settle, and did not previously say it left unsettled, the second. Using the
+same register already used above for `test-in-the-consumer-context`: this
+is not evidence either verdict is wrong, and neither is being called
+"invalid and must be re-run" on the strength of this caveat alone — it is
+named because claiming "structurally immune" without this scope would
+overstate what was actually checked, which is the same defect this audit
+exists to catch elsewhere in the record.
+
 ## Also found, related but distinct — installed-but-STALE, not missing
 
 Running the same tool against all 41 skills surfaced a second, different
