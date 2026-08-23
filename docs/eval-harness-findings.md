@@ -255,6 +255,55 @@ This makes **two directly-tested cases, not a proof** -- exactly the caveat this
 
 This is argued from the data above, not from first principles: it targets exactly the gap the `create-skill` result exposes (a clean, well-designed single scenario still didn't discriminate) and exactly what these nine skills' own content is actually about (habit and consistency over time, not a one-shot capability gap) -- rather than proposing a generically "harder" eval, it proposes the SPECIFIC axis (repetition/duration, not difficulty of a single instance) that this population's own evidence says the current instrument is blind to. Recommending this, not implementing it -- building the longitudinal harness is a process-design task for whoever picks this up next, and is out of scope for this evaluate-nothing-new pass.
 
+### Cause D (found in the fourteenth pass, one instance so far): a
+### tool skill with real system access can leave side effects entirely
+### outside its own scenario's fixture
+
+`tmux`'s eval scenario (`skills/tmux/references/eval-scenario/`) asks a
+run to fix a small pane-safety utility and verify it against a
+self-contained test harness that creates and tears down its own
+PID-suffixed tmux sessions. After both arms completed, the live host had
+two extra tmux sessions neither the fixture nor the test harness
+created: `eval-with` and `eval-without`, each with five windows named
+`controller`/`worker-1`/`worker-2`/`worker-4`/`worker-5-` — a layout
+matching `tmux`'s own multi-agent-supervision documentation almost
+exactly. Empty, harmless, and killed once confirmed as debris — but
+unaccounted for by the scenario itself, and not caught until a manual
+`tmux ls` after the run, not by anything the harness checks on its own.
+
+Every other scenario evaluated across all fourteen passes runs inside a
+git-fixture sandbox with no reach outside `dest` (`eval_skill.py`'s own
+`build_fixture`/headless-run design). `tmux`, `linear`, `github-cli`,
+and `obsidian` are different in kind: their entire subject is driving a
+real external system (a terminal multiplexer, an issue tracker, a
+desktop app), and a scenario for one of them under
+`--dangerously-skip-permissions` has no fixture-sandbox boundary at all
+— the "external system" the skill exists to operate IS the host. This
+pass separately found, by hand, before authoring any scenario, that the
+real `obsidian` CLI installed on this machine does not fail fast when
+the app isn't running (contrary to `SKILL.md`'s own documented
+behavior) — it instead triggers real app-launch/update-check machinery
+and hangs; that skill was dropped from this pass's candidate list before
+a single automated run touched it, specifically because of this class of
+risk, not because of anything about the skill's own quality.
+
+**The general lesson, stated once:** a scenario for a tool skill whose
+entire purpose is operating a real external system needs either a
+verified-sandboxed target (a throwaway account, a disposable local
+resource, provably no reachable production state) or an explicit,
+manual "what could this actually touch" check before it is ever run
+automatically — `eval_skill.py`'s existing git-fixture isolation, built
+for scenarios that edit files, provides no isolation at all for this
+category, and assuming it does is exactly the kind of untested
+assumption `docs/evals.md`'s "Scoring is code, and every rule is a scar"
+section warns against. This pass's own response was conservative rather
+than corrective: pick scenarios where the "real system" is either fully
+local and disposable (`tmux`, via PID-suffixed sessions) or absent
+entirely (`prd`, `primer` — no external tool at all), and record
+`could_not_measure` rather than trust a result once contamination was
+found, rather than attempting to harden `eval_skill.py` itself for this
+category inside this pass's own scope.
+
 ## What I did NOT do
 
 - Did not evaluate any new skill. All 25 `could_not_measure` counts, and
