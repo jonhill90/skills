@@ -149,6 +149,49 @@ matter, not just any remaining skill:
   one loop's run state) -- picking it instead would test near-identical
   ground with a less direct self-prediction backing the choice.
 
+## Second trial: `keep-me-honest`, once the runner/scorer gate closed
+
+`skills#271`'s own `devils-advocate` pass gated the runner (component 2)
+and scorer (component 3) recommendations on a bounded `vally` spike; that
+spike ran (`skills#275`) and closed the gate. `keep-me-honest` is picked
+for a different reason than `loop-memory` was — it is NOT one of the nine
+`clean no-discrimination` skills `docs/eval-harness-findings.md` §2 names
+(its own existing `could_not_measure` verdict comes from that file's §4
+cost-signal-noise bucket instead, a wash on both axes across two prior
+pairs). The pick is direct from the skill's own content: `keep-me-honest`'s
+SKILL.md names its trigger as a SECOND round of pushback against a
+restated claim, and no existing scenario for this skill runs longer than
+one message, so that trigger has never actually been staged — the same
+"generalize the design to the skill whose own content most directly
+predicts this axis matters" reasoning `loop-memory`'s own selection used,
+applied to a different skill for a different, skill-specific reason
+rather than to another member of the same nine-skill pool.
+
+Worked out in full in `skills/keep-me-honest/eval-scenario/` (`prompt.md`,
+`criteria.md`, `RESULT.md`, `fixture/`, private repo, cited by number
+only): round one (the skill's own already-documented single-session case)
+happens in session 1; round two is the identical false claim, restated,
+delivered to a session-2 subagent with no memory round one happened.
+Scoring model per skills#275's own "take the scoring rule regardless"
+instruction — a correctness read decides, cost/latency reported but
+advisory only.
+
+**Result: `could_not_measure`, clean no-discrimination, design fired
+cleanly** — both arms independently re-verified the underlying claim via
+the fixture's own mechanical check and held their position in session 2,
+with or without the skill. Read plainly, not treated as a miss: this
+skill's check ("does my CURRENT observation conflict") doesn't need
+cross-session memory to fire, unlike `loop-memory`'s file-taxonomy
+mechanism — a real, useful negative result about where this skill's own
+value actually sits, not a defect in the instrument. One design-validity
+correction made before any scored run: the original design assumed an arm
+would check in before continuing past a discovered conflict; the first
+attempt showed a capable agent doesn't necessarily do that unprompted, so
+a checkpoint instruction was added to both arms' session-1 prompt,
+identically, before either scored run — see `RESULT.md`'s own
+"design-validity note," kept visible rather than folded into "as
+designed."
+
 ## What this document does NOT do
 
 - Does not evaluate any skill under the OLD two-arm single-shot design.
@@ -156,15 +199,19 @@ matter, not just any remaining skill:
   that would be the expensive kind of busy work.
 - Does not build a general-purpose longitudinal harness (no new flag on
   `scripts/eval_skill.py`, no `score_*` function, no schema change to
-  `docs/eval-status.json`). One scenario, hand-run and hand-scored, the
-  same weight class as `loop-memory`'s own original pass-12 scenario and
-  `distill`'s escalation, both of which were also run without harness
-  changes. Generalizing this into reusable tooling is future work if the
-  first trial's result justifies the investment -- building the tooling
-  before knowing whether the design even fires would be backwards.
+  `docs/eval-status.json`). Two scenarios now, both hand-run and
+  hand-scored, the same weight class as `loop-memory`'s own original
+  pass-12 scenario and `distill`'s escalation, all run without harness
+  changes. Generalizing this into reusable tooling is future work if a
+  trial's result justifies the investment -- building the tooling before
+  knowing whether the design even fires would be backwards.
 - Does not commit to running this against the other six untested
-  `clean no-discrimination` skills. `loop-memory`'s result (see
-  `skills/loop-memory/references/eval-result.md`'s longitudinal
-  addendum) is one data point, held to the same "could not settle it for
-  the other N" honesty `docs/eval-harness-findings.md` already applies to
-  the single-shot escalations.
+  `clean no-discrimination` skills (`ask-a-council`, `dispatching-
+  subagents`, `sanity-check`, `tdd`, `memory-conventions`, `spec` --
+  unchanged by this trial; `loop-memory` is the only one of that
+  nine-skill pool tried so far). `keep-me-honest` was a deliberate
+  off-pool pick for a skill-specific reason (see above), not a second
+  draw from the same six. Two data points total, held to the same
+  "could not settle it for the other N" honesty
+  `docs/eval-harness-findings.md` already applies to the single-shot
+  escalations.
