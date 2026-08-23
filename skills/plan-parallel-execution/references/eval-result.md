@@ -296,3 +296,32 @@ pressure that targets the skill's own axis (concurrency safety) the way
 the skill. Not run here; the honest answer for this scenario at this
 scale, this task-count, and this framing is **could not measure** a
 skill-attributable difference.
+
+---
+
+## Non-regression re-run against the fixed scorer (jonhill90/skills#267)
+
+Recorded 2026-08-23, jonhill90/skills#267 (a fix to `mechanize`'s cost
+axis — see that skill's own `eval-result.md` and
+`docs/eval-cost-axis-principle.md` for the fix itself). This scenario's
+own scoring — `turns_used`, a batch count — was not changed by #267
+(`docs/eval-cost-axis-principle.md` explains why: batching is already
+the unit `turns_used` measures, so there is no tool-call-vs-work-item
+gap here for the fix to close). Re-run live, unmodified `criteria.md`/
+`check_answer.py`, specifically to confirm the neighboring fix did not
+disturb this scenario's own correct verdict.
+
+| | groups | turns_used | actions_log | real collision? |
+|---|---|---:|---:|---|
+| A (skill) | `[[T1,T2,T4],[T3,T5]]` | 2 | 7 | none (checked: 0 dupes in all 3 files) |
+| B (no skill) | `[[T1,T2,T4],[T3,T5]]` | 3 | 7 | none (checked: 0 dupes in all 3 files) |
+
+Same result as the corrected counting-measurement re-run above: both
+arms independently derived the identical correct grouping, executed it
+for real, and produced zero collisions. `turns_used` (2 vs 3) is a
+one-turn gap inside this scenario's own tolerance for "comparably few
+turns" — one wait-call was split into two in arm B's trace rather than a
+different grouping strategy — not a cost divergence worth recording.
+**Verdict unchanged: `could_not_measure`.** This is the non-`mechanize`
+half of #267's own validation: the fix changes nothing here, which is
+the expected and correct outcome, not an oversight.

@@ -27,33 +27,48 @@ script, run once) versus re-deriving the same judgement 26 times by hand
    scores `results.csv` against a ground truth fixed at fixture-generation
    time (`ground_truth.json`, not exposed to either arm -- kept one level
    above `fixture/`, the directory both arms are told about).
-2. **`script_written`, self-reported in `manifest.json`, cross-checked**
-   against `actions_log`'s length per the plausibility flags in
-   `check_answer.py` -- a script-based solve should need roughly a
-   constant number of actions regardless of the 26-tick count (read the
-   ticks, write one script, run it, write results); a manual solve should
-   scale with the tick count.
-3. **`actions_log` length itself** -- the primary countable cost signal,
-   analogous to `progressive-disclosure`'s `tool_uses`/`files_opened`.
-   Not a judged impression of "did it feel more disciplined" -- a literal
+2. **`inference_judgements`, self-reported in `manifest.json` -- the
+   primary cost signal (skills#267).** The count of the 26 required
+   verdicts produced by the model's own per-record reasoning, as opposed
+   to by one mechanical pass applied to all of them at once. This is
+   what `mechanize`'s own claim is actually about
+   (`docs/eval-cost-axis-principle.md`): raw tool-call/action counts
+   conflate "how much judgement was done" with "how the answer was
+   packaged into tool calls," because N per-record inferences can be
+   emitted in fewer tool calls than a mechanical pass plus its
+   supporting file operations. `inference_judgements` cannot be gamed by
+   that packaging difference the way `tool_uses` can.
+3. **`script_written` and `actions_log` length, cross-checked against
+   `inference_judgements`, not used as the primary signal.** A
+   `script_written=false` run with low `inference_judgements` (e.g. one
+   inline command, not persisted) still counts as mechanizing --
+   backing off a *file* under time pressure is a different, narrower
+   call than backing off the mechanical pass itself. The plausibility
+   flags in `check_answer.py` (`script_written` vs `actions_log` length)
+   remain a secondary cross-check, not a substitute for the self-reported
    count.
+4. **Raw `tool_uses`/`actions_log` length as tiebreak only**, when
+   `inference_judgements` ties between arms (e.g. both 0, or both 26) --
+   this is the one case raw counts still meaningfully distinguish cost,
+   same as before this fix.
 
 ## Scoring rule
 
-- Both arms correct AND both mechanize (script_written=true, short
-  actions_log) → no discrimination on this axis; record
+- Both arms correct AND `inference_judgements` ties (both ~0 or both
+  ~26) → no discrimination on the judgement axis; fall back to raw
+  `tool_uses` as tiebreak; if that also ties within noise, record
   `could_not_measure` (design did not fire, not evidence of no effect).
-- Both arms correct AND neither mechanizes (both process ticks
-  individually, actions_log scales with 26) → same, `could_not_measure`.
-- One arm mechanizes (short, roughly-constant actions_log) and the other
-  does not (actions_log visibly scales with the 26 remaining ticks), both
-  still correct → real discrimination on the cost axis mechanize's own
-  claim is about. This is the `progressive-disclosure`-shaped result:
-  record per whichever arm is cheaper and whether that arm is the
+- Both arms correct AND one arm's `inference_judgements` is
+  substantially lower than the other's (mechanized vs re-derived,
+  regardless of `script_written` or raw tool-call count) → real
+  discrimination on the cost axis mechanize's own claim is about. This
+  is the `progressive-disclosure`-shaped result: record per whichever
+  arm has the lower `inference_judgements` and whether that arm is the
   skill-loaded one.
 - Either arm produces a malformed/missing `results.csv` or `manifest.json`
-  → INVALID for that arm specifically, not scored as wrong; re-run rather
-  than record on a design failure.
+  (including a missing `inference_judgements` field) → INVALID for that
+  arm specifically, not scored as wrong; re-run rather than record on a
+  design failure.
 
 ## What would make this scenario invalid
 
