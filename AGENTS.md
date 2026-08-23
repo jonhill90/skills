@@ -142,6 +142,53 @@ surface for open work here. Close an issue with `Fixes #N` in the PR
 body. Branch with a type prefix (`docs/`, `feat/`, `chore/`); CI gates on
 `pull_request`.
 
+## Merging PRs you did not author (jonhill90/skills#254)
+
+When more than one agent lane works this repository at once, every lane
+pushes through the same shared GitHub login — `gh pr review --approve`
+is refused as self-review regardless of who is actually asking, so a
+real cross-lane review has to be recorded another way: a reviewing lane
+posts a plain PR comment, not a GitHub review object, carrying
+
+```
+Verdict: APPROVE            (or REQUEST CHANGES, with specifics)
+Review-Lane: <reviewing lane's own name>
+Reviewed-SHA: <the exact head commit SHA reviewed>
+```
+
+and the PR's own body states which lane opened it:
+
+```
+Author-Lane: <authoring lane's own name>
+```
+
+Before merging a PR you did not author, run
+
+```bash
+python3 scripts/pr_verdict.py --repo <owner/name> --number <N>
+```
+
+and merge only on exit code `0` (`approved`) — every other exit code
+(`1` rejected, `2` no verdict on record, `3` unknown/unresolved: same
+lane, stale SHA, a missing trailer) means do not merge, full stop, same
+as CI being red. See `scripts/pr_verdict.py`'s own doc comment for
+exactly what this checks and why: it is a port of
+`jonhill90/agent-supervisor`'s `verdict.py`/`verdict-independence.sh`,
+adapted because this repository has no lane ledger to resolve
+authorship from independently — `Author-Lane:`/`Review-Lane:` are both
+self-declared, the same trust model either side already has.
+
+**Not wired into CI, deliberately.** This repository's own CI
+(`.github/workflows/validate.yml`) never merges a PR — every job here
+validates content and exits; merging is always a separate `gh pr merge`
+invocation an operator or an agent lane runs directly, outside any
+workflow. There is no merge-time CI job to attach this gate to without
+inventing one that does not otherwise exist; `scripts/pr_verdict.py` is
+the check that invocation must run first, by convention stated here,
+the same way `scripts/check_skill_install.py` is wired into
+`eval_status.py --record` as a Python import rather than a workflow
+step because ITS caller is also not a CI job.
+
 ## Required Verification
 
 Run before considering repository changes complete:
