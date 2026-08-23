@@ -287,18 +287,32 @@ linear label delete "bug"
 
 ## Common Parameters
 
+**Correction (truth pass, 2026-08-23):** `-a` and `-w` each mean two
+different things depending on the subcommand — confirmed directly
+against `linear issue list --help`/`linear issue create --help`, not
+assumed from the table below as it previously read. On `issue
+create`/`issue update`, `-a` is `--assignee`. On `issue list`/`issue
+view`, `-a` is `--app` (open in Linear.app) instead — `--assignee` has
+**no short flag at all** on `list`. `linear issue list --help` genuinely
+lists `-w` for both `--web` and `--workspace` simultaneously (an
+upstream CLI ambiguity, not something this table can resolve); every
+worked example elsewhere in this file already spells these four flags
+out in full rather than reaching for the short form, and the table
+below now does too, for exactly this reason — do not read `-a docs/-w`
+into an `issue list`/`issue view` command from this table alone.
+
 | Parameter | Values | Description |
 |-----------|--------|-------------|
 | `--priority` | `1` Urgent, `2` High, `3` Medium, `4` Low | Issue priority (1-4) |
 | `--state` / `-s` | `triage`, `backlog`, `unstarted`, `started`, `completed`, `canceled` | Workflow state |
 | `--sort` | `priority`, `manual` | Sort order (**required** for `issue list`) |
-| `--assignee` / `-a` | `self`, username, or display name | Assign or filter by user |
-| `-A` / `--all-assignees` | flag | Show issues for all assignees |
-| `-U` / `--unassigned` | flag | Show only unassigned issues |
+| `--assignee` | `self`, username, or display name | Assign or filter by user. `-a` short form on `create`/`update` only — no short flag on `list` |
+| `-A` / `--all-assignees` | flag | Show issues for all assignees (`list` only) |
+| `-U` / `--unassigned` | flag | Show only unassigned issues (`list` only) |
 | `--limit` | number (default: 50, 0=unlimited) | Max items to return |
-| `--web` / `-w` | flag | Open in browser |
-| `--app` / `-a` | flag | Open in Linear.app |
-| `--workspace` / `-w` | slug | Target a specific workspace |
+| `--web` | flag | Open in browser. Short form `-w` collides with `--workspace` on `list`/`view` — spell it out |
+| `--app` | flag | Open in Linear.app (`list`/`view` only). Short form `-a` — do not confuse with `--assignee`'s own `-a` on `create`/`update` |
+| `--workspace` | slug | Target a specific workspace. Short form `-w` collides with `--web` on `list`/`view` — spell it out |
 
 ## Common Workflows
 
