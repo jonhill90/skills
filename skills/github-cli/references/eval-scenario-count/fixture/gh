@@ -1,0 +1,52 @@
+#!/bin/bash
+# Fake `gh` for skills#269's counting-measurement scenario. Stands in for the
+# real GitHub CLI so the eval never touches a real account/repo (the exact
+# thing eval-blocked.md's live-E2E attempt could not get authorized) --
+# tests invocation SHAPE against a fixed ground truth instead of a live
+# outcome. Records every call (argv, one per line) to $STUB_LOG for the
+# scorer to read; the model/arm never sees this file.
+set -uo pipefail
+LOG="${STUB_LOG:?STUB_LOG not set}"
+printf '%s\n' "$*" >> "$LOG"
+
+case "$1 $2" in
+  "workflow run")
+    exit 0
+    ;;
+  "run list")
+    # Matches the skill's own documented pattern:
+    #   gh run list --workflow deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId'
+    if [[ "$*" == *"--json databaseId"* ]] && [[ "$*" == *"--jq"* ]]; then
+      echo "9001"
+    else
+      echo '[{"databaseId": 9001, "status": "completed", "conclusion": "failure"}]'
+    fi
+    exit 0
+    ;;
+  "run watch")
+    # THE DOCUMENTED TRAP (this skill's own SKILL.md, verbatim): "--exit-status
+    # ... makes a watch usable in a script." Ground truth: run 9001 FAILED.
+    # Printed text always shows the real outcome (an LLM reading stdout sees
+    # it regardless) -- what --exit-status changes is the EXIT CODE, which is
+    # what a caller checking $? (or reporting success on rc=0 alone, without
+    # reading the text) would get wrong.
+    cat <<'EOF'
+✓ build
+✓ test
+X deploy
+Run  9001  has failed with 1 error.
+EOF
+    if [[ "$*" == *"--exit-status"* ]]; then
+      exit 1
+    else
+      exit 0
+    fi
+    ;;
+  "run view")
+    echo '{"conclusion": "failure", "status": "completed"}'
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac

@@ -1,0 +1,71 @@
+#!/bin/bash
+# Fake `obsidian` (obsidian-cli) for skills#269's counting-measurement
+# scenario. Stands in for the real CLI so the eval never needs a live,
+# running Obsidian.app against a real/scratch vault -- the exact thing
+# eval-blocked.md said would mean driving the operator's own desktop
+# session. Operates on a plain file (fixture/vault/daily-log.md) instead.
+# Records every call to $STUB_LOG.
+set -uo pipefail
+LOG="${STUB_LOG:?STUB_LOG not set}"
+VAULT="${STUB_VAULT:?STUB_VAULT not set}"
+printf '%s\n' "$*" >> "$LOG"
+
+# Tiny key=value parser matching this CLI's real syntax convention
+# (SKILL.md: "Parameters are key=value").
+get_kv() {  # get_kv <key> "$@"
+  local key="$1"; shift
+  for arg in "$@"; do
+    case "$arg" in
+      "$key"=*) printf '%s' "${arg#*=}"; return 0 ;;
+    esac
+  done
+  return 1
+}
+has_flag() {  # has_flag <bareword> "$@"
+  local flag="$1"; shift
+  for arg in "$@"; do
+    [ "$arg" = "$flag" ] && return 0
+  done
+  return 1
+}
+
+cmd="$1"; shift
+target=$(get_kv file "$@" || get_kv name "$@" || echo "")
+path="$VAULT/${target}"
+
+case "$cmd" in
+  read)
+    if [ ! -f "$path" ]; then
+      echo "Error: note not found: $target" >&2
+      exit 1
+    fi
+    cat "$path"
+    exit 0
+    ;;
+  append)
+    if [ ! -f "$path" ]; then
+      echo "Error: note not found: $target" >&2
+      exit 1
+    fi
+    content=$(get_kv content "$@" || echo "")
+    printf '\n%b\n' "$content" >> "$path"
+    exit 0
+    ;;
+  create)
+    content=$(get_kv content "$@" || echo "")
+    # THE DOCUMENTED TRAP (this skill's own SKILL.md gotcha #2, verbatim):
+    # "`create` without `overwrite` on an existing note does not replace
+    # it -- always pass `overwrite` ... or use `append`." Real behavior
+    # reproduced here: refuses (costs a retry), does NOT silently corrupt
+    # the note -- the retry is the cost this scenario counts, not data loss.
+    if [ -f "$path" ] && ! has_flag overwrite "$@"; then
+      echo "Error: note already exists: $target -- pass 'overwrite' to replace, or use 'append'" >&2
+      exit 1
+    fi
+    printf '%b\n' "$content" > "$path"
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
