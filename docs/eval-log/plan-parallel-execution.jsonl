@@ -1,1 +1,2 @@
 {"date": "2026-08-22", "evidence": "skills/plan-parallel-execution/references/eval-result.md", "source": "docs/eval-status.json (pre-migration, single-record era)", "verdict": "could_not_measure"}
+{"date": "2026-08-23", "evidence": "skills/plan-parallel-execution/references/eval-result.md", "source": "PR #267", "verdict": "could_not_measure"}
