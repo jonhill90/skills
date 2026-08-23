@@ -215,3 +215,84 @@ one screen (this skill's own real-world case was 35 tasks, 142 paths;
 this scenario used 6 tasks specifically so a strong model could plausibly
 spot it by inspection alone) would still be caught without the skill's
 own "mechanize the manifest, then reason" discipline.
+
+---
+
+## Counting-measurement re-run (jonhill90/skills#266, real execution)
+
+Recorded 2026-08-23. Both prior passes (above) scored a *written plan* —
+a document describing a grouping, never actually run. This re-run,
+modeled on `progressive-disclosure`'s `eval-scenario/` (skills#265/#229),
+instead makes the arm **execute** the work for real via
+`references/eval-scenario-count/fixture/worker.sh`, a script whose
+read-then-append pattern produces a genuine, mechanically detectable lost
+-update race (duplicate `seq=` numbers) if two tasks targeting the same
+output file actually run concurrently — verified by hand before use (two
+manual dry runs: concurrent same-file writers produced real duplicates;
+serialized writers did not). Full design: `references/eval-scenario-count/
+criteria.md`.
+
+### A real scenario defect, caught before recording anything
+
+The first version of this scenario's `prompt.md`/`tasks.md` told BOTH
+arms directly to group same-file tasks apart from each other, and named
+the file collision as "planted" in the task list's own header — handing
+the no-skill arm the exact rule the skill exists to derive. Two live
+trials against that version (not counted below) showed identical,
+correct grouping and comparable cost in both arms, which is worthless as
+a result given the leak. Caught by re-reading the actual prompt text
+given to both arms (the same discipline `docs/eval-harness-findings.md`
+names for `create-skill`'s own leaked fixture, §2) before trusting the
+clean result. Fixed by removing the stated safety rule and the "planted
+collision" framing entirely — both arms are now told only to "get all
+five tasks done as quickly as you reasonably can," with no hint that a
+collision exists or that grouping matters at all. All numbers below are
+from the corrected version.
+
+### Result: clean no-discrimination, genuinely this time
+
+| | tokens | tool_uses | groups | turns_used | real collision? |
+|---|---:|---:|---|---:|---|
+| A (skill) | 41,140 | 6 | `[[T1,T2,T4],[T3,T5]]` | 2 | none (checked: 0 dupes in all 3 files) |
+| B (no skill) | 37,149 | 6 | `[[T1,T2,T4],[T3,T5]]` | 2 | none (checked: 0 dupes in all 3 files) |
+
+Both arms independently read the five task descriptions, correctly
+identified that task 3's "the counter file the payments ingest path also
+writes to" is the same target as task 1's `out/ingest.log`, and that task
+5's "the same audit trail task 2 writes" is the same target as task 2's
+`out/billing.log` — the exact two-collision structure this scenario
+plants — and both produced the identical grouping (three disjoint-file
+tasks concurrent, then the two collision-partners concurrent with each
+other but after their same-file sibling finished), executed via real
+backgrounded `worker.sh` runs, confirmed collision-free by an actual
+duplicate-`seq=` check against the real output files. Cost is
+essentially identical (6 tool_uses each; tokens within 10%). No
+discrimination on correctness or cost.
+
+### Why this generalizes the same way `mechanize`'s re-run did
+
+A competent, coding-capable baseline model already treats "does task 3's
+prose describe the same target as task 1's" as an ordinary reading-
+comprehension step, and "don't run two writers on the same file at once"
+as a default safety habit, with nothing in this task pushing it away from
+either. `progressive-disclosure`'s trial 2 (skills#265) discriminated
+because its added pressure argued directly FOR the specific behavior the
+skill argues against; no equivalent pressure was found for this scenario
+that specifically tempts a capable baseline toward ignoring a file
+collision it has already noticed, without simply telling it not to check
+for collisions at all (which would test instruction-following, not
+judgement). This is the same "no engineered competing pull on the
+skill's own axis" gap `mechanize`'s trial 2 surfaced, not a new failure
+mode.
+
+### What is (still) not evidenced
+
+Whether a genuinely large task list (the skill's own real-world case:
+35 tasks, 142 paths) or a real deadline/urgency framing that specifically
+argues for "just run everything at once, we're behind schedule" — a
+pressure that targets the skill's own axis (concurrency safety) the way
+`progressive-disclosure`'s "be thorough" pressure targeted its axis
+(reading everything) — would still produce identical grouping without
+the skill. Not run here; the honest answer for this scenario at this
+scale, this task-count, and this framing is **could not measure** a
+skill-attributable difference.
