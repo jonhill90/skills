@@ -330,13 +330,25 @@ verdict across this population.
 
 **Any eval PR that delivers a skill to an arm via prompt instruction
 rather than the Skill tool must populate a structured
-`arm_a_skill_read_confirmed: true|false` field in that skill's
+`arm_a_skill_read_confirmed: true|false|unknown` field in that skill's
 `eval-result.md`**, computed by `scripts/skill_read_confirmed.py`'s
 `skill_read_confirmed(transcript_path, skill_path)` against that trial's
 real transcript — never asserted in prose, and never read from
 `manifest.json`'s own self-reported log. A blank/missing field on a
 prompt-delivered scenario is the same gap `skills#269` had, and should
 read as one.
+
+**Tri-state, not boolean (`skills#273` review).** The function returns
+`None` — record as `unknown`, never `false` — when the transcript itself
+could not be confirmed legible (unparseable, empty, truncated, or the
+wrong file entirely, e.g. `$STUB_LOG` pointed at by mistake): a
+`could_not_measure`-shaped input must never silently collapse into a
+confident negative, which is the exact conflation this field exists to
+close one level down. `false` means the transcript was confirmed legible
+and genuinely shows no matching `Read`; `unknown` means the check itself
+could not be trusted on this input. Treat `unknown` the same as a blank
+field — re-run against a real transcript before trusting the result,
+never record it as a negative.
 
 ## What I did NOT do
 

@@ -1,7 +1,13 @@
 """jonhill90/skills#269 review (estate:2): prove skill_read_confirmed by
 construction, in both mutation directions, not by reading the function and
 trusting it -- this repo's own standing convention for a scorer-adjacent
-utility (see test_eval_status.py's own header for the same import shape)."""
+utility (see test_eval_status.py's own header for the same import shape).
+
+jonhill90/skills#273 review (estate:4): the function is tri-state
+(True/False/None), not boolean -- an unparseable/empty/truncated/wrong-file
+transcript must return None ("could not determine"), never False, or a
+could-not-measure input silently records as a confirmed negative. Both the
+original mutation pair and the new tri-state pair are covered below."""
 
 from __future__ import annotations
 
@@ -48,7 +54,7 @@ class SkillReadConfirmedTests(unittest.TestCase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    # --- the two mandatory mutation-check directions -----------------
+    # --- the two mandatory mutation-check directions (True/False) ------
 
     def test_confirmed_true_when_the_read_genuinely_happened(self):
         transcript = _write_transcript(
@@ -61,16 +67,18 @@ class SkillReadConfirmedTests(unittest.TestCase):
                 ),
             ],
         )
-        self.assertTrue(
+        self.assertIs(
             skill_read_confirmed(transcript, "skills/github-cli/SKILL.md"),
-            "a transcript with a real Read of the exact skill path must confirm true",
+            True,
+            "a transcript with a real Read of the exact skill path must confirm True",
         )
 
     def test_confirmed_false_when_the_read_never_happened(self):
         # Same shape, same skill, but Arm A went straight to the task --
         # exactly the silent-wiring-failure case this function exists to
         # catch, indistinguishable from a genuine null in prose or in
-        # manifest.json's own self-reported actions_log.
+        # manifest.json's own self-reported actions_log. A REAL, legible
+        # transcript with real events -- this must be False, not None.
         transcript = _write_transcript(
             self.tmpdir,
             "without-read.jsonl",
@@ -81,10 +89,66 @@ class SkillReadConfirmedTests(unittest.TestCase):
                 ),
             ],
         )
-        self.assertFalse(
+        self.assertIs(
             skill_read_confirmed(transcript, "skills/github-cli/SKILL.md"),
-            "a transcript with no Read of the skill path must confirm false",
+            False,
+            "a legible transcript with no Read of the skill path must confirm False, not None",
         )
+
+    # --- the new tri-state mutation-check directions (skills#273) ------
+
+    def test_a_genuinely_empty_transcript_returns_unknown_not_false(self):
+        """The exact defect skills#273 found: this used to return False
+        here, byte-for-byte identical to a real negative result."""
+        path = self.tmpdir / "empty.jsonl"
+        path.write_text("", encoding="utf-8")
+        self.assertIsNone(
+            skill_read_confirmed(path, "skills/linear/SKILL.md"),
+            "an empty transcript carries no evidence either way -- must be None, never False",
+        )
+
+    def test_a_legible_transcript_with_no_read_is_still_false_not_unknown(self):
+        """The mutation-check DIRECTION that proves the fix didn't just
+        widen everything to None: a real, well-formed transcript that
+        genuinely shows no Read must still resolve to False. (Same
+        fixture as test_confirmed_false_when_the_read_never_happened,
+        asserted again here explicitly alongside the None cases so the
+        two directions of the NEW behaviour sit next to each other.)"""
+        transcript = _write_transcript(
+            self.tmpdir,
+            "legible-no-read.jsonl",
+            [_assistant_turn({"type": "text", "text": "Proceeding without reading anything."})],
+        )
+        self.assertIs(skill_read_confirmed(transcript, "skills/linear/SKILL.md"), False)
+
+    def test_unparseable_json_throughout_returns_unknown(self):
+        path = self.tmpdir / "garbage.jsonl"
+        path.write_text("not json\nalso not json\n{{{broken\n", encoding="utf-8")
+        self.assertIsNone(skill_read_confirmed(path, "skills/linear/SKILL.md"))
+
+    def test_wrong_file_shape_returns_unknown_not_false(self):
+        """The reviewer's own named scenario: an operator points this at
+        $STUB_LOG (or any file that is valid JSON lines but not a Claude
+        Code transcript) by mistake. Valid JSON, zero recognisable
+        assistant/tool_use events -- must be None, not a confident False."""
+        path = self.tmpdir / "stub-log-shaped.jsonl"
+        # Plausible $STUB_LOG shape: a flat list of CLI invocations, not a
+        # transcript event envelope at all.
+        lines = [
+            {"argv": ["gh", "run", "watch", "9001", "--exit-status"]},
+            {"argv": ["gh", "run", "view", "9001"]},
+        ]
+        path.write_text("\n".join(json.dumps(line) for line in lines), encoding="utf-8")
+        self.assertIsNone(
+            skill_read_confirmed(path, "skills/github-cli/SKILL.md"),
+            "a wrong-shaped file (e.g. $STUB_LOG) must return None, never a confident False",
+        )
+
+    def test_truncated_transcript_with_no_complete_event_returns_unknown(self):
+        path = self.tmpdir / "truncated.jsonl"
+        # A capture cut off mid-write -- half a JSON object, no valid line.
+        path.write_text('{"type": "assistant", "message": {"content": [{"typ', encoding="utf-8")
+        self.assertIsNone(skill_read_confirmed(path, "skills/linear/SKILL.md"))
 
     # --- must be a REAL Read tool_use, never a stand-in ----------------
 
@@ -105,7 +169,7 @@ class SkillReadConfirmedTests(unittest.TestCase):
         # Sanity: the Read-tool version of this exact path DOES confirm --
         # proves the negative case below isn't failing for some unrelated
         # reason (e.g. a broken fixture).
-        self.assertTrue(skill_read_confirmed(transcript, "skills/github-cli/SKILL.md"))
+        self.assertIs(skill_read_confirmed(transcript, "skills/github-cli/SKILL.md"), True)
 
         bash_transcript = _write_transcript(
             self.tmpdir,
@@ -116,9 +180,11 @@ class SkillReadConfirmedTests(unittest.TestCase):
                 )
             ],
         )
-        self.assertFalse(
+        self.assertIs(
             skill_read_confirmed(bash_transcript, "skills/github-cli/SKILL.md"),
-            "a Bash cat of the skill file must not count as a confirmed Read",
+            False,
+            "a Bash cat of the skill file must not count as a confirmed Read -- and this IS a legible "
+            "transcript (a real tool_use event was seen), so the answer is False, not None",
         )
 
     def test_actions_log_style_self_report_is_never_consulted(self):
@@ -135,7 +201,7 @@ class SkillReadConfirmedTests(unittest.TestCase):
                 )
             ],
         )
-        self.assertFalse(skill_read_confirmed(transcript, "skills/github-cli/SKILL.md"))
+        self.assertIs(skill_read_confirmed(transcript, "skills/github-cli/SKILL.md"), False)
 
     # --- path-matching, both forms named in the brief -------------------
 
@@ -145,7 +211,7 @@ class SkillReadConfirmedTests(unittest.TestCase):
             "abs.jsonl",
             [_assistant_turn(_read_block("/private/var/tmp/eval-run-42/skills/linear/SKILL.md"))],
         )
-        self.assertTrue(skill_read_confirmed(transcript, "skills/linear/SKILL.md"))
+        self.assertIs(skill_read_confirmed(transcript, "skills/linear/SKILL.md"), True)
 
     def test_absolute_skill_path_requires_exact_match(self):
         transcript = _write_transcript(
@@ -153,11 +219,12 @@ class SkillReadConfirmedTests(unittest.TestCase):
             "abs-exact.jsonl",
             [_assistant_turn(_read_block("/private/var/tmp/eval-run-42/skills/linear/SKILL.md"))],
         )
-        self.assertTrue(
-            skill_read_confirmed(transcript, "/private/var/tmp/eval-run-42/skills/linear/SKILL.md")
+        self.assertIs(
+            skill_read_confirmed(transcript, "/private/var/tmp/eval-run-42/skills/linear/SKILL.md"), True
         )
-        self.assertFalse(
+        self.assertIs(
             skill_read_confirmed(transcript, "/somewhere/else/skills/linear/SKILL.md"),
+            False,
             "an absolute query path must match exactly, not by suffix",
         )
 
@@ -170,7 +237,7 @@ class SkillReadConfirmedTests(unittest.TestCase):
             "boundary.jsonl",
             [_assistant_turn(_read_block("/work/myskills/linear/SKILL.md"))],
         )
-        self.assertFalse(skill_read_confirmed(transcript, "skills/linear/SKILL.md"))
+        self.assertIs(skill_read_confirmed(transcript, "skills/linear/SKILL.md"), False)
 
     def test_read_of_a_different_skill_does_not_confirm(self):
         transcript = _write_transcript(
@@ -178,12 +245,12 @@ class SkillReadConfirmedTests(unittest.TestCase):
             "wrong-skill.jsonl",
             [_assistant_turn(_read_block("/work/skills/obsidian/SKILL.md"))],
         )
-        self.assertFalse(skill_read_confirmed(transcript, "skills/linear/SKILL.md"))
+        self.assertIs(skill_read_confirmed(transcript, "skills/linear/SKILL.md"), False)
 
     # --- fail-closed behaviour -------------------------------------------
 
-    def test_missing_transcript_fails_closed_to_false(self):
-        self.assertFalse(
+    def test_missing_transcript_returns_unknown(self):
+        self.assertIsNone(
             skill_read_confirmed(self.tmpdir / "does-not-exist.jsonl", "skills/linear/SKILL.md")
         )
 
@@ -194,12 +261,7 @@ class SkillReadConfirmedTests(unittest.TestCase):
             + json.dumps(_assistant_turn(_read_block("/work/skills/linear/SKILL.md"))),
             encoding="utf-8",
         )
-        self.assertTrue(skill_read_confirmed(path, "skills/linear/SKILL.md"))
-
-    def test_empty_transcript_confirms_false(self):
-        path = self.tmpdir / "empty.jsonl"
-        path.write_text("", encoding="utf-8")
-        self.assertFalse(skill_read_confirmed(path, "skills/linear/SKILL.md"))
+        self.assertIs(skill_read_confirmed(path, "skills/linear/SKILL.md"), True)
 
 
 class CLITests(unittest.TestCase):
@@ -233,11 +295,20 @@ class CLITests(unittest.TestCase):
         self.assertEqual(rc2.returncode, 1)
         self.assertEqual(rc2.stdout.strip(), "false")
 
+        empty = self.tmpdir / "empty-for-cli.jsonl"
+        empty.write_text("", encoding="utf-8")
         rc3 = subprocess.run(
+            [sys.executable, str(SCRIPT_PATH), str(empty), "skills/linear/SKILL.md"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(rc3.returncode, 2, "an empty transcript must exit 2 (unknown), not 1 (false)")
+        self.assertEqual(rc3.stdout.strip(), "unknown")
+
+        rc4 = subprocess.run(
             [sys.executable, str(SCRIPT_PATH), str(self.tmpdir / "nope.jsonl"), "skills/linear/SKILL.md"],
             capture_output=True, text=True,
         )
-        self.assertEqual(rc3.returncode, 2)
+        self.assertEqual(rc4.returncode, 3, "a missing file is a usage-level error, distinct from exit 2")
 
 
 if __name__ == "__main__":
