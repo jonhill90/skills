@@ -10,7 +10,7 @@
     "determine-intent": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/determine-intent/references/eval-result.md"},
     "determine-signals": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/determine-signals/references/eval-result.md"},
     "devils-advocate": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/devils-advocate/references/eval-result.md"},
-    "dispatch-brief": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "dispatch-brief": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/dispatch-brief/references/eval-result.md"},
     "dispatching-subagents": {"verdict": "unevaluated", "date": null, "evidence": null},
     "distill": {"verdict": "unevaluated", "date": null, "evidence": null},
     "durable-fact-before-label": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/durable-fact-before-label/references/eval-result.md"},
@@ -34,12 +34,12 @@
     "safe-deletion": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/safe-deletion/references/eval-result.md"},
     "sanity-check": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/sanity-check/references/eval-result.md"},
     "spec": {"verdict": "unevaluated", "date": null, "evidence": null},
-    "spec-driven-development": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "spec-driven-development": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/spec-driven-development/references/eval-result.md"},
     "supervised-lane-loop": {"verdict": "unevaluated", "date": null, "evidence": null},
     "tdd": {"verdict": "unevaluated", "date": null, "evidence": null},
     "test-in-the-consumer-context": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/test-in-the-consumer-context/references/eval-result.md"},
     "tmux": {"verdict": "unevaluated", "date": null, "evidence": null},
     "verify-the-instrument": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/verify-the-instrument/references/eval-result.md"},
-    "wire-it-when-you-write-it": {"verdict": "unevaluated", "date": null, "evidence": null}
+    "wire-it-when-you-write-it": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/wire-it-when-you-write-it/references/eval-result.md"}
   }
 }
