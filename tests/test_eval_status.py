@@ -187,32 +187,47 @@ class EvalLogSandboxTestCase(unittest.TestCase):
 
     def _sandbox(self):
         tmp = Path(tempfile.mkdtemp())
+        skill_md = "---\nname: a-skill\n---\nbody\n"
         (tmp / "skills" / "a-skill" / "references").mkdir(parents=True)
         (tmp / "skills" / "a-skill" / "references" / "eval-result.md").write_text(
             "evidence\n", encoding="utf-8")
+        (tmp / "skills" / "a-skill" / "SKILL.md").write_text(skill_md, encoding="utf-8")
         (tmp / "docs").mkdir()
         (tmp / "docs" / "eval-status.json").write_text(json.dumps({
             "$comment": "c",
             "skills": {"a-skill": {"verdict": "unevaluated", "date": None, "evidence": None}},
         }), encoding="utf-8")
-        return tmp
+        # A matching "installed" copy of a-skill -- these tests exercise the
+        # REAL install-check pass-through path (a fixture that genuinely
+        # matches), never quietly bypass it just because the record itself
+        # is sandboxed. See test_record_refuses_when_skill_not_installed/
+        # test_record_refuses_when_installed_copy_diverges below for the
+        # failure paths, and test_record_skip_install_check_override for the
+        # explicit-override path.
+        claude_skills = tmp / "claude-skills"
+        claude_skills.mkdir(parents=True)
+        shutil.copytree(tmp / "skills" / "a-skill", claude_skills / "a-skill")
+        return tmp, claude_skills
 
     def setUp(self):
         self.orig_repo = eval_status.REPO
         self.orig_record = eval_status.RECORD_PATH
         self.orig_skills = eval_status.SKILLS_ROOT
         self.orig_log_dir = eval_status.EVAL_LOG_DIR
-        self.tmp = self._sandbox()
+        self.orig_claude_skills = eval_status.CLAUDE_SKILLS_DIR
+        self.tmp, self.claude_skills = self._sandbox()
         eval_status.REPO = self.tmp
         eval_status.RECORD_PATH = self.tmp / "docs" / "eval-status.json"
         eval_status.SKILLS_ROOT = self.tmp / "skills"
         eval_status.EVAL_LOG_DIR = self.tmp / "docs" / "eval-log"
+        eval_status.CLAUDE_SKILLS_DIR = self.claude_skills
 
     def tearDown(self):
         eval_status.REPO = self.orig_repo
         eval_status.RECORD_PATH = self.orig_record
         eval_status.SKILLS_ROOT = self.orig_skills
         eval_status.EVAL_LOG_DIR = self.orig_log_dir
+        eval_status.CLAUDE_SKILLS_DIR = self.orig_claude_skills
         shutil.rmtree(self.tmp, ignore_errors=True)
 
 
@@ -412,6 +427,60 @@ class TestRecordCLI(EvalLogSandboxTestCase):
         # unchanged contract.
         record = eval_status.load_record(eval_status.RECORD_PATH)
         self.assertEqual(record["a-skill"]["verdict"], "improve")
+
+    def test_record_refuses_when_skill_not_installed(self):
+        """#230's own mechanical check: a skill missing from the shared
+        skills path must block --record, not just get a note in a doc a
+        human can skip. --source is present and valid here so the refusal
+        can only be coming from the install check, not the (separate,
+        already-covered) missing-source path."""
+        shutil.rmtree(self.claude_skills / "a-skill")
+
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--source", "PR #244",
+        ])
+        self.assertEqual(rc, 2)
+        self.assertEqual(eval_status.read_observations("a-skill"), [])
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["a-skill"]["verdict"], "unevaluated")
+
+    def test_record_refuses_when_installed_copy_diverges(self):
+        """A present-but-drifted installed copy is a different failure than
+        MISSING and must be named as such, not merged into one message."""
+        (self.claude_skills / "a-skill" / "SKILL.md").write_text(
+            "---\nname: a-skill\n---\ndrifted body\n", encoding="utf-8")
+
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--source", "PR #244",
+        ])
+        self.assertEqual(rc, 2)
+        self.assertEqual(eval_status.read_observations("a-skill"), [])
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["a-skill"]["verdict"], "unevaluated")
+
+    def test_record_skip_install_check_override(self):
+        """--skip-install-check is the loud, named escape hatch -- it must
+        still let a legitimate --record through even when the sandboxed
+        installed copy doesn't match (there is no real ~/.claude/skills
+        entry for this test's own fake skill on CI machines)."""
+        shutil.rmtree(self.claude_skills / "a-skill")
+
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22", "--source", "PR #244",
+            "--skip-install-check", "sandboxed test fixture, not a real install",
+        ])
+        self.assertEqual(rc, 0)
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertEqual(record["a-skill"]["verdict"], "keep")
+        observations = eval_status.read_observations("a-skill")
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0]["source"], "PR #244")
 
 
 class TestHistoryCLI(EvalLogSandboxTestCase):
