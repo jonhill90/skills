@@ -1,19 +1,42 @@
 # Stale-docs truth pass, 2026-08-23
 
-Measured, before starting: 12 of 116 tracked `.md` files had no commit
-touching them in the last 14 days —
+**Correction (review, same day):** this section originally read "12 of
+116" for the denominator. `git ls-files '*.md' | wc -l` against the tree
+as it ships in this PR — including this report itself, the same
+self-inclusion count this pass's own commit adds a file to — returns
+**117**, not 116. 116 was the true count of the corpus *before* this
+report existed as a file; stating it that way, unqualified, produces a
+number a re-run against the shipped tree cannot reproduce, the same
+class of bug `agent-tui#136` found and fixed for its own `docs/index.md`
+self-reference. Fixed the same way: state the method precisely enough
+that a re-run reproduces the number, rather than pointing at a count
+that quietly drifts the moment a file lands.
+
+Measured, before starting: 12 of the 116 tracked `.md` files that
+existed at the time had no commit touching them in the last 14 days —
 
 ```
+$ git ls-files '*.md' | wc -l                          # denominator, re-run
 $ now=$(date +%s); git ls-files '*.md' | while read -r f; do
     ts=$(git log -1 --format=%ct -- "$f")
     [ $(( (now - ts) / 86400 )) -ge 14 ] && echo "$f"
-  done
+  done | wc -l                                          # stale count, re-run
 ```
 
+Re-running the denominator query against the tree this PR ships (this
+report is now the 117th tracked `.md` file) returns 117, not 116 — state
+the ratio as **12 of 117** if citing it against the shipped tree; "12 of
+116" describes the corpus as it stood the moment this pass started, one
+file smaller. The stale-count query's own result will keep moving as
+files are touched (this same PR's correction to `linear/SKILL.md` below
+removes it from a fresh re-run of that query, since fixing a stale file
+is itself a commit against it) — re-run both queries together rather
+than citing either number as fixed.
+
 A lower proportion than `agent-dotfiles` (16/43, 37%) at the same pass,
-but this repo's 116-file, 657 KB doc corpus is the largest in the
-estate, so the absolute risk was worth checking rather than accepting
-the lower ratio as evidence of health.
+but this repo's doc corpus (657 KB before this pass, the largest in the
+estate) made the absolute risk worth checking rather than accepting the
+lower ratio as evidence of health.
 
 ## Method
 
@@ -48,10 +71,29 @@ landed with the scoring rule ported) but none of that content lives in
 any of the 12 files this pass covers — nothing here needed correcting
 for it.
 
-## Result: 12 checked, 0 corrected, 0 could-not-measure, 12 entirely accurate
+## Result: 12 checked, 1 corrected, 0 could-not-measure, 11 entirely accurate
 
-Every specific, checkable claim in all 12 files held against the
-current tree or a real command run:
+**Correction (review, same day):** `skills/linear/SKILL.md` was
+originally certified accurate outright. It wasn't, under this pass's own
+bar — its Common Parameters table listed `-a` as short for `--assignee`
+unconditionally, which is true for `issue create`/`issue update` but
+false for `issue list`/`issue view`, the subcommands the file itself
+demonstrates repeatedly. `linear issue list --help`, run directly:
+`-a` is bound to `--app` there, and `--assignee` has no short flag on
+`list` at all. A second, same-shape defect surfaced fixing the first:
+`-w` is genuinely claimed for both `--web` and `--workspace`
+simultaneously on `list`/`view` (confirmed in the real `--help` output,
+not this repo's doc). A reader reaching for either short flag on `list`
+or `view` off this table's original wording would get a silently wrong
+or ambiguous command. Fixed directly in `skills/linear/SKILL.md`
+(scoped each short flag to the subcommand(s) it actually means that on)
+rather than left standing under an "accurate" verdict — pre-existing,
+not introduced by this pass, but this pass's own stated method (check
+every command against installed `--help` output) is exactly what
+should have caught it the first time through.
+
+Every specific, checkable claim in the remaining 11 files held against
+the current tree or a real command run:
 
 | File | Disposition |
 |---|---|
