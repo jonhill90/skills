@@ -1,205 +1,45 @@
 {
- "$comment": "jonhill90/skills#230's own record: one entry per skills/<name>/ directory. verdict is one of keep | improve | rename | drop | could_not_measure | unevaluated -- could_not_measure means an eval ran but did not produce a reliable skill-attributable signal (the scenario didn't discriminate, or the scorer was found unreliable), which is a real, different state from unevaluated (no eval has run at all) and must never be read as either a pass or a fail. date is null for unevaluated. evidence is a repo-relative path to the recording file for anything other than unevaluated, or null. Read and updated by scripts/eval_status.py -- do not hand-edit the shape without also updating that script's own schema check.",
- "skills": {
-  "adopt-or-build": {
-   "verdict": "improve",
-   "date": "2026-08-22",
-   "evidence": "skills/adopt-or-build/references/eval-result.md"
-  },
-  "ask-a-council": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/ask-a-council/references/eval-result.md"
-  },
-  "close-the-loop": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "create-skill": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "decide-by-variant": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "derive-independently-then-compare": {
-   "verdict": "improve",
-   "date": "2026-08-22",
-   "evidence": "skills/derive-independently-then-compare/references/eval-result.md"
-  },
-  "determine-intent": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/determine-intent/references/eval-result.md"
-  },
-  "determine-signals": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/determine-signals/references/eval-result.md"
-  },
-  "devils-advocate": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/devils-advocate/references/eval-result.md"
-  },
-  "dispatch-brief": {
-   "verdict": "keep",
-   "date": "2026-08-22",
-   "evidence": "skills/dispatch-brief/references/eval-result.md"
-  },
-  "dispatching-subagents": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "distill": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "durable-fact-before-label": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/durable-fact-before-label/references/eval-result.md"
-  },
-  "failing-test-first": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "github-cli": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "keep-me-honest": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "linear": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "loop-contract": {
-   "verdict": "improve",
-   "date": "2026-08-22",
-   "evidence": "skills/loop-contract/references/eval-result.md"
-  },
-  "loop-memory": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "mechanize": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/mechanize/references/eval-result.md"
-  },
-  "memory-conventions": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "mine-transcripts": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/mine-transcripts/references/eval-result.md"
-  },
-  "notify": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "obsidian": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "plan-parallel-execution": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/plan-parallel-execution/references/eval-result.md"
-  },
-  "prd": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "primer": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "prompt-corpus": {
-   "verdict": "keep",
-   "date": "2026-08-22",
-   "evidence": "skills/prompt-corpus/references/eval-result.md"
-  },
-  "refuse-invented-identity": {
-   "verdict": "improve",
-   "date": "2026-08-22",
-   "evidence": "skills/refuse-invented-identity/references/eval-result.md"
-  },
-  "research-the-limit": {
-   "verdict": "improve",
-   "date": "2026-08-22",
-   "evidence": "skills/research-the-limit/references/eval-result.md"
-  },
-  "safe-deletion": {
-   "verdict": "improve",
-   "date": "2026-08-22",
-   "evidence": "skills/safe-deletion/references/eval-result.md"
-  },
-  "sanity-check": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/sanity-check/references/eval-result.md"
-  },
-  "spec": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "spec-driven-development": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/spec-driven-development/references/eval-result.md"
-  },
-  "supervised-lane-loop": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/supervised-lane-loop/references/eval-result.md"
-  },
-  "tdd": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "test-in-the-consumer-context": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/test-in-the-consumer-context/references/eval-result.md"
-  },
-  "tmux": {
-   "verdict": "unevaluated",
-   "date": null,
-   "evidence": null
-  },
-  "verify-the-instrument": {
-   "verdict": "keep",
-   "date": "2026-08-22",
-   "evidence": "skills/verify-the-instrument/references/eval-result.md"
-  },
-  "wire-it-when-you-write-it": {
-   "verdict": "could_not_measure",
-   "date": "2026-08-22",
-   "evidence": "skills/wire-it-when-you-write-it/references/eval-result.md"
+  "$comment": "jonhill90/skills#230's own record: one entry per skills/<name>/ directory. verdict is one of keep | improve | rename | drop | could_not_measure | unevaluated -- could_not_measure means an eval ran but did not produce a reliable skill-attributable signal (the scenario didn't discriminate, or the scorer was found unreliable), which is a real, different state from unevaluated (no eval has run at all) and must never be read as either a pass or a fail. date is null for unevaluated. evidence is a repo-relative path to the recording file for anything other than unevaluated, or null. Read and updated by scripts/eval_status.py -- do not hand-edit the shape without also updating that script's own schema check.",
+  "skills": {
+    "adopt-or-build": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/adopt-or-build/references/eval-result.md"},
+    "ask-a-council": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/ask-a-council/references/eval-result.md"},
+    "close-the-loop": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "create-skill": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "decide-by-variant": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "derive-independently-then-compare": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/derive-independently-then-compare/references/eval-result.md"},
+    "determine-intent": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/determine-intent/references/eval-result.md"},
+    "determine-signals": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/determine-signals/references/eval-result.md"},
+    "devils-advocate": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/devils-advocate/references/eval-result.md"},
+    "dispatch-brief": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/dispatch-brief/references/eval-result.md"},
+    "dispatching-subagents": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "distill": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "durable-fact-before-label": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/durable-fact-before-label/references/eval-result.md"},
+    "failing-test-first": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "github-cli": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "keep-me-honest": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "linear": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "loop-contract": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/loop-contract/references/eval-result.md"},
+    "loop-memory": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "mechanize": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/mechanize/references/eval-result.md"},
+    "memory-conventions": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "mine-transcripts": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/mine-transcripts/references/eval-result.md"},
+    "notify": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "obsidian": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "plan-parallel-execution": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/plan-parallel-execution/references/eval-result.md"},
+    "prd": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "primer": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "prompt-corpus": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/prompt-corpus/references/eval-result.md"},
+    "refuse-invented-identity": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/refuse-invented-identity/references/eval-result.md"},
+    "research-the-limit": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/research-the-limit/references/eval-result.md"},
+    "safe-deletion": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/safe-deletion/references/eval-result.md"},
+    "sanity-check": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/sanity-check/references/eval-result.md"},
+    "spec": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "spec-driven-development": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/spec-driven-development/references/eval-result.md"},
+    "supervised-lane-loop": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/supervised-lane-loop/references/eval-result.md"},
+    "tdd": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "test-in-the-consumer-context": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/test-in-the-consumer-context/references/eval-result.md"},
+    "tmux": {"verdict": "unevaluated", "date": null, "evidence": null},
+    "verify-the-instrument": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/verify-the-instrument/references/eval-result.md"},
+    "wire-it-when-you-write-it": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/wire-it-when-you-write-it/references/eval-result.md"}
   }
- }
 }
