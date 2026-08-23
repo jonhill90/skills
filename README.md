@@ -81,6 +81,7 @@ reaches the public repository.
 | [`plan-parallel-execution`](skills/plan-parallel-execution/) | Turn a task list into groups several agents can execute concurrently without colliding |
 | [`prd`](skills/prd/) | Author or review a Product Requirements Document |
 | [`primer`](skills/primer/) | Orient in an unfamiliar codebase before starting work |
+| [`progressive-disclosure`](skills/progressive-disclosure/) | Load a large corpus the way an index is meant to be used — read the index, pull facts on demand, stop when there's enough |
 | [`prompt-corpus`](skills/prompt-corpus/) | Turn a transcript history into a queryable record of decisions |
 | [`refuse-invented-identity`](skills/refuse-invented-identity/) | Refuse and report unrecoverable when a recovery path cannot positively confirm the prior identity it is restoring |
 | [`research-the-limit`](skills/research-the-limit/) | Check a primary source before asserting a tool or system cannot do something |
