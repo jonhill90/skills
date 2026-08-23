@@ -314,6 +314,170 @@ entirely (`prd`, `primer` — no external tool at all), and record
 found, rather than attempting to harden `eval_skill.py` itself for this
 category inside this pass's own scope.
 
+## Update: classifying all 23 remaining `could_not_measure` skills individually (2026-08-23, jonhill90/skills#230)
+
+A devils-advocate pass on the three direct escalations (`create-skill`,
+`distill`, `loop-memory`, §3 above) flagged a real gap: each was chosen as
+the STRONGEST candidate for the structural-mismatch hypothesis. Nothing had
+checked whether the remaining `could_not_measure` skills share that same
+habit/consistency shape, or whether some are ordinary scorer/scenario bugs
+(§1 above already found that class is 24% of the bucket) wearing the same
+verdict label. `python3 scripts/eval_status.py --summary` at the time of
+this pass: `could_not_measure: 26`. Excluding the 3 already directly
+escalated (their own `eval-result.md` already documents the
+structural-mismatch finding — not re-litigated here) leaves 23. Every one
+of the 23 was read in full, directly, against its own
+`skills/<skill>/references/eval-result.md` — not inferred from name or
+topic — and classified as:
+
+- **(a)** a habit/consistency skill a one-shot two-arm design structurally
+  can't discriminate (this file's own §2/§3 hypothesis) — the skill's own
+  write-up frames the null result as the base model's pre-existing
+  disposition/habit converging with the skill's prescribed behavior on a
+  clean first attempt, or as requiring a repeated/multi-turn exchange the
+  scenario's single-message framing doesn't stage.
+- **(b)** a scorer/regex misread, a bad or too-easy scenario, a
+  fixture/installation defect, or cost-signal noise — a fixable instrument
+  problem inside the existing two-arm single-turn design, not a design-class
+  ceiling.
+- **(c)** something else, named on its own terms, where neither fits.
+
+**Result: 20 of 23 map cleanly onto buckets this file already built (§1–§5
+above); the per-skill read confirms those assignments rather than
+overturning them.** Six are additional, previously-unescalated members of
+the "clean no-discrimination" bucket (§2); fourteen are additional members
+of the four fixable-instrument buckets (§1, §3, §4, §5); one
+(`keep-me-honest`) carries dual evidence and is resolved below; one
+(`tmux`) is neither — a third, genuinely distinct failure class the
+existing five buckets don't cover.
+
+### (a) — habit/consistency, structural mismatch: 7 of 23
+
+| Skill | Citation from its own `eval-result.md` |
+|---|---|
+| `ask-a-council` | "a well-applied `ask-a-council` on a two-defect, both-cheaply-checkable artifact is supposed to conclude 'no council needed' -- which means this scenario, even redesigned around the skill's own documented gap, still cannot show what a GENUINE multi-agent convening changes" |
+| `dispatching-subagents` | "this pass's own base model already avoids the reflexive-parallel-dispatch trap on this scenario without needing the skill's prompting. That is a real result about this model on this task, not evidence the skill is dead." |
+| `sanity-check` | "This is a real result about Opus 5 at this model tier on this specific kind of check (summing seven small integers from a log) -- not evidence the skill's actual target (an inherited, unsourced FIGURE with no source at all to check, this skill's own TRIGGER clause) doesn't matter." |
+| `tdd` | "Both arms independently chose to write the test first, unprompted by the skill in the without arm's case -- a real result about Opus 5's own default habit on a small, clearly-scoped greenfield function, not evidence the skill changes nothing." |
+| `memory-conventions` | "Identical, correct outcome ... in both arms: `docs/eval-harness-findings.md`'s 'Clean no-discrimination' bucket (§4). ... this skill's marginal value would more likely show up on a harder discrimination [an ambiguous slug, an unstated hard/preference weight, or the vault-unset guardrail under actual absence]." |
+| `spec` | "Structurally near-identical, correct-shaped output in both arms: `docs/eval-harness-findings.md`'s 'Clean no-discrimination' bucket (§4). The base model already knows the shape of a good technical spec ... without this skill's explicit five-section list." |
+| `keep-me-honest` | "Whether the skill's actual value on this trigger -- holding position under a *second* round of pushback after an initial correction, which this scenario's single-message framing does not stage -- would show a difference a strong baseline model doesn't already reach on its own. A harder version of this scenario would need a real two-turn exchange." |
+
+All seven are correctly-formed for the (a) claim: each one's own doc
+attributes the null result to the base model already carrying the
+disposition the skill prescribes (a "default habit," an "already avoids,"
+a rule the model applied correctly on its own), not to anything broken in
+the run. Six (`ask-a-council`, `dispatching-subagents`, `sanity-check`,
+`tdd`, `memory-conventions`, `spec`) are the six previously-unescalated
+members of §2's own nine-skill "clean no-discrimination" bucket —
+`create-skill`, `distill`, `loop-memory` were the other three, already
+escalated. `keep-me-honest` is new to this bucket and is the single
+strongest self-contained case in the whole population: unlike the other
+six, whose own "what is not evidenced" sections name a harder
+*single-turn* scenario as the untested axis (still buildable inside the
+existing two-arm design), `keep-me-honest`'s own text names a
+*structurally different shape of turn* (a second round of pushback after
+correction) that a one-message scenario cannot stage at all, regardless of
+how hard the single message is made. **Caveat, stated plainly:**
+`keep-me-honest`'s own "Why could_not_measure" section attributes the
+verdict primarily to a non-reproducing cost signal across two live pairs
+(1.6x/1.7x, then inverted to 0.55x) — cost-signal noise, a (b)-type cause
+— and the outcome axis never moved in either pair either, which is its own
+form of clean no-discrimination. The doc carries all three signals at
+once; it is filed under (a) here because its "what is not evidenced"
+section is the clearest multi-turn-specific claim in the entire 23-skill
+population, not because the cost-noise reading is wrong. A future pass
+that wants a single cleanly-attributable cost-noise example should use
+`decide-by-variant`, `determine-signals`, or `devils-advocate` instead
+(below), not this one.
+
+**None of these seven has had "bad scenario, needs to be harder" ruled
+out for it individually** — that escalation work is what §3 above already
+recommends and has run for `create-skill`, `distill`, and `loop-memory`
+only. The honest position for these seven, individually, remains what §3
+already states: the aggregate pattern (a discipline-shaped skill, base
+model already does the right thing, untested axis is repetition/duration/
+pressure rather than raw difficulty) leans toward "wrong instrument,"
+without being settled per-skill.
+
+### (b) — fixable instrument bug in the existing two-arm design: 15 of 23
+
+| Skill | Sub-cause | Citation from its own `eval-result.md` |
+|---|---|---|
+| `close-the-loop` | scorer regex misread | "The regex matched the literal substring with no negation awareness, the same shape of bug as this loop's eighth pass (`supervised-lane-loop`'s `_AGREED_SAFE`)." |
+| `decide-by-variant` | scorer regex misread + cost noise | "`_BUILT_VARIANTS`'s original regex only matched literal 'option A/B/1' or 'variant A/B/1' phrasing. This response used neither ... so the regex missed a real, unambiguous violation." |
+| `determine-intent` | scorer keyword-match misread | "A bare keyword match cannot tell 'discussed and declined' apart from 'built' ... The scorer was fixed to check only the artifact." |
+| `determine-signals` | cost-signal noise | "A cost signal that does not reproduce across independent runs is exactly the ×2/×3-repetitions bar `docs/evals.md` sets before trusting an efficiency delta at all." |
+| `devils-advocate` | cost-signal noise | "Two samples pointing opposite ways is exactly what `docs/evals.md`'s ×2/×3-repetitions bar ... exists to catch: n=1 would have shipped a false `improve`." |
+| `durable-fact-before-label` | fixture/installation defect | "`durable-fact-before-label` was never installed on this machine's shared skills path at all ... The 'with' arm in that first attempt was silently *also* a without-the-skill run; the whole first pair was invalid." |
+| `failing-test-first` | scorer regex misread | "The scorer's own path-matching regex was the bug: `_SOURCE_PATH` was `shipping\.py$`, which also matches `test_shipping.py` ... making `test_before_source` compute `False` on every correctly-ordered run." |
+| `mechanize` | scorer keyword-match misread | "its keyword match for 'did this recommend mechanizing anything' only recognized one vocabulary and missed an equivalent proposal phrased in different, still entirely reasonable, words." |
+| `mine-transcripts` | scenario design defect | "A scenario defect found by reading the transcripts, not a scorer bug ... this scenario's own prompt inadvertently prevented the test it was meant to run." |
+| `notify` | scenario design defect | "It is a scenario design defect: framing the request as an engineering change to the skill's own script, rather than as a request to *use* the skill for its actual purpose ... does not reliably cause the skill to be consulted at all." |
+| `plan-parallel-execution` | scorer misread + missing fixture file | "the WITH arm's own text explains it MERGED tasks 1 and 3 into one combined task ... not two agents concurrently fighting over the same file" — plus "both independently found their own scenario's manifest/input file did not actually exist in the fixture." |
+| `spec-driven-development` | fixture/installation defect | "This skill was not installed on this machine's shared skills path at all -- one of the 5 skills out of this repo's 40 that `~/.claude/skills/` doesn't symlink." |
+| `supervised-lane-loop` | scorer regex misread (two independent bugs, two passes) | "both passes independently found and fixed a real mechanical-scorer bug that had produced a false `keep` before either pass trusted it ... two independent regex defects." |
+| `test-in-the-consumer-context` | fixture defect | "The first live attempt at this scenario produced a false negative in the FIXTURE, not the scorer: `prompt.md` documented that the agent's own session would have `INTERACTIVE_SESSION=1` set ... but the harness never actually exported that variable." |
+| `wire-it-when-you-write-it` | fixture/installation defect | "This skill was not installed on this machine's shared skills path at all ... The first live attempt was discarded entirely once this was found -- both arms had silently run without the skill either way." |
+
+All fifteen are already members of §1/§3/§4/§5's own four fixable-instrument
+buckets (scorer/regex misread, fixture/installation defect, cost-signal
+noise, scenario design defect) — this pass's direct read of each doc
+confirms those bucket assignments hold, not just at the population level
+but in each skill's own words. **The recommended fix for all fifteen is
+the normal per-skill path already demonstrated inside this loop: read the
+transcript, find the actual defect (a regex, a missing env export, an
+un-symlinked skill, a leading prompt), fix it, re-run inside the same
+two-arm single-turn design** — not a longitudinal redesign. Several of
+these fifteen (`close-the-loop`, `determine-intent`, `failing-test-first`,
+`mechanize`, `supervised-lane-loop`) already had their instrument bug
+found AND fixed in the same pass that produced the citation above; the
+`could_not_measure` verdict that remains after the fix is an
+identical-outcome wash on a now-correct instrument, not evidence the
+instrument itself is wrong.
+
+### (c) — a third, distinct class: `tmux`, a methodology confound / invalid comparison
+
+`tmux` does not fit either (a) or (b). Two independent passes both landed
+on `could_not_measure`, from two different confounds, neither a scorer bug,
+a scenario-difficulty gap, nor a disposition/habit claim:
+
+- **PR #252's pass:** "The 'with-skill' arm's subagent reported,
+  unprompted, that no skill named `tmux` was discoverable via the `Skill`
+  tool or `ToolSearch` inside its own execution environment ... That means
+  this pair is **not actually a valid with-skill/without-skill
+  comparison** -- both arms ran without the skill's content in context."
+- **PR #253's pass:** "After both arms completed, `tmux ls` on the host
+  showed two leftover sessions, `eval-with` and `eval-without` ... created
+  by neither the fixture nor `test_send_input.sh` ... This undermines
+  confidence that this was a clean, controlled comparison rather than one
+  contaminated by whatever produced that side effect."
+
+Both failures are about experimental control being lost — one arm silently
+never received the independent variable at all; a live, uncontrolled side
+effect contaminated the environment both arms ran in — not about the
+instrument misreading a real signal (b) or about the base model's
+disposition already matching the skill's prescription on a clean attempt
+(a). This is the same class of risk "Cause D" above already names for
+tool skills with real system access (`tmux`, `linear`, `github-cli`,
+`obsidian`): a scenario whose subject is operating a real external system
+has no fixture-sandbox boundary, so the SAME two-arm design that works for
+file-editing scenarios cannot guarantee, mid-run, that the skill was
+actually in context or that nothing outside the fixture bled into the
+result. The fix here is neither "hold the design, escalate to
+longitudinal" (a) nor "fix one wrong regex" (b) — it is "verify the skill
+was actually loaded into the with-arm's context and run the comparison
+non-concurrently before trusting any verdict," per `tmux`'s own "what is
+not evidenced" section.
+
+### The answer, stated at the precision the evidence supports
+
+**The structural-mismatch (habit/consistency) finding applies, evidence-backed, to 7 of the 23: `ask-a-council`, `dispatching-subagents`, `sanity-check`, `tdd`, `memory-conventions`, `spec`, `keep-me-honest`.** Combined with the 3 already directly escalated (`create-skill`, `distill`, `loop-memory`), that is 10 of 26 `could_not_measure` skills for which this file's own hypothesis has direct, per-skill textual support — not a majority, and not proof for any one of the ten individually (only three have been escalated with a harder scenario and still not discriminated; the other seven remain, honestly, un-escalated).
+
+**It does not apply to the other 16.** Fifteen (`close-the-loop`, `decide-by-variant`, `determine-intent`, `determine-signals`, `devils-advocate`, `durable-fact-before-label`, `failing-test-first`, `mechanize`, `mine-transcripts`, `notify`, `plan-parallel-execution`, `spec-driven-development`, `supervised-lane-loop`, `test-in-the-consumer-context`, `wire-it-when-you-write-it`) have a named, fixable instrument defect in their own write-up — the recommended action is the ordinary per-skill fix path (repair the scorer, the fixture, the install, or the scenario, then re-run inside the existing two-arm design), not a design change. One (`tmux`) is a distinct methodology-confound class needing a controlled re-run, not a redesign either.
+
+**This is not a blanket "stop evaluating" conclusion, and is not meant to read as one.** The design limitation this file has argued for since §2 is real and now has direct textual support from 10 of 26 skills — but 16 of 26 are ordinary instrument bugs, most already diagnosed with a concrete fix named in their own file, waiting on someone to apply it inside the loop's existing design.
+
 ## What I did NOT do
 
 - Did not evaluate any new skill. All 25 `could_not_measure` counts, and
@@ -341,3 +505,11 @@ category inside this pass's own scope.
   this loop's own protocol next (`docs/evals.md`, cited above, is not
   currently in this repository's tree -- see the note in "Cause D"
   above).
+- (This pass, the "classifying all 23 remaining could_not_measure skills"
+  update above) Did not evaluate any skill under the old two-arm design,
+  did not build a general longitudinal harness, did not touch the private
+  `agent-evals` harness, and did not change any verdict in
+  `docs/eval-status.json` or drop or evaluate any new skill --
+  `could_not_measure: 26` before and after this update, confirmed by
+  `scripts/eval_status.py --summary`. Classification only, against
+  existing `eval-result.md` files.
