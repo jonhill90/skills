@@ -30,8 +30,8 @@ reference.
 
 This repository is also an [Agent Plugins
 1.0.0](https://agent-plugins.org/specification) plugin: `plugin.json` at the
-root, 39 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
-verified 2026-08-21), which is the standard's own discovery convention.
+root, 40 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
+verified 2026-08-23), which is the standard's own discovery convention.
 Any conformant client can consume the collection whole, with no bespoke
 tooling.
 
@@ -42,9 +42,9 @@ remains the way to install individual skills, and nothing here replaces it.
 
 ## Skills in this collection
 
-All 39, flat and alphabetical — matching `skills/`'s own layout (see
+All 40, flat and alphabetical — matching `skills/`'s own layout (see
 [Where a skill belongs](#where-a-skill-belongs) for why this repository does
-not bucket by category). Measured `ls -d skills/*/`, verified 2026-08-21.
+not bucket by category). Measured `ls -d skills/*/`, verified 2026-08-23.
 This table has drifted from the tree twice: 12 skills short for five days
 (`069e2c4`, 2026-08-09) and, a second time, 13 skills short until this
 correction (skills#224) — `scripts/validate_repository.py`'s

@@ -137,7 +137,7 @@ partially overlaps all of them.
 That is the honest strength of the evidence behind this skill, and it is
 weaker than it might sound stated as a list of six numbered rules.
 
-An independent review tested whether brief discipline of this shape raises
+An independent review (source not cited here; could not measure independently in this pass) tested whether brief discipline of this shape raises
 throughput and found **no dose-response**: the days with the strongest
 discipline in that day's briefs were not the days with the most merges, and
 the rule with the strongest individual case (rule 2, the mutation

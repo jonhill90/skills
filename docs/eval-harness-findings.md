@@ -300,7 +300,13 @@ automatically — `eval_skill.py`'s existing git-fixture isolation, built
 for scenarios that edit files, provides no isolation at all for this
 category, and assuming it does is exactly the kind of untested
 assumption `docs/evals.md`'s "Scoring is code, and every rule is a scar"
-section warns against. This pass's own response was conservative rather
+section warns against (that file is not currently in this repository's
+tree -- removed 2026-08-09, commit `069e2c4`, as part of stripping
+`agent-dotfiles`' private harness content, and a search of
+`jonhill90/agent-dotfiles` finds no `evals.md` there either; the warning
+is real -- quoted verbatim from that commit's parent, `git show
+069e2c4~1:docs/evals.md` -- but the citation is to a file no longer
+checkable in either repo). This pass's own response was conservative rather
 than corrective: pick scenarios where the "real system" is either fully
 local and disposable (`tmux`, via PID-suffixed sessions) or absent
 entirely (`prd`, `primer` — no external tool at all), and record
@@ -311,8 +317,12 @@ category inside this pass's own scope.
 ## What I did NOT do
 
 - Did not evaluate any new skill. All 25 `could_not_measure` counts, and
-  the 3 `keep` / 6 `improve` / 6 `unevaluated` counts, are unchanged by
-  this PR -- this file only re-reads and re-classifies existing results.
+  the 3 `keep` / 6 `improve` / 6 `unevaluated` counts (pass 12's
+  population, §"The number that motivated this pass" above), are
+  unchanged by this PR -- this file only re-reads and re-classifies
+  existing results. Later passes (13, 14, ...) have since moved these
+  totals; `python3 scripts/eval_status.py --summary` is the live count,
+  not this line.
 - Did not patch, reproduce, or open a PR against the private
   `agent-evals` harness.
 - Did not relabel or delete any `could_not_measure` entry, and did not
@@ -328,4 +338,6 @@ category inside this pass's own scope.
 - Did not build the longitudinal eval design recommended in §4.
   Recommending it, with the evidence for why it targets the actual gap,
   is this task's own scope; implementing it belongs to whoever picks up
-  `docs/evals.md`'s own protocol next.
+  this loop's own protocol next (`docs/evals.md`, cited above, is not
+  currently in this repository's tree -- see the note in "Cause D"
+  above).

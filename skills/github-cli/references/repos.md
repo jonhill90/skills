@@ -41,9 +41,9 @@ gh repo create --source . --public --push
 # Change description and homepage
 gh repo edit --description "A cool project" --homepage "https://example.com"
 
-# Change visibility
-gh repo edit --visibility public
-gh repo edit --visibility private
+# Change visibility (requires --accept-visibility-change-consequences)
+gh repo edit --visibility public --accept-visibility-change-consequences
+gh repo edit --visibility private --accept-visibility-change-consequences
 
 # Change default branch
 gh repo edit --default-branch develop
@@ -228,8 +228,9 @@ gh release download v1.0.0 --skip-existing
 # Verify artifact attestation
 gh attestation verify ./dist/app-linux-amd64.tar.gz --repo OWNER/REPO
 
-# List attestations
-gh attestation list --repo OWNER/REPO
+# Download attestations for offline verification (there is no `gh attestation list`;
+# subcommands are download, trusted-root, verify)
+gh attestation download ./dist/app-linux-amd64.tar.gz --repo OWNER/REPO
 ```
 
 ### List Releases with Filters

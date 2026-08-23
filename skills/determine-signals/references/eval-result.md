@@ -55,7 +55,9 @@ sharply in pair 1 and not at all in pair 2 -- the same scenario, same
 skill, same absence of it, producing a large delta once and none the
 next time. A cost signal that does not reproduce across independent runs
 is exactly the ×2/×3-repetitions bar `docs/evals.md` sets before trusting
-an efficiency delta at all; recording `improve` off pair 1 alone, when
+an efficiency delta at all (that file was removed from this repo
+2026-08-09, before this pass ran -- could not be re-checked against the
+current tree); recording `improve` off pair 1 alone, when
 pair 2 directly contradicts it, would be trusting noise. Recorded as
 `could_not_measure` -- genuinely unmeasured, not a wash dressed up as a
 pass, and not an unreproduced delta dressed up as a finding.

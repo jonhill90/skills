@@ -68,8 +68,10 @@ response contains no new hex codes at all.
 ## Why `could_not_measure`, not `keep` or `drop`
 
 Two samples, one showing a real difference and one showing none, is
-exactly the noisy-signal case this loop's docs/evals.md ×2/×3-repetitions
-bar exists to catch — n=1 (pair 1 alone) would have shipped a false
+exactly the noisy-signal case this loop's ×2/×3-repetitions bar exists to
+catch (originally stated in `docs/evals.md`, which was removed from this
+repo 2026-08-09, before this pass ran -- could not be re-checked against
+the current tree) — n=1 (pair 1 alone) would have shipped a false
 confident `keep`. Recorded `could_not_measure`. Worth naming as
 suggestive rather than settled: the skill-installed arm was correct in
 both runs (2/2), the skill-absent arm in only one (1/2) — consistent

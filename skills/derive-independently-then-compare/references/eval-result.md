@@ -46,7 +46,9 @@ whether the inversion was caught. Cost did: 1.7x tokens, 1.8x turns with
 the skill installed. Same reasoning as this loop's own prior
 `adopt-or-build`/`research-the-limit` results (jonhill90/skills#233/#234):
 an unchanged-but-more-expensive outcome is `improve`, not `keep` — and,
-per `docs/evals.md`'s own ×2/×3-repetitions bar, this is one pair, not a
+per the loop's own ×2/×3-repetitions bar (stated in `docs/evals.md`,
+which was removed from this repo 2026-08-09, before this pass ran --
+could not be re-checked against the current tree), this is one pair, not a
 confirmed effect; recorded as `improve, n=1` rather than upgraded on a
 single sample, matching this pass's own instruction against chasing
 confidence beyond what was actually run.

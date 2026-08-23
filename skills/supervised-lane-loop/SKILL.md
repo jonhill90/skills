@@ -295,7 +295,7 @@ Where the lane protocol is `jonhill90/agent-supervisor`'s `lanes.sh`
 description of it, not the other way around — read the script when they
 disagree. **Do not cite a fixed count for how many states it reports.**
 The script's own header, its `AGENTS.md`, and a grep of its source have
-disagreed with each other before (`agent-supervisor#131`, open) — a
+disagreed with each other before (`agent-supervisor#131`, closed) — a
 number copied from any one of those goes stale the moment the script
 changes. Verify coverage the same way: grep the script for the states it
 assigns and diff that list against the table below.

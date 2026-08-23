@@ -43,7 +43,7 @@ non-default vault. Many list/read commands accept
 | property:set | `obsidian property:set name=<name> value=<value> type=text\|list\|number\|checkbox\|date\|datetime file=<name>` |
 | property:read | `obsidian property:read name=<name> file=<name>` |
 | property:remove | `obsidian property:remove name=<name> file=<name>` |
-| properties | `obsidian properties active file=<name> count sort=count format=yaml\|json\|tsv` |
+| properties | `obsidian properties active file=<name> counts sort=count format=yaml\|json\|tsv` |
 | aliases | `obsidian aliases active file=<name> total verbose` |
 
 ## Daily notes
@@ -87,7 +87,6 @@ non-default vault. Many list/read commands accept
 |---|---|
 | vault | `obsidian vault info=name\|path\|files\|folders\|size` |
 | vaults | `obsidian vaults total verbose` |
-| vault:open | `obsidian vault:open name=<name>` |
 
 ## History & Obsidian Sync
 
@@ -106,7 +105,7 @@ non-default vault. Many list/read commands accept
 | plugins family | `obsidian plugins`, `plugin:enable id=<id>`, `plugin:install id=<id> enable`, … |
 | eval | `obsidian eval code=<javascript>` (advanced; runs in app context) |
 | reload / restart / version | `obsidian reload`, `obsidian restart`, `obsidian version` |
-| random / unique | `obsidian random:read folder=<path>`, `obsidian unique name=<text> content=<text>` |
+| random | `obsidian random:read folder=<path>` |
 
 Running bare `obsidian` opens the interactive TUI — avoid in scripts;
 use single commands with `format=json` for automation.

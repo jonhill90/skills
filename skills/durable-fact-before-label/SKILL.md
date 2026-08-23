@@ -94,13 +94,14 @@ path, never overwrite the lane's own account, so a crash or a missed
 signal leaves a wrong *label next to* a correct record instead of erasing
 the record.
 
-**The six-lane symptom this rule exists to prevent (2026-08-20).** Six
-ledger tasks sat at `status=accepted` for 6–10 hours with zero live
-processes and zero tmux windows behind them. Four of the six GitHub
-issues were already `CLOSED` — the work had shipped. `reap-lane-claims`
-returned `count:0`; nothing detected them as stale, because the
-ledger — the record a reaper reads to decide what's abandoned — never
-recorded the in-flight status as provisional. Had the ledger's status
+**The six-lane symptom this rule exists to prevent (2026-08-20, could not
+measure).** Six ledger tasks are said to have sat at `status=accepted` for
+6–10 hours with zero live processes and zero tmux windows behind them, four
+of the six GitHub issues already `CLOSED`, and `reap-lane-claims` returning
+`count:0`. No issue, PR, or commit in `jonhill90/agent-supervisor` matching
+this specific incident could be found to check the counts against (unlike
+the two incidents above, which cite #178 and agent-supervisor#401
+respectively and check out against those records). Had the ledger's status
 field been ordered as a label updated *after* a durable "this lane
 finished" fact rather than as the thing a crash could leave permanently
 wrong, the reaper would have had something loud to catch.

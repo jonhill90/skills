@@ -39,7 +39,8 @@ judgements writes 0. Always verify that after a load — an idempotency claim
 nobody tested is not a property.
 
 At scale, run the judging as a dynamic workflow: `.claude/workflows/corpus-itemise.js`
-in `agent-supervisor`. Agents judge and write JSON **only**; a single serial
+on the `feat/prompt-corpus-skill` branch of `agent-supervisor` (could not measure
+whether this has since merged to `main`). Agents judge and write JSON **only**; a single serial
 agent does every ledger write. Twelve concurrent writers on one SQLite file
 contend.
 
@@ -72,9 +73,9 @@ Matched literally, no model:
 
 ```
 "do exactly what it says"        "That file is your complete brief"
-"never work in the shared checkout"
+"carry it out exactly as written"
 "Base directory for this skill:" "## Context Usage"
-"Supervisor loop tick"           "<bash-stdout>"
+"Supervisor loop tick"           "<local-command-stdout>"
 ```
 
 **A topic-keyword filter is a trap.** Filtering on `career`/`resume` matched
