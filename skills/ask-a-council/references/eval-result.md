@@ -16,6 +16,16 @@ caught and discarded before scoring (this machine's globally-deployed
 skill roster leaked into what was meant to be a clean "without" arm; see
 the evidence file for how that was caught and re-run).
 
+**Provenance caveat:** the prediction's ordering relative to the runs is
+not independently verifiable from the repository -- `agent-evals` PR #25
+bundled `prediction.md`, fixtures, transcripts, and results into one
+squashed commit that postdates all three transcripts' internal
+timestamps. See `docs/eval-ask-a-council-266.md` for the full accounting.
+The verdict below does not depend on prediction timing (it rests on the
+WITHOUT-arm contamination catch and the both-arms-caught-the-citation
+finding, both independently verified against the transcripts), but the
+prediction's own priority claim is unverified.
+
 Both arms found both planted defects, independently, each quoting the
 specific contradicting log lines. Checking the WITH arm's own reasoning
 text (not tool-result noise) for council/lens language, or a Skill-tool

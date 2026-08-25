@@ -15,11 +15,27 @@ modes plural in *kind* (not merely plural in count), not settleable by a
 cheap deterministic check or a single careful read, and a right answer
 checkable after the fact without a judgement call.
 
-## Prediction (written before either arm ran)
+## Prediction
 
 Full text lives in the private `agent-evals` repo's own prediction file
 for this scenario; summarized here since the prediction's *reasoning*,
-not its content, is what matters for a public reader:
+not its content, is what matters for a public reader.
+
+**Provenance caveat:** the prediction's *content* is consistent with
+having been authored before either arm ran and matches the reasoning
+below, but its ordering relative to the runs cannot be confirmed from
+the repository. `agent-evals` PR #25 is a single squashed commit
+(`57fa0cad`) containing `prediction.md`, the fixtures, all three
+transcripts, and the results file together, timestamped
+2026-08-25T04:53:15Z -- after all three transcripts' own internal
+timestamps (04:47:47-04:50:43Z). No transcript reads or references
+`prediction.md`, so nothing in the runs themselves proves the file
+existed beforehand. That is consistent with an ordinary workflow
+(authored earlier, committed in one batch afterward) but is equally
+consistent with post-hoc rationalization, and the repository cannot
+distinguish the two. The `could_not_measure` verdict below rests in
+part on a prediction whose priority relative to the runs is
+unverified.
 
 - **WITHOUT** would catch the code-mechanism bug (visible in one read)
   and likely NOT independently cross-reference a quoted citation against
@@ -79,6 +95,15 @@ sufficient to force this skill's mechanism to engage. What remains
 untested: whether a genuinely harder-to-hold-in-one-pass artifact would
 force it, and whether the skill helps once explicitly invoked rather than
 left to trigger on its own.
+
+## Process note for future runs
+
+This pass committed `prediction.md` together with the fixtures,
+transcripts, and results file in one squashed commit, which is why its
+priority relative to the runs cannot be confirmed above. The fix is
+process, not retroactive: commit `prediction.md` on its own, before
+running either arm, so the ordering is a fact in git rather than a claim
+in prose.
 
 ## Where the evidence actually lives
 
