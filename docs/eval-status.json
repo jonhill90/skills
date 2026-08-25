@@ -2,7 +2,7 @@
   "$comment": "jonhill90/skills#230's own record: one entry per skills/<name>/ directory. verdict is one of keep | improve | rename | drop | could_not_measure | unevaluated -- could_not_measure means an eval ran but did not produce a reliable skill-attributable signal (the scenario didn't discriminate, or the scorer was found unreliable), which is a real, different state from unevaluated (no eval has run at all) and must never be read as either a pass or a fail. date is null for unevaluated. evidence is a repo-relative path to the recording file for anything other than unevaluated, or null. Read and updated by scripts/eval_status.py -- do not hand-edit the shape without also updating that script's own schema check.",
   "skills": {
     "adopt-or-build": {"verdict": "improve", "date": "2026-08-22", "evidence": "skills/adopt-or-build/references/eval-result.md"},
-    "ask-a-council": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/ask-a-council/references/eval-result.md"},
+    "ask-a-council": {"verdict": "could_not_measure", "date": "2026-08-25", "evidence": "skills/ask-a-council/references/eval-result.md"},
     "close-the-loop": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/close-the-loop/references/eval-result.md"},
     "create-skill": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/create-skill/references/eval-result.md"},
     "decide-by-variant": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/decide-by-variant/references/eval-result.md"},

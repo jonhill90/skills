@@ -1,1 +1,2 @@
 {"date": "2026-08-22", "evidence": "skills/ask-a-council/references/eval-result.md", "source": "docs/eval-status.json (pre-migration, single-record era)", "verdict": "could_not_measure"}
+{"date": "2026-08-25", "evidence": "skills/ask-a-council/references/eval-result.md", "source": "skills#266 (v3 citation-verification scenario, agent-evals#25)", "verdict": "could_not_measure"}
