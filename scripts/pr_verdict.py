@@ -221,9 +221,22 @@ def _parse_verdict_comment(body: str) -> str | None:
 # to `[ \t]*` keeps the match on the trailer's own line; `(.*)$` still
 # can't cross a line boundary on its own (no `re.DOTALL`), so this was the
 # only gap.
+# jonhill90/skills#259: #260's fix above stopped at Review-Lane:/
+# Author-Lane: on the (mistaken) belief that _REVIEWED_SHA_RE's mandatory
+# `[A-Za-z0-9]+` capture already made it immune -- it does not. A BLANK
+# `Reviewed-SHA:` trailer (nothing after the colon on its own line) still
+# lets the leading `\s*` cross the newline: the pattern simply fails to
+# match on the blank line and re-anchors on the NEXT line instead, where
+# `[A-Za-z0-9]+` happily captures that line's leading alnum run (e.g. the
+# start of a comment's next sentence, or another trailer's value) as if it
+# were the SHA. Fix: restrict the whitespace that can precede the capture
+# to `[ \t]*`, same line only, same as the other two. The TRAILING `\s*`
+# before `$` is left alone -- it sits after the mandatory capture, so it
+# cannot manufacture a value out of the next line; it only needs to still
+# absorb a trailing `\r` so CRLF-terminated comments keep matching.
 _REVIEW_LANE_LINE_RE = re.compile(r"(?im)^[ \t]*Review-Lane:[ \t]*(.*)$")
 _AUTHOR_LANE_LINE_RE = re.compile(r"(?im)^[ \t]*Author-Lane:[ \t]*(.*)$")
-_REVIEWED_SHA_RE = re.compile(r"(?im)^\s*Reviewed-SHA:\s*([A-Za-z0-9]+)\s*$")
+_REVIEWED_SHA_RE = re.compile(r"(?im)^[ \t]*Reviewed-SHA:[ \t]*([A-Za-z0-9]+)\s*$")
 
 
 def _parse_trailer(pattern: re.Pattern, body: str) -> str | None:

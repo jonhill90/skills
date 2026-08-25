@@ -110,6 +110,111 @@ class BlankReviewLaneSelfApprovalBypass(unittest.TestCase):
         self.assertIsNone(value)
 
 
+class BlankReviewedShaAlsoBypassed(unittest.TestCase):
+    """jonhill90/skills#259: #260 fixed Review-Lane:/Author-Lane: but its
+    commit message asserted `_REVIEWED_SHA_RE` "already only matches
+    `[A-Za-z0-9]+` so it never had this bug" -- false. The mandatory `+`
+    only stops it matching on the BLANK trailer's own (empty) line; the
+    leading `\\s*` still crosses the newline and re-anchors on the NEXT
+    line, where `[A-Za-z0-9]+` captures that line's leading alnum run as
+    if it were the SHA. Because the capture is alnum-only (unlike the
+    free-text `(.*)$` capture Review-Lane:/Author-Lane: use), the bug only
+    fires when everything on the next line, after that captured run, is
+    itself blank/whitespace to end-of-line -- e.g. the next line is a
+    bare alnum token with no other punctuation. A raw SHA quoted on its
+    own line, with no `Reviewed-SHA:` label, is exactly that shape, and
+    is exactly what makes this a live self-approval bypass: if that raw
+    line happens to equal the PR's real head SHA, the blank trailer is
+    silently treated as a MATCHING one."""
+
+    def test_blank_reviewed_sha_does_not_capture_a_bare_alnum_next_line(self):
+        body = "Verdict: APPROVE\nReviewed-SHA:\nabc123def\n"
+        value = pv._parse_trailer(pv._REVIEWED_SHA_RE, body)
+        self.assertIsNone(value)
+
+    def test_blank_reviewed_sha_followed_by_the_real_head_sha_bare_is_not_approved(self):
+        # The security-relevant shape: Reviewed-SHA: is left blank, but the
+        # very next line happens to BE the PR's real current head SHA
+        # (e.g. pasted in without its label). A real approval still
+        # requires the `Reviewed-SHA:` trailer itself to carry the value
+        # -- a blank trailer must never be rescued by coincidental text
+        # sitting on the following line.
+        payload = _payload(
+            body="Author-Lane: build-2\n",
+            comments=[_comment(f"Verdict: APPROVE\nReview-Lane: build-5\nReviewed-SHA:\n{HEAD}\n")],
+        )
+        result = _resolve(payload)
+        self.assertEqual(result["decision"], "unknown")
+        self.assertIn("Reviewed-SHA", result["detail"])
+
+
+class TrailerRegexShapeCoverage(unittest.TestCase):
+    """The real trailer shapes a comment or PR body can carry, run through
+    all three patterns directly (not just the one blank-then-trailer shape
+    each bug report happened to quote): a normal value, a blank value
+    immediately followed by another trailer line, a blank value at the
+    very end of the body (no next line to wrongly capture), trailing
+    horizontal whitespace after a real value, and CRLF line endings."""
+
+    # Reviewed-SHA's capture is restricted to `[A-Za-z0-9]+` (no hyphen),
+    # unlike the free-text Review-Lane:/Author-Lane: values -- each
+    # trailer gets its own valid sample value so every pattern is
+    # exercised against a shape it actually accepts.
+    _PATTERNS = {
+        "Review-Lane": (pv._REVIEW_LANE_LINE_RE, "build-9"),
+        "Author-Lane": (pv._AUTHOR_LANE_LINE_RE, "build-9"),
+        "Reviewed-SHA": (pv._REVIEWED_SHA_RE, "abc123"),
+    }
+
+    def test_value_present_is_captured(self):
+        for name, (pattern, value) in self._PATTERNS.items():
+            with self.subTest(trailer=name):
+                body = f"{name}: {value}\n"
+                self.assertEqual(pv._parse_trailer(pattern, body), value)
+
+    # The next trailer line must never be the SAME trailer name as the one
+    # under test -- "Reviewed-SHA:\nReviewed-SHA: <real sha>\n" would let
+    # `.search()` legitimately find the second, well-formed occurrence and
+    # return it, which is correct behaviour, not a regression. Each blank
+    # trailer is instead followed by a genuinely different trailer, the
+    # exact shape both #259 and #260 describe.
+    _NEXT_LINE = {
+        "Review-Lane": f"Reviewed-SHA: {HEAD}",
+        "Author-Lane": f"Reviewed-SHA: {HEAD}",
+        "Reviewed-SHA": "Author-Lane: build-2",
+    }
+
+    def test_blank_value_followed_by_another_trailer_is_missing(self):
+        for name, (pattern, _value) in self._PATTERNS.items():
+            with self.subTest(trailer=name):
+                body = f"{name}:\n{self._NEXT_LINE[name]}\n"
+                self.assertIsNone(pv._parse_trailer(pattern, body))
+
+    def test_blank_value_at_end_of_body_is_missing(self):
+        for name, (pattern, _value) in self._PATTERNS.items():
+            with self.subTest(trailer=name):
+                body = f"Verdict: APPROVE\n{name}:\n"
+                self.assertIsNone(pv._parse_trailer(pattern, body))
+
+    def test_trailing_horizontal_whitespace_is_stripped(self):
+        for name, (pattern, value) in self._PATTERNS.items():
+            with self.subTest(trailer=name):
+                body = f"{name}: {value}   \n"
+                self.assertEqual(pv._parse_trailer(pattern, body), value)
+
+    def test_crlf_line_endings_still_match(self):
+        for name, (pattern, value) in self._PATTERNS.items():
+            with self.subTest(trailer=name):
+                body = f"{name}: {value}\r\n"
+                self.assertEqual(pv._parse_trailer(pattern, body), value)
+
+    def test_crlf_blank_value_followed_by_another_trailer_is_missing(self):
+        for name, (pattern, _value) in self._PATTERNS.items():
+            with self.subTest(trailer=name):
+                body = f"{name}:\r\n{self._NEXT_LINE[name]}\r\n"
+                self.assertIsNone(pv._parse_trailer(pattern, body))
+
+
 class ExitCodesMatchDecision(unittest.TestCase):
     """A caller gates on the exit code alone (this module's own docstring
     contract) -- prove the mapping, not just resolve()'s return value."""
