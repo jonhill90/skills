@@ -1,15 +1,12 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1, scorer bug found and fixed)**
+**Verdict: could_not_measure (n=1, instrument bug found and fixed)**
 
-An automated scorer initially flagged a real divergence between arms, but
-hand-reading the transcript found the scorer's own keyword match had
-misread a sentence that explicitly declined a bad example as if it had
-committed to it. Once the scorer was corrected and both transcripts
-re-scored, the two arms turned out identical: both read the governing
-rules document, both named the missing inputs as blocking rather than
-guessing, neither invented a plausible-looking answer. A wash once
-measured properly, not a discriminating result.
+A wash once measured properly: both arms read the governing rules
+document, both named the missing inputs as blocking rather than
+guessing, neither invented a plausible-looking answer. Full write-up
+(including the eval-instrument finding behind this verdict) moved to
+`jonhill90/agent-evals` by jonhill90/skills#272.
 
 Evidence for this verdict lives outside this repository, in the private
 `jonhill90/agent-evals` repo (evaluation loop tracked via

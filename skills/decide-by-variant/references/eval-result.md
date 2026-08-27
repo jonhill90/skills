@@ -1,14 +1,13 @@
 # Eval result
 
-**Verdict: could_not_measure (n=2, scorer bug found and fixed, effect did not replicate)**
+**Verdict: could_not_measure (n=2, instrument bug found and fixed, effect did not replicate)**
 
-A first live pair, after a scorer fix (a keyword-only detector missed an
-unlabeled but real violation), scored as a clean discriminating result. A
-second independent pair, run specifically to check that signal before
-trusting it, did not reproduce it — the arm that had failed the first
-time succeeded the second. Two samples pointing in different directions
-is exactly the noise this loop's own repetition bar exists to catch; an
-n=1 read would have shipped a false confident verdict.
+A first pair looked like a clean discriminating result; an independent
+second pair, run specifically to check that signal before trusting it,
+did not reproduce it. Two samples pointing in different directions is
+exactly the noise this loop's own repetition bar exists to catch. Full
+write-up (including the eval-instrument finding behind this verdict)
+moved to `jonhill90/agent-evals` by jonhill90/skills#272.
 
 Evidence for this verdict lives outside this repository, in the private
 `jonhill90/agent-evals` repo (evaluation loop tracked via
