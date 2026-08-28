@@ -68,6 +68,19 @@ verdict, and refuses -- naming the skill and whether the installed copy is
 MISSING or DIVERGENT from this repo's own copy -- unless the caller passes
 --skip-install-check with a reason. See check_skill_install.py's own doc
 comment for what the check does and does not cover.
+
+--claude-skills-dir (jonhill90/skills#285): --record's install check
+defaults to comparing against the one shared `~/.claude/skills` path every
+running agent on the host reads from. This flag points that comparison at
+a different directory instead (a scratch checkout, a project-local skills
+dir) -- see do_record's own docstring for the exact contract. #285 asks a
+larger question this flag does not answer: whether the with/without
+evaluation ARMS themselves (not this record-time gate) should be able to
+point at an arbitrary skill source. That harness is `agent-evals`, private
+and out of this repository's scope (see this file's own top line) -- this
+flag only narrows the ONE coupling this repository's own code enforces:
+that recording a verdict requires the skill to already be live on the
+single shared path.
 """
 
 from __future__ import annotations
@@ -221,7 +234,8 @@ def regenerate_record(comment: str, skill_names: set[str]) -> dict:
 
 
 def do_record(skill: str, verdict: str | None, evidence: str | None, date: str | None,
-              source: str | None, skip_install_check: str | None = None) -> int:
+              source: str | None, skip_install_check: str | None = None,
+              claude_skills_dir: Path | None = None) -> int:
     """Appends ONE observation to docs/eval-log/<skill>.jsonl, then
     regenerates docs/eval-status.json from every skill's own log -- the
     one path --record exposes, and the one this script wants every future
@@ -263,6 +277,28 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
         machine actually ran the eval) but prints a loud stderr warning
         naming the reason; the override is never silent.
 
+    `claude_skills_dir` (jonhill90/skills#285): the directory the install
+    check compares `skills/<skill>/` against, defaulting to the module-level
+    CLAUDE_SKILLS_DIR (`~/.claude/skills`, the one path shared by every
+    running agent on this host) when None -- existing callers that never
+    pass this argument get byte-identical behavior. Passing a different
+    directory lets a verdict be recorded from an install visible only to
+    this evaluation (a scratch checkout of a specific commit, a
+    project-local skills dir) WITHOUT ever symlinking a not-yet-merged or
+    not-yet-trusted skill into the one path every other agent on the host
+    reads -- the coupling #285 names ("evaluating a candidate skill makes
+    it live for every running agent on the host as a side effect of
+    measuring it"), narrowed to the one place this repository's own code
+    enforces it. This does not touch how the with/without evaluation ARMS
+    themselves get skill content -- that harness (`agent-evals`, private,
+    see this module's own top-of-file doc comment) is out of this
+    repository's scope; this only changes what --record's own pre-write
+    gate checks against. The visibility guarantee is unchanged either way:
+    `check_skill_install.check_installed` still runs, still returns
+    OK/MISSING/DIVERGENT, and its message still names the exact directory
+    it checked -- pointing it elsewhere does not make the check optional
+    or silent, only redirects what it verifies against.
+
     `date` defaults to today (real wall-clock date; this is an ordinary
     script run by a human/agent, not a Workflow script, so datetime.date.
     today() is the right tool) -- overridable for tests and for a
@@ -298,7 +334,8 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
         print(f"--record {skill}: install check SKIPPED -- {skip_install_check}",
               file=sys.stderr)
     else:
-        install = check_skill_install.check_installed(skill, CLAUDE_SKILLS_DIR, REPO)
+        target_dir = claude_skills_dir if claude_skills_dir is not None else CLAUDE_SKILLS_DIR
+        install = check_skill_install.check_installed(skill, target_dir, REPO)
         if install.status != check_skill_install.OK:
             print(f"--record {skill}: refusing -- {install.message}", file=sys.stderr)
             print("  (pass --skip-install-check \"<reason>\" to override; "
@@ -477,11 +514,20 @@ def main(argv: list[str]) -> int:
                      help="override --record's own install-parity check (with --record) -- "
                           "requires a non-empty REASON, printed to stderr, never silent; "
                           "see check_skill_install.py for what this check verifies and why")
+    ap.add_argument("--claude-skills-dir", metavar="DIR",
+                     help="check --record's install-parity gate against DIR instead of the "
+                          "shared ~/.claude/skills (jonhill90/skills#285) -- lets a verdict be "
+                          "recorded from an install visible only to this evaluation (e.g. a "
+                          "scratch checkout of a specific commit) without symlinking a "
+                          "not-yet-merged skill into the one path every other agent on the "
+                          "host reads; omit for the unchanged default behavior")
     args = ap.parse_args(argv)
 
     if args.record:
         return do_record(args.record, args.verdict, args.evidence, args.date, args.source,
-                          skip_install_check=args.skip_install_check)
+                          skip_install_check=args.skip_install_check,
+                          claude_skills_dir=Path(args.claude_skills_dir)
+                          if args.claude_skills_dir else None)
 
     if args.history:
         return do_history(args.history)
