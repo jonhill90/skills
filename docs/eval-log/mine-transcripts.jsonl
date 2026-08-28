@@ -1,1 +1,2 @@
 {"date": "2026-08-22", "evidence": "skills/mine-transcripts/references/eval-result.md", "source": "docs/eval-status.json (pre-migration, single-record era)", "verdict": "could_not_measure"}
+{"date": "2026-08-28", "evidence": "skills/mine-transcripts/references/eval-result.md", "source": "skills#287 re-run (second pass, scenario rewritten)", "verdict": "improve"}
