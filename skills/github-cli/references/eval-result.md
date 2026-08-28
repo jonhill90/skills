@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could not measure a reliable skill-attributable difference**
+**Verdict: could_not_measure (a reliable skill-attributable difference could not be established)**
 
 Closes this skill's prior `unevaluated` status with a real pair of live
 trials against a narrower claim than the original blocker — whether an

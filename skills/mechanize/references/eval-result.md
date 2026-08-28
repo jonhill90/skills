@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could not measure a reliable skill-attributable difference**
+**Verdict: could_not_measure (a reliable skill-attributable difference could not be established)**
 
 A counting-measurement redesign (a real, mechanically scored quantity
 rather than a scored write-up) ran several trials across a baseline

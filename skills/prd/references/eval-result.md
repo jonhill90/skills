@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: two passes, `could_not_measure` (n=1) then `improve` (n=1, not replicated)**
+**Verdict: improve (n=1, not replicated; first pass recorded could_not_measure)**
 
 Two independently-designed traps for the same boundary this skill draws
 — keeping a named solution out of the problem statement. Across both,
