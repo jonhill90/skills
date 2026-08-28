@@ -462,6 +462,63 @@ class TestRecordCLI(EvalLogSandboxTestCase):
         record = eval_status.load_record(eval_status.RECORD_PATH)
         self.assertEqual(record["a-skill"]["verdict"], "unevaluated")
 
+    def test_record_claude_skills_dir_override_redirects_the_check(self):
+        """jonhill90/skills#285: --claude-skills-dir must actually redirect
+        the install-parity gate, not merely be accepted and ignored.
+        Mutation, both directions, in one test: a scratch install the
+        DEFAULT claude-skills dir does not have at all is accepted when
+        pointed at directly; a scratch install missing the skill is
+        refused even though the DEFAULT dir (self.claude_skills, from
+        _sandbox) has a perfectly good matching copy the whole time. If
+        the override were ignored and --record silently fell back to
+        CLAUDE_SKILLS_DIR, both assertions below would still pass by
+        accident -- the second one is what rules that out."""
+        scratch = self.tmp / "scratch-install"
+        scratch.mkdir()
+        shutil.copytree(self.tmp / "skills" / "a-skill", scratch / "a-skill")
+
+        rc_accept = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-28", "--source", "PR #285-test",
+            "--claude-skills-dir", str(scratch),
+        ])
+        self.assertEqual(rc_accept, 0,
+                          "a scratch install that genuinely matches must be accepted "
+                          "when --claude-skills-dir points directly at it")
+
+        empty_scratch = self.tmp / "empty-scratch"
+        empty_scratch.mkdir()
+        rc_reject = eval_status.main([
+            "--record", "a-skill", "--verdict", "improve",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-28", "--source", "PR #285-test-2",
+            "--claude-skills-dir", str(empty_scratch),
+        ])
+        self.assertEqual(rc_reject, 2,
+                          "must refuse against a scratch dir missing the skill even "
+                          "though the DEFAULT claude-skills dir (self.claude_skills) "
+                          "has a matching copy the whole time -- proves the override "
+                          "actually redirected the check rather than being ignored")
+        # the accepted call recorded one observation; the refused call added none.
+        observations = eval_status.read_observations("a-skill")
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0]["source"], "PR #285-test")
+
+    def test_record_without_override_still_checks_the_default_dir(self):
+        """Regression: omitting --claude-skills-dir must keep checking
+        CLAUDE_SKILLS_DIR exactly as before this flag existed -- the
+        'do not break the installed path' requirement, checked directly
+        against do_record's own None-default branch."""
+        shutil.rmtree(self.claude_skills / "a-skill")
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--source", "PR #244",
+        ])
+        self.assertEqual(rc, 2)
+        self.assertEqual(eval_status.read_observations("a-skill"), [])
+
     def test_record_skip_install_check_override(self):
         """--skip-install-check is the loud, named escape hatch -- it must
         still let a legitimate --record through even when the sandboxed
