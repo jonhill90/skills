@@ -22,7 +22,7 @@
     "loop-memory": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/loop-memory/references/eval-result.md"},
     "mechanize": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/mechanize/references/eval-result.md"},
     "memory-conventions": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/memory-conventions/references/eval-result.md"},
-    "mine-transcripts": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/mine-transcripts/references/eval-result.md"},
+    "mine-transcripts": {"verdict": "improve", "date": "2026-08-28", "evidence": "skills/mine-transcripts/references/eval-result.md"},
     "notify": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/notify/references/eval-result.md"},
     "obsidian": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/obsidian/references/eval-result.md"},
     "plan-parallel-execution": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/plan-parallel-execution/references/eval-result.md"},
@@ -39,7 +39,7 @@
     "supervised-lane-loop": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/supervised-lane-loop/references/eval-result.md"},
     "tdd": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/tdd/references/eval-result.md"},
     "test-in-the-consumer-context": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/test-in-the-consumer-context/references/eval-result.md"},
-    "tmux": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/tmux/references/eval-result.md"},
+    "tmux": {"verdict": "improve", "date": "2026-08-28", "evidence": "skills/tmux/references/eval-result.md"},
     "verify-the-instrument": {"verdict": "keep", "date": "2026-08-22", "evidence": "skills/verify-the-instrument/references/eval-result.md"},
     "wire-it-when-you-write-it": {"verdict": "could_not_measure", "date": "2026-08-22", "evidence": "skills/wire-it-when-you-write-it/references/eval-result.md"}
   }

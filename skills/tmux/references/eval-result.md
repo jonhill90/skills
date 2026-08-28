@@ -1,5 +1,50 @@
 # Eval result
 
+**Verdict: improve (n=1, third pass, jonhill90/skills#287 — was
+could_not_measure across the first two)**
+
+Re-run for jonhill90/skills#287 after diagnosing why the first two passes
+couldn't measure (below): this pass fixed both named causes before scoring,
+not after. Skill delivery to the with-skill arm was mechanically confirmed —
+a real `Read` tool-use against `skills/tmux/SKILL.md` in a legible
+transcript, not inferred or self-reported — and the host was checked for
+leftover tmux sessions immediately before and after each arm; none were
+found either time, so Cause D's contamination did not recur.
+
+A same-scenario attempt relying on the harness's native skill discovery was
+tried first and reproduced the first pass's own original defect exactly:
+the with-skill arm never actually consulted the skill at all (no `Skill`
+tool-use, no `SKILL.md` read, in an otherwise legible transcript) despite
+the skill being on the skills path. Discarded rather than scored, for the
+same reason the first pass discarded its own unloaded arm. Delivering the
+skill by explicit prompt instruction instead — the same delivery
+`github-cli`/`linear`/`obsidian` use to dodge this exact failure — produced
+a valid pair.
+
+Both arms solved the task: the fixture's own self-contained test exited `0`
+for both, and neither fix hardcoded any of the test's own fixture-specific
+names (secondary observable, satisfied by both). The two arms diverged on
+cost, not correctness: with the skill confirmed read, 12 turns and roughly
+457k tokens; without it (skill stashed via an isolated-home shadow, never
+touching the shared, real `~/.claude`), 10 turns and roughly 302k tokens —
+about 1.5x. Same outcome at different cost is exactly the shape this
+harness's own scoring rule (`eval_skill.py`'s `verdict()`) reads as
+`improve`, not `keep`, at `n=1` — a signal to replicate, not a keep/drop
+call by itself.
+
+Evidence for this pass is from a fresh, local run performed for
+jonhill90/skills#287; it was not committed to the private
+`jonhill90/agent-evals` repo, so there is nothing further to cite here
+beyond this summary.
+
+**arm_a_skill_read_confirmed: true** (this pass's scored with-skill arm,
+prompt-instruction delivery, mechanically confirmed via a real `Read` of
+`skills/tmux/SKILL.md`). The discarded native-discovery attempt would have
+read `false` by the same check — not recorded as a scored trial, since it
+was never used for the verdict above.
+
+## Prior passes (superseded by the above, kept for the record)
+
 **Verdict: could_not_measure (two independent passes, n=1 each)**
 
 Two independently-run passes, both dated the same day, both landed on
