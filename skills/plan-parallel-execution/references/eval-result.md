@@ -1,27 +1,25 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1, across multiple trials)**
+**Verdict: could_not_measure (n=1, re-run after skills#282)**
 
-Two live pairs, each scoring a written plan rather than real execution,
-found both arms correctly identifying and correctly resolving real
-file-ownership collisions in a task list, by two differently valid
-strategies. A scoring heuristic misread one arm's valid resolution as a
-miss in one of these pairs; corrected by hand-reading the actual
-transcript before trusting the automated read. A follow-up
-counting-measurement redesign made the arms actually execute the work for
-real rather than just describe a plan, after a first version of that
-redesign was caught leaking the answer into the prompt and rebuilt
-cleanly; the corrected version again found no discrimination — both arms
-independently derived the identical, correct, collision-free grouping.
-Consistent across every trial run so far: a capable base model already
-treats collision-detection and safe grouping as an ordinary default, on
-scenarios of this size, without needing the skill's own explicit
-manifest-first discipline.
+Re-run for `jonhill90/skills#290`: `jonhill90/skills#282` named this skill
+as one of five `could_not_measure` verdicts recorded while the skill was
+missing from the harness's shared install path — an uninstalled "with"
+arm cannot discriminate from "without" by construction, which is
+consistent with this file's own prior finding of "no discrimination" on
+every earlier trial. Visibility was confirmed directly before trusting
+this run: `~/.claude/skills/plan-parallel-execution` resolves as a
+symlink to this skill's directory and `SKILL.md` reads back through it.
 
-Evidence for this verdict lives outside this repository, in the private
-`jonhill90/agent-evals` repo, at
-`skills/plan-parallel-execution/eval-scenario/` and
-`skills/plan-parallel-execution/eval-scenario-count/` (moved
-there by the landing PR jonhill90/agent-evals#22). This citation is for
-internal cross-check only — `agent-evals` is a private repository (its evidence is not publicly available), so a
-reader of this public repo cannot open it.
+New live pair (`claude -p`, project-local skill vs.
+`--disable-slash-commands`), task: split six file-editing tasks across
+concurrent agents without collisions. Both arms independently produced a
+per-task file-ownership manifest, correctly identified the same
+four-way collision on one shared entrypoint file, flagged the same
+unbounded-fan-out risk on a rename task, proposed a merge-then-split
+grouping to resolve the hotspot, and wrote exit-on-failure gates with an
+explicit mutation-check instruction. No discrimination — the skill was
+genuinely visible this time, and the base model already performs this
+skill's own manifest-first discipline by default at this task's scale,
+matching every prior trial recorded against this skill before the
+install-path defect existed.
