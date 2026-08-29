@@ -47,7 +47,7 @@ beyond this summary.
 
 ## Prior pass (superseded by the above, kept for the record)
 
-**Verdict: could_not_measure (n=1) — the scenario, not just the harness, needs rework**
+**Previous verdict: could_not_measure (n=1) — the scenario, not just the harness, needs rework**
 
 Hand-reading both transcripts found the real cause: the scenario's own
 prompt inadvertently scoped the search away from the one source that

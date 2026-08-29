@@ -619,5 +619,85 @@ class ReadmeTableTests(unittest.TestCase):
             self.assertTrue(any("README.md is missing" in message for message in self.messages(findings)))
 
 
+class EvalVerdictTests(unittest.TestCase):
+    """validate_eval_verdicts (jonhill90/skills#294)."""
+
+    def messages(self, findings: list[object]) -> list[str]:
+        return [finding.message for finding in findings]
+
+    def _write_eval_result(self, root: Path, skill: str, text: str) -> None:
+        references = root / "skills" / skill / "references"
+        references.mkdir(parents=True, exist_ok=True)
+        (references / "eval-result.md").write_text(text, encoding="utf-8")
+
+    def test_single_verdict_line_is_clean(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_eval_result(root, "alpha", "# Eval result\n\n**Verdict: keep**\n")
+            self.assertEqual(validator.validate_eval_verdicts(root / "skills"), [])
+
+    def test_second_verdict_line_is_rejected(self) -> None:
+        """The acceptance test named in jonhill90/skills#294: adding a
+        second "Verdict:" line makes this go red."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_eval_result(
+                root, "alpha",
+                "# Eval result\n\n**Verdict: keep**\n\n"
+                "**Verdict: improve (deliberately injected)**\n",
+            )
+            findings = validator.validate_eval_verdicts(root / "skills")
+            self.assertTrue(
+                any("2 \"Verdict:\" lines found" in message for message in self.messages(findings))
+            )
+
+    def test_removing_the_second_line_turns_it_green_again(self) -> None:
+        """The other half of #294's acceptance test: removing the extra
+        line makes the check pass again."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_eval_result(
+                root, "alpha",
+                "# Eval result\n\n**Verdict: keep**\n\n"
+                "**Verdict: improve (deliberately injected)**\n",
+            )
+            self.assertNotEqual(validator.validate_eval_verdicts(root / "skills"), [])
+            self._write_eval_result(root, "alpha", "# Eval result\n\n**Verdict: keep**\n")
+            self.assertEqual(validator.validate_eval_verdicts(root / "skills"), [])
+
+    def test_previous_verdict_marker_does_not_count_as_a_second_line(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_eval_result(
+                root, "alpha",
+                "# Eval result\n\n**Verdict: improve (n=1, second pass)**\n\n"
+                "## Prior pass\n\n**Previous verdict: could_not_measure**\n",
+            )
+            self.assertEqual(validator.validate_eval_verdicts(root / "skills"), [])
+
+    def test_missing_verdict_line_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_eval_result(root, "alpha", "# Eval result\n\nno verdict here.\n")
+            findings = validator.validate_eval_verdicts(root / "skills")
+            self.assertTrue(
+                any("no authoritative" in message for message in self.messages(findings))
+            )
+
+    def test_real_repository_tree_produces_the_294_tally(self) -> None:
+        """Guards the exact figure jonhill90/skills#294 names: 26/11/3/1,
+        summing to 41, on the real tree -- not a synthetic fixture."""
+        import eval_tally
+
+        repo_root = Path(__file__).resolve().parents[1]
+        self.assertEqual(validator.validate_eval_verdicts(repo_root / "skills"), [])
+        counts = eval_tally.tally(repo_root / "skills")
+        self.assertEqual(
+            dict(counts),
+            {"could_not_measure": 26, "improve": 11, "keep": 3, "drop": 1},
+        )
+        self.assertEqual(sum(counts.values()), 41)
+
+
 if __name__ == "__main__":
     unittest.main()

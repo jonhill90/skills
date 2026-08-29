@@ -45,7 +45,7 @@ was never used for the verdict above.
 
 ## Prior passes (superseded by the above, kept for the record)
 
-**Verdict: could_not_measure (two independent passes, n=1 each)**
+**Previous verdict: could_not_measure (two independent passes, n=1 each)**
 
 Two independently-run passes, both dated the same day, both landed on
 `could_not_measure`, for two different reasons — neither resolved by the

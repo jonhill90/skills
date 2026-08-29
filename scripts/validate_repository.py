@@ -16,6 +16,9 @@ try:
 except ImportError:  # fresh machines lack PyYAML; use the fallback parser
     yaml = None
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import eval_tally  # noqa: E402
+
 YAML_ERRORS = (yaml.YAMLError,) if yaml is not None else ()
 PARSE_ERRORS = (OSError, UnicodeError, ValueError) + YAML_ERRORS
 
@@ -368,6 +371,21 @@ def validate_no_private_links(root: Path) -> list[Finding]:
     return findings
 
 
+def validate_eval_verdicts(skills_root: Path) -> list[Finding]:
+    """Each skills/*/references/eval-result.md must carry exactly one
+    authoritative "Verdict:" line (jonhill90/skills#294). The naive count --
+    grep every line matching that pattern -- silently includes superseded
+    verdicts a file keeps for the record (skills/mine-transcripts,
+    skills/tmux, both re-run more than once), inflating the tally in the
+    same direction as the miscount #289/#290 were about. eval_tally.py is
+    the one place that parses these files; this just fails the build on
+    whatever it reports rather than duplicating its regex here."""
+    return [
+        Finding("error", skills_root, problem)
+        for problem in eval_tally.find_verdict_problems(skills_root)
+    ]
+
+
 def validate_skill_directories_found(
     skill_dirs: list[Path], skills_root: Path
 ) -> list[Finding]:
@@ -461,6 +479,7 @@ def validate(root: Path, target: Path | None = None) -> list[Finding]:
         findings.extend(validate_readme_table(root, skill_dirs))
         findings.extend(validate_privacy(root))
         findings.extend(validate_no_private_links(root))
+        findings.extend(validate_eval_verdicts(root / "skills"))
         return findings
 
     return validate_skill_collection(skill_dirs)
