@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (two independent passes, n=1 each, agree)**
+**Verdict: no_effect_observed (two independent passes, n=1 each, agree)**
 
 Two independently-run passes against genuinely different bug fixtures
 found identical, correct outcomes in both arms of their own comparison:

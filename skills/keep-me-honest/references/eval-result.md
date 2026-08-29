@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=2, including a longitudinal escalation)**
+**Verdict: no_effect_observed (n=2, including a longitudinal escalation)**
 
 Two independent live pairs against a scenario built around one of this
 skill's own named rules — every arm, across both pairs, correctly held

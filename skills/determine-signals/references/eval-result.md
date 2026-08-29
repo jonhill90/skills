@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (still)**
+**Verdict: no_effect_observed (still)**
 
 A second-pass scenario, redesigned to remove surface cues that made the
 first attempt too easy. Both arms consistently reached the correct

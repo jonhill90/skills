@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (still)**
+**Verdict: no_effect_observed (still)**
 
 A second-pass scenario, redesigned to narrow the planted discrepancy to
 one small enough that it requires actually re-deriving a number rather

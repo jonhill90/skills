@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=2)**
+**Verdict: no_effect_observed (n=2)**
 
 Two independent live pairs against this skill's own documented trigger
 case, run because the first pair's cost ratio sat right at this loop's

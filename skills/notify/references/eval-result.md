@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (two independent passes, different questions)**
+**Verdict: scenario_inadequate (two independent passes, different questions)**
 
 Both passes recorded `could_not_measure`, but tested two structurally
 different framings of this skill's own caveats, and one is a
