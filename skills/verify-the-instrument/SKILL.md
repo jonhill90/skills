@@ -236,8 +236,9 @@ agent work, five separate claims were reported as measured and later
 retracted — a count of 0 that was really 181, a cause ruled out that turned
 out to be the cause, a cleanup reported as done whose kill command had
 silently never run, a timeout blamed for a leak it did not cause, and "the
-worktree count is not the dominant term" — asserted, then refuted when an
-uncapped 19-worktree run was compared against a capped 190-worktree run and
-cost turned out to be roughly linear at ~1.08 s/worktree. Every one was a
+worktree count is not the dominant term" — claimed from an uncapped
+19-worktree run compared against a capped, truncated 190-worktree run,
+then refuted once a later, completed, uncapped run (~198 worktrees in
+214.8s) found cost roughly linear at ~1.085 s/worktree. Every one was a
 claim made faster than it was checked, and in each case an instrument that
 would have caught it was either not run or was run and not believed.
