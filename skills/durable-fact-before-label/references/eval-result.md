@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1, re-run after skills#282)**
+**Verdict: no_effect_observed (n=1, re-run after skills#282)**
 
 Re-run for `jonhill90/skills#290`: `jonhill90/skills#282` found this skill
 missing from the harness's shared install path at audit time, which

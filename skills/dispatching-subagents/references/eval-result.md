@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1)**
+**Verdict: no_effect_observed (n=1)**
 
 A with/without comparison against a task shaped to tempt a reflexive
 parallel-dispatch mistake found both arms correctly declining to

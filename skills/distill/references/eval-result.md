@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1)**
+**Verdict: no_effect_observed (n=1)**
 
 A baseline with/without comparison found both arms correctly surfacing a
 retracted figure and its replacement, with no meaningful cost delta —

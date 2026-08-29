@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (two independent passes, n=1 each, agree)**
+**Verdict: no_effect_observed (two independent passes, n=1 each, agree)**
 
 Two independently-run passes against two different scenarios — a
 PR-merge-verification case and a health-gate-that-cannot-fail case —

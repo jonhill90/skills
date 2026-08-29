@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1, instrument bug found and fixed)**
+**Verdict: no_effect_observed (n=1, instrument bug found and fixed)**
 
 A wash once measured properly: both arms read the governing rules
 document, both named the missing inputs as blocking rather than

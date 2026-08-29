@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1)**
+**Verdict: no_effect_observed (n=1)**
 
 An identical-outcome pair with no meaningful cost delta once the
 deliverable was hand-checked directly — a wash on both axes, not

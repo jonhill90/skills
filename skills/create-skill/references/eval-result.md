@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1)**
+**Verdict: no_effect_observed (n=1)**
 
 A with/without comparison against this skill's own placement-judgement
 trigger reached the same correct conclusion in both arms — a

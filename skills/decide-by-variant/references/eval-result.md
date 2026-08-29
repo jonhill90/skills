@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=2, instrument bug found and fixed, effect did not replicate)**
+**Verdict: no_effect_observed (n=2, instrument bug found and fixed, effect did not replicate)**
 
 A first pair looked like a clean discriminating result; an independent
 second pair, run specifically to check that signal before trusting it,

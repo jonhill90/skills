@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1)**
+**Verdict: no_effect_observed (n=1)**
 
 A local sandbox trial found both arms correctly updating an existing
 record in place rather than duplicating it, and both correctly left an

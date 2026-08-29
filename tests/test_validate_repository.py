@@ -684,9 +684,11 @@ class EvalVerdictTests(unittest.TestCase):
                 any("no authoritative" in message for message in self.messages(findings))
             )
 
-    def test_real_repository_tree_produces_the_294_tally(self) -> None:
-        """Guards the exact figure jonhill90/skills#294 names: 26/11/3/1,
-        summing to 41, on the real tree -- not a synthetic fixture."""
+    def test_real_repository_tree_produces_the_296_tally(self) -> None:
+        """Guards the exact figure jonhill90/skills#296 names: the 26
+        `could_not_measure` of #294 split into 3/20/3, still summing to 41
+        alongside the unchanged 11/3/1 -- on the real tree, not a synthetic
+        fixture."""
         import eval_tally
 
         repo_root = Path(__file__).resolve().parents[1]
@@ -694,7 +696,14 @@ class EvalVerdictTests(unittest.TestCase):
         counts = eval_tally.tally(repo_root / "skills")
         self.assertEqual(
             dict(counts),
-            {"could_not_measure": 26, "improve": 11, "keep": 3, "drop": 1},
+            {
+                "could_not_measure": 3,
+                "no_effect_observed": 20,
+                "scenario_inadequate": 3,
+                "improve": 11,
+                "keep": 3,
+                "drop": 1,
+            },
         )
         self.assertEqual(sum(counts.values()), 41)
 

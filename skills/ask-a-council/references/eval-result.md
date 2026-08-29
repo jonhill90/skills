@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (still) -- third pass, third reason**
+**Verdict: scenario_inadequate (still) -- third pass, third reason**
 
 jonhill90/skills#266 asked for one new scenario, designed specifically to
 satisfy this skill's own documented trigger (failure modes plural in

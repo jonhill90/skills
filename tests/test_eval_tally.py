@@ -62,15 +62,24 @@ class EvalTallyTests(unittest.TestCase):
             self.assertEqual(eval_tally.find_verdict_problems(root), [])
             self.assertEqual(dict(eval_tally.tally(root)), {"keep": 2, "drop": 1})
 
-    def test_real_repository_tally_is_26_11_3_1(self) -> None:
-        """jonhill90/skills#294's own named figure, measured against the
-        actual tree this test ships with -- not a synthetic fixture."""
+    def test_real_repository_tally_is_3_20_3_11_3_1(self) -> None:
+        """jonhill90/skills#296's own named figure, measured against the
+        actual tree this test ships with -- not a synthetic fixture. The
+        26 `could_not_measure` of #294 split three ways: 3 genuinely blind,
+        20 clean null results, 3 inadequate scenarios."""
         skills_root = Path(__file__).resolve().parents[1] / "skills"
         self.assertEqual(eval_tally.find_verdict_problems(skills_root), [])
         counts = eval_tally.tally(skills_root)
         self.assertEqual(
             dict(counts),
-            {"could_not_measure": 26, "improve": 11, "keep": 3, "drop": 1},
+            {
+                "could_not_measure": 3,
+                "no_effect_observed": 20,
+                "scenario_inadequate": 3,
+                "improve": 11,
+                "keep": 3,
+                "drop": 1,
+            },
         )
         self.assertEqual(sum(counts.values()), 41)
 

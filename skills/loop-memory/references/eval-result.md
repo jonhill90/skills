@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1, including a longitudinal escalation)**
+**Verdict: no_effect_observed (n=1, including a longitudinal escalation)**
 
 A local sandbox trial found both arms correctly persisting resumable
 state to disk before stopping on a single-session, context-exhaustion

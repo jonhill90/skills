@@ -1,6 +1,6 @@
 # Eval result
 
-**Verdict: could_not_measure (n=1)**
+**Verdict: no_effect_observed (n=1)**
 
 A local sandbox trial against a request naming no requirements up front
 (the shape most likely to invite the PRD-flavored drift this skill

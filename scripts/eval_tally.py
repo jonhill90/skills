@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The one canonical tally of skills/*/references/eval-result.md verdicts
-(jonhill90/skills#294).
+(jonhill90/skills#294, vocabulary split by #296).
 
 Why this exists: the obvious command --
 
@@ -15,7 +15,9 @@ re-run more than once). That grep returns 43 across 41 files -- inflating
 direction as the miscount jonhill90/skills#289 and #290 were about. The real,
 current-verdict-only tally on this tree is:
 
-    26 could_not_measure
+     3 could_not_measure
+    20 no_effect_observed
+     3 scenario_inadequate
     11 improve
      3 keep
      1 drop           (= 41)
@@ -30,6 +32,32 @@ position. `find_verdict_problems` below still checks the position invariant
 non-heading line) so a future edit that reintroduces a second "Verdict:"
 line -- rather than remembering to write "Previous verdict:" -- is caught
 here rather than silently re-inflating the count the way the naive grep did.
+
+`could_not_measure` used to be 26 of 41 -- one number standing in for three
+different situations (jonhill90/skills#296). Reading each of those 26
+bodies rather than pattern-matching the verdict line split it three ways:
+
+  - `could_not_measure` (3 left) -- genuinely blind: the harness could not
+    confirm the skill was ever exercised (an install-path gap, or -- for
+    `github-cli`/`linear`/`obsidian` -- a "with" arm delivered the skill by
+    prompt instruction with no independent confirmation it was read). A
+    re-run with that confirmation fixed can still produce a real verdict.
+  - `no_effect_observed` (20) -- measured cleanly, both arms behaved the
+    same. This is a finding, not an absence: it says the base model already
+    does the thing this skill asks for, on the scenario tested. It is NOT
+    grounds to drop the skill -- a null result on one scenario is evidence
+    about that scenario, not about the skill's value on a harder one.
+  - `scenario_inadequate` (3) -- the scenario itself never discriminated
+    and re-running it will not fix that; it needs a different scenario (or
+    an honest statement that this skill's effect is not A/B-measurable on
+    a single task). Distinct from a blind case: nothing stopped the harness
+    from exercising the skill here, the exercise just didn't engage the
+    thing being tested.
+
+No skill's keep/improve/drop judgement changed here -- this relabels *why*
+a `could_not_measure` was could_not_measure, never converts one verdict
+family into another. See jonhill90/skills#296's closing PR for the
+per-skill classification table and reasoning.
 
 scripts/validate_repository.py imports `find_verdict_problems` from this
 module and fails the build on any problem it returns
