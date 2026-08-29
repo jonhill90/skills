@@ -172,11 +172,11 @@ Two shapes, both observed:
   the format did not have, the other assumed lowercase where the text was
   uppercase. Both returned `0`. The agreement made `0` look solid; the
   true count was 181. Neither pattern was checked against a line known to
-  exist.
+  exist (agent-estate#800).
 - Counting references to a name across a repository with a recursive
   search over the working tree, which also swept 113 sibling worktrees
   each carrying their own copy: 19,857 instead of 2,959. Scoping the same
-  query to tracked files gave the real number.
+  query to tracked files gave the real number (agent-estate#768).
 
 The defence for both is the same and is cheap: **anchor every count to a
 positive control.** Point the pattern at something you know is there and
@@ -235,7 +235,9 @@ A third incident, and the source of check 5: in a single day of supervising
 agent work, five separate claims were reported as measured and later
 retracted — a count of 0 that was really 181, a cause ruled out that turned
 out to be the cause, a cleanup reported as done whose kill command had
-silently never run, and a timeout blamed for a leak it did not cause. Every
-one was a claim made faster than it was checked, and in each case an
-instrument that would have caught it was either not run or was run and not
-believed.
+silently never run, a timeout blamed for a leak it did not cause, and "the
+worktree count is not the dominant term" — asserted, then refuted when an
+uncapped 19-worktree run was compared against a capped 190-worktree run and
+cost turned out to be roughly linear at ~1.08 s/worktree. Every one was a
+claim made faster than it was checked, and in each case an instrument that
+would have caught it was either not run or was run and not believed.
