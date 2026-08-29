@@ -32,7 +32,7 @@ development, not an instrument in question. And do not reach for it as a
 substitute for `sanity-check`: that skill is for reasoning with no test to
 run; this one is for a verdict a command already produced.
 
-## Four checks, in order
+## Five checks, in order
 
 ### 1. Prove the check can fail
 
@@ -148,9 +148,45 @@ which side you actually diffed:
   A stale build directory compared against fresh source will report drift
   that isn't there, or hide drift that is.
 
+### 5. Two checks that agree are not corroboration unless they can fail independently
+
+Running a second check and getting the same answer feels like confirmation.
+It is only confirmation if the two could have disagreed. Two patterns with
+overlapping blind spots return the same empty result for the same reason,
+and the agreement is an artifact of the shared blindness rather than
+evidence about the thing.
+
+Before treating agreement as corroboration, ask what each check would have
+to see to *disagree*. If you cannot name a case that one catches and the
+other misses, you ran one check twice.
+
+The same failure has a mirror image: an over-count from an unscoped input.
+A pattern that sweeps more than the thing you meant to measure — a build
+tree, a vendored copy, a directory of checkouts — inflates instead of
+hiding, and looks just as authoritative.
+
+Two shapes, both observed:
+
+- Counting how many times something happened in a log, with two patterns
+  that each missed for a different reason — one assumed a trailing colon
+  the format did not have, the other assumed lowercase where the text was
+  uppercase. Both returned `0`. The agreement made `0` look solid; the
+  true count was 181. Neither pattern was checked against a line known to
+  exist (agent-estate#800).
+- Counting references to a name across a repository with a recursive
+  search over the working tree, which also swept 113 sibling worktrees
+  each carrying their own copy: 19,857 instead of 2,959. Scoping the same
+  query to tracked files gave the real number (agent-estate#768).
+
+The defence for both is the same and is cheap: **anchor every count to a
+positive control.** Point the pattern at something you know is there and
+confirm it matches, before you believe a number it produces about
+something you cannot see. A count with no positive control is a claim, not
+a measurement.
+
 ## What "verified" looks like when you report it
 
-State which of the four checks applied and what each one showed — not just
+State which of the five checks applied and what each one showed — not just
 "tests pass." A report that says "ran the suite, green" answers none of
 these; a report that says "reverted the fix, confirmed the target test
 failed, reapplied, confirmed it passed" is the thing itself.
@@ -169,7 +205,7 @@ second opinion — `failing-test-first` and `sanity-check` own those. It owns
 one narrower thing: before a verdict from any of those is trusted, confirm
 the thing that produced it was capable of saying no.
 
-It is not a mechanism for automated CI gating — the four checks above are
+It is not a mechanism for automated CI gating — the five checks above are
 manual discipline applied by whoever is about to act on a result, not a
 script to install. Where a check *can* be made self-verifying (a test suite
 that asserts its own fixture count, a validator that asserts nonzero files
@@ -177,7 +213,7 @@ scanned), prefer that over remembering to redo this by hand each time.
 
 ## Where this came from
 
-The name and the four checks come from a documented pattern across daily
+The name and the first four checks come from a documented pattern across daily
 agent operation: verdicts trusted from checks that turned out not to be
 watching anything — a validator that reported zero findings because its
 input had vanished, a test module silently skipped rather than run, and a
@@ -194,3 +230,15 @@ to a check that could not report the failure it was supposed to catch
 (exit code lost through a pipeline, a check reading `$?` after `cmd |
 tail`). Recorded portably in issue jonhill90/skills#174; the underlying
 transcripts are private, not published here.
+
+A third incident, and the source of check 5: in a single day of supervising
+agent work, five separate claims were reported as measured and later
+retracted — a count of 0 that was really 181, a cause ruled out that turned
+out to be the cause, a cleanup reported as done whose kill command had
+silently never run, a timeout blamed for a leak it did not cause, and "the
+worktree count is not the dominant term" — claimed from an uncapped
+19-worktree run compared against a capped, truncated 190-worktree run,
+then refuted once a later, completed, uncapped run (~198 worktrees in
+214.8s) found cost roughly linear at ~1.085 s/worktree. Every one was a
+claim made faster than it was checked, and in each case an instrument that
+would have caught it was either not run or was run and not believed.
