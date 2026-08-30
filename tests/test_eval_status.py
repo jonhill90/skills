@@ -539,6 +539,76 @@ class TestRecordCLI(EvalLogSandboxTestCase):
         self.assertEqual(len(observations), 1)
         self.assertEqual(observations[0]["source"], "PR #244")
 
+    def test_record_writes_arm_a_skill_read_confirmed_true_false_unknown(self):
+        """jonhill90/skills#300: the sanctioned writer must be able to
+        attach the tri-state, and each of the three values must survive
+        into the appended entry exactly -- the property #299 established
+        by hand must now also hold through --record."""
+        for i, value in enumerate(("true", "false", "unknown")):
+            rc = eval_status.main([
+                "--record", "a-skill", "--verdict", "could_not_measure",
+                "--evidence", "skills/a-skill/references/eval-result.md",
+                "--date", f"2026-08-2{i}", "--source", f"PR #300-{value}",
+                "--arm-a-skill-read-confirmed", value,
+            ])
+            self.assertEqual(rc, 0)
+
+        observations = eval_status.read_observations("a-skill")
+        self.assertEqual(len(observations), 3)
+        self.assertEqual(
+            [o["arm_a_skill_read_confirmed"] for o in observations],
+            ["true", "false", "unknown"],
+        )
+
+    def test_record_without_the_flag_omits_the_key_entirely(self):
+        """The design decision this PR makes explicit: an unrecorded field
+        ('this pass did not measure it') must stay distinguishable from a
+        recorded 'unknown' ('this pass measured it and could not tell').
+        Defaulting to 'unknown', or to 'false', would each collapse that
+        distinction -- this proves the chosen behaviour: the key is simply
+        absent from the entry, not present with either default value."""
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "keep",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22", "--source", "PR #244",
+        ])
+        self.assertEqual(rc, 0)
+        observations = eval_status.read_observations("a-skill")
+        self.assertEqual(len(observations), 1)
+        self.assertNotIn("arm_a_skill_read_confirmed", observations[0])
+
+    def test_record_rejects_a_bad_arm_a_skill_read_confirmed_value(self):
+        """A bad value must be refused, never silently written -- the same
+        bar --verdict and --evidence already hold to."""
+        with self.assertRaises(SystemExit):
+            # argparse itself refuses: "maybe" is not in the flag's choices.
+            eval_status.main([
+                "--record", "a-skill", "--verdict", "keep",
+                "--evidence", "skills/a-skill/references/eval-result.md",
+                "--source", "PR #244",
+                "--arm-a-skill-read-confirmed", "maybe",
+            ])
+        self.assertEqual(eval_status.read_observations("a-skill"), [])
+
+    def test_record_arm_a_skill_read_confirmed_does_not_reach_the_generated_record(self):
+        """docs/eval-status.json keeps its exact pre-existing shape (this
+        module's own top-of-file doc comment) -- the tri-state lives only
+        in the log, the same way 'source' already does, never in the
+        regenerated per-skill entry."""
+        rc = eval_status.main([
+            "--record", "a-skill", "--verdict", "could_not_measure",
+            "--evidence", "skills/a-skill/references/eval-result.md",
+            "--date", "2026-08-22", "--source", "PR #244",
+            "--arm-a-skill-read-confirmed", "unknown",
+        ])
+        self.assertEqual(rc, 0)
+        record = eval_status.load_record(eval_status.RECORD_PATH)
+        self.assertNotIn("arm_a_skill_read_confirmed", record["a-skill"])
+        self.assertEqual(record["a-skill"], {
+            "verdict": "could_not_measure", "date": "2026-08-22",
+            "evidence": "skills/a-skill/references/eval-result.md",
+        })
+
 
 class TestHistoryCLI(EvalLogSandboxTestCase):
     def test_history_nonexistent_skill(self):
