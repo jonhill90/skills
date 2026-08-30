@@ -108,6 +108,7 @@ CLAUDE_SKILLS_DIR = check_skill_install.default_claude_skills_dir()
 
 VERDICTS = {"keep", "improve", "rename", "drop", "could_not_measure", "unevaluated"}
 RECORDABLE_VERDICTS = VERDICTS - {"unevaluated"}
+ARM_A_SKILL_READ_CONFIRMED_VALUES = {"true", "false", "unknown"}
 
 
 class RecordError(RuntimeError):
@@ -235,7 +236,8 @@ def regenerate_record(comment: str, skill_names: set[str]) -> dict:
 
 def do_record(skill: str, verdict: str | None, evidence: str | None, date: str | None,
               source: str | None, skip_install_check: str | None = None,
-              claude_skills_dir: Path | None = None) -> int:
+              claude_skills_dir: Path | None = None,
+              arm_a_skill_read_confirmed: str | None = None) -> int:
     """Appends ONE observation to docs/eval-log/<skill>.jsonl, then
     regenerates docs/eval-status.json from every skill's own log -- the
     one path --record exposes, and the one this script wants every future
@@ -303,6 +305,22 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
     script run by a human/agent, not a Workflow script, so datetime.date.
     today() is the right tool) -- overridable for tests and for a
     deliberate backdate, never read by production callers.
+
+    `arm_a_skill_read_confirmed` (jonhill90/skills#300): the tri-state
+    `skill_read_confirmed.py` produces for an arm-wiring-shaped pass --
+    "true", "false", or "unknown" (an unscannable input must never be
+    collapsed into a confident "false"; see that module's own doc comment).
+    Rejected (exit 2) if given anything outside
+    ARM_A_SKILL_READ_CONFIRMED_VALUES, the same "reject a bad value rather
+    than silently write it" rule --verdict/--evidence already enforce.
+    None (the flag omitted) means the key is left OUT of the appended
+    entry entirely -- "this pass did not measure it" must stay
+    distinguishable from "this pass measured it and could not tell"
+    (unknown), which a default of "unknown" or "false" would each collapse
+    in a different direction. Existing records written before #300 have no
+    such key at all and must keep loading -- this flag does not touch
+    read_observations/latest_observation/check(), none of which requires
+    the key to be present.
     """
     if not (SKILLS_ROOT / skill).is_dir():
         print(f"--record {skill}: no skills/{skill}/ directory -- refusing to "
@@ -329,6 +347,12 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
         print(f"--record {skill}: --source is required -- name the pass/PR "
               "this observation came from (e.g. \"PR #244\")", file=sys.stderr)
         return 2
+    if (arm_a_skill_read_confirmed is not None
+            and arm_a_skill_read_confirmed not in ARM_A_SKILL_READ_CONFIRMED_VALUES):
+        print(f"--record {skill}: --arm-a-skill-read-confirmed "
+              f"{arm_a_skill_read_confirmed!r} is not one of "
+              f"{sorted(ARM_A_SKILL_READ_CONFIRMED_VALUES)}", file=sys.stderr)
+        return 2
 
     if skip_install_check:
         print(f"--record {skill}: install check SKIPPED -- {skip_install_check}",
@@ -350,14 +374,20 @@ def do_record(skill: str, verdict: str | None, evidence: str | None, date: str |
         return 2
 
     resolved_date = date or datetime.date.today().isoformat()
-    append_observation(skill, {
+    entry = {
         "verdict": verdict,
         "date": resolved_date,
         "evidence": evidence,
         "source": source,
-    })
+    }
+    if arm_a_skill_read_confirmed is not None:
+        entry["arm_a_skill_read_confirmed"] = arm_a_skill_read_confirmed
+    append_observation(skill, entry)
     dump_record(regenerate_record(comment, skill_names), RECORD_PATH)
-    print(f"recorded {skill}: {verdict} ({resolved_date}, {evidence}, source={source!r})")
+    suffix = (f", arm_a_skill_read_confirmed={arm_a_skill_read_confirmed!r}"
+              if arm_a_skill_read_confirmed is not None else "")
+    print(f"recorded {skill}: {verdict} ({resolved_date}, {evidence}, "
+          f"source={source!r}{suffix})")
     return 0
 
 
@@ -507,6 +537,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--source",
                      help="which pass/PR produced this observation, e.g. \"PR #244\" "
                           "(with --record; required -- see do_record's own docstring)")
+    ap.add_argument("--arm-a-skill-read-confirmed",
+                     choices=sorted(ARM_A_SKILL_READ_CONFIRMED_VALUES),
+                     help="the arm-A skill_read_confirmed.py tri-state for this observation "
+                          "(with --record; optional -- omitting this flag omits the key from "
+                          "the appended entry entirely, distinct from recording 'unknown'; "
+                          "see do_record's own docstring)")
     ap.add_argument("--history", metavar="SKILL",
                      help="print every observation ever recorded for SKILL, oldest "
                           "first, and exit")
@@ -527,7 +563,8 @@ def main(argv: list[str]) -> int:
         return do_record(args.record, args.verdict, args.evidence, args.date, args.source,
                           skip_install_check=args.skip_install_check,
                           claude_skills_dir=Path(args.claude_skills_dir)
-                          if args.claude_skills_dir else None)
+                          if args.claude_skills_dir else None,
+                          arm_a_skill_read_confirmed=args.arm_a_skill_read_confirmed)
 
     if args.history:
         return do_history(args.history)
