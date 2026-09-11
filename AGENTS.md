@@ -81,8 +81,13 @@ scripts/
   validate_repository.py   # structural + link + naming checks
   check_orphan_skills.py   # advisory: rostered/benched in agent-dotfiles?
 docs/
-  <issue-name>-<N>.md      # one doc per issue; each states its own
-                            # disposition — landed, rejected, or still open
+  README.md                # taxonomy index for the three dirs below (#305)
+  canonical/               # standing reference, true today
+  historical/              # dated investigation/decision records
+  research/                # open proposals, not yet decided
+  <issue-name>-<N>.md      # not-yet-classified docs still at the root; each
+                            # states its own disposition — landed, rejected,
+                            # or still open
 tests/
   test_validate_repository.py
   test_plugin_manifest.py  # manifest fields + plugin-root path containment
