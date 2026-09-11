@@ -81,20 +81,25 @@ scripts/
   validate_repository.py   # structural + link + naming checks
   check_orphan_skills.py   # advisory: rostered/benched in agent-dotfiles?
 docs/
-  <issue-name>-<N>.md      # one doc per issue; each states its own
-                            # disposition — landed, rejected, or still open
+  README.md                # taxonomy index -- read this first
+  canonical/                # current, standing reference material
+  historical/               # dated investigation/decision records
+  research/                 # open proposals, not yet decided
 tests/
   test_validate_repository.py
   test_plugin_manifest.py  # manifest fields + plugin-root path containment
   test_check_orphan_skills.py
+  test_docs_lint.py         # enforces the docs/ classification below
 .github/workflows/         # CI: validate + unit tests
 ```
 
-`docs/` holds investigation and proposal documents named after the GitHub
-issue that asked for them, not project-level PRD/SPEC material — this
-repository does not carry those (see "Scope"). Each document states its own
-disposition up top: whether Jon accepted, rejected, or has not yet reacted
-to what it recommends. A document with no disposition note predates that
+`docs/` is classified into `canonical/` (actively true today), `historical/`
+(dated investigation/decision records, each stating its own disposition:
+landed, rejected, or still open), and `research/` (open proposals) —
+[`docs/README.md`](docs/README.md) is the one-page signpost, and
+`scripts/docs_lint.py` enforces the shape in CI: no unclassified file
+directly under `docs/`, no generated state committed there, no duplicate
+content. A document with no disposition note predates the classification
 convention (2026-08-16) — treat its recommendation as unconfirmed until
 checked against `gh issue view` / `gh pr list` for what actually happened,
 never as settled practice on its own say-so.
@@ -144,69 +149,16 @@ body. Branch with a type prefix (`docs/`, `feat/`, `chore/`); CI gates on
 
 ## Merging PRs (jonhill90/skills#254, #256)
 
-When more than one agent lane works this repository at once, every lane
-pushes through the same shared GitHub login — `gh pr review --approve`
-is refused as self-review regardless of who is actually asking, so a
-real cross-lane review has to be recorded another way: a reviewing lane
-posts a plain PR comment, not a GitHub review object, carrying
-
-```
-Verdict: APPROVE            (or REQUEST CHANGES, with specifics)
-Review-Lane: <reviewing lane's own name>
-Reviewed-SHA: <the exact head commit SHA reviewed>
-```
-
-and the PR's own body states which lane opened it:
-
-```
-Author-Lane: <authoring lane's own name>
-```
-
-**`scripts/merge_pr.py` is the only way to merge a PR in this repository
-(jonhill90/skills#256).** Do not run `gh pr merge` directly — not by
-hand, not from a lane. `gh pr merge` is a bare, unchecked command; it
-does not know CI is red, and it does not know whether a `Verdict:`
-comment exists, let alone whether it is a genuine cross-lane one at the
-current head. That gap is exactly how `jonhill90/skills#255` (this
-gate's own PR) got self-merged unreviewed 2m22s after opening — nothing
-stopped it, because `gh pr merge` never checked. `scripts/merge_pr.py`
-is the wrapper that cannot skip the gate:
-
-```bash
-python3 scripts/merge_pr.py --repo <owner/name> --number <N>
-```
-
-It checks, in order, and merges only if BOTH pass:
-
-1. CI is green (`gh pr checks`) — any failing or still-pending check,
-   or no checks at all, refuses.
-2. `scripts/pr_verdict.py --repo <owner/name> --number <N>` exits `0`
-   (`approved`) at the PR's CURRENT head — every other exit code (`1`
-   rejected, `2` no verdict on record, `3` unknown/unresolved: same
-   lane, stale SHA, a missing trailer) refuses, same as CI being red.
-
-Exit code `0` means it merged; `1`/`2`/`3` each name a specific refusal
-reason in the printed JSON — see `scripts/merge_pr.py`'s own doc comment
-for the full exit-code table. `scripts/pr_verdict.py` on its own is
-still the thing to run when you want the verdict WITHOUT merging (a
-dry-run read, or building another caller on top); `scripts/pr_verdict.py`'s
-own doc comment covers exactly what that check does and why — it is a
-port of `jonhill90/agent-supervisor`'s `verdict.py`/`verdict-independence.sh`,
-adapted because this repository has no lane ledger to resolve
-authorship from independently — `Author-Lane:`/`Review-Lane:` are both
-self-declared, the same trust model either side already has.
-
-**Not wired into CI, deliberately.** This repository's own CI
-(`.github/workflows/validate.yml`) never merges a PR — every job here
-validates content and exits; merging is always a separate
-`scripts/merge_pr.py` invocation an operator or an agent lane runs
-directly, outside any workflow. There is no merge-time CI job to attach
-this gate to without inventing one that does not otherwise exist;
-`scripts/merge_pr.py` is the script that invocation must run instead of
-`gh pr merge`, by convention stated here, the same way
-`scripts/check_skill_install.py` is wired into `eval_status.py --record`
-as a Python import rather than a workflow step because ITS caller is
-also not a CI job.
+**`scripts/merge_pr.py --repo <owner/name> --number <N>` is the only way to
+merge a PR in this repository.** Never `gh pr merge` — it does not check CI
+or review state, which is exactly how skills#255 got self-merged unreviewed.
+A reviewing lane records a cross-lane review as a `Verdict:`/`Review-Lane:`/
+`Reviewed-SHA:` PR comment (GitHub review objects are unusable here — every
+lane shares one login, so `gh pr review --approve` is refused as
+self-review); `merge_pr.py` merges only when CI is green and
+`scripts/pr_verdict.py` confirms an approved verdict at the current head.
+Full mechanism, the incident that forced it, and why it is a script rather
+than a CI job: [`docs/historical/merge-gate-required-256.md`](docs/historical/merge-gate-required-256.md).
 
 ## Required Verification
 
@@ -222,35 +174,14 @@ Run language-specific tests when changing bundled scripts.
 
 ## Spec Conformance
 
-`scripts/validate_repository.py` is checked against the specification's own
-reference implementation — `skills-ref` from
-[agentskills/agentskills](https://github.com/agentskills/agentskills) — by the
-`spec-conformance` CI job, which runs `skills-ref validate` over every skill.
-Reading the spec and comparing it to our own code is not an independent check;
-that job is the independent instrument.
-
-`plugin.json` follows the same split (#159). `tests/test_plugin_manifest.py`
-encodes the Agent Plugins constraints offline — required fields, the exact
-`$schema` value, the `name` pattern, and the closed top-level key set — and the
-`plugin-conformance` CI job validates the same file against the schema fetched
-from `agent-plugins.org`. The manifest schema is closed, so one misspelled key
-fails every conformant client; both instruments were confirmed to go red on a
-`keywords` → `keyword` edit before this was merged.
-
-Where the two deliberately differ, this repository is the stricter one. None of
-these are spec violations — a skill accepted here is accepted by the reference:
-
-- **ASCII names only.** `NAME_RE` allows `a-z0-9-`; the reference also accepts
-  Unicode letters (`café-skill` passes it, fails us). The spec's own wording is
-  "lowercase alphanumeric characters (`a-z`, `0-9`)", and ASCII directory names
-  travel better across filesystems and URLs.
-- **`SKILL.md` must be uppercase.** The reference also accepts `skill.md`.
-- **A skill must have a body.** The reference accepts frontmatter with no
-  markdown after it.
-- **Names are not whitespace-stripped** before the directory-match check.
-- Plus checks the spec does not cover at all: the 500-line cap, resolvable
-  relative links, no `README.md` inside a skill, executable bits on bundled
-  scripts, collection-wide duplicate names, and the privacy denylist.
+`scripts/validate_repository.py` and `plugin.json` are each checked against
+their own external reference (`skills-ref`, `agent-plugins.org`'s schema) by
+a dedicated CI job — reading the spec and comparing it to our own code is
+not an independent check; those jobs are. This repository is deliberately
+stricter than the reference in a few named ways (ASCII-only names,
+uppercase `SKILL.md`, a few checks the spec doesn't cover at all); none of
+the differences are spec violations. Full list and rationale:
+[`docs/canonical/spec-conformance.md`](docs/canonical/spec-conformance.md).
 
 ## Recording Figures
 
