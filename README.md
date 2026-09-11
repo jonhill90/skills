@@ -30,8 +30,10 @@ reference.
 
 This repository is also an [Agent Plugins
 1.0.0](https://agent-plugins.org/specification) plugin: `plugin.json` at the
-root, 40 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
-verified 2026-08-23), which is the standard's own discovery convention.
+root, one skill per `skills/<name>/SKILL.md` (the current count is the
+`Generated from N current skill bundles` line in the generated table below,
+never hand-typed here — a hand-typed 40 sat above the table's 41 until
+agent-estate#1397), which is the standard's own discovery convention.
 Any conformant client can consume the collection whole, with no bespoke
 tooling.
 
