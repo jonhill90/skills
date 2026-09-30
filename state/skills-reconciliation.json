@@ -1086,8 +1086,8 @@
     {
       "authorship": {
         "basis": "Earliest available addition commit; git attribution does not prove absence of upstream copying.",
-        "class": "unknown",
-        "commit": null
+        "class": "jon-or-agent-attributed",
+        "commit": "ec20f6c70e9a3d57f5cc69af872057aa73f24047"
       },
       "canonical_home": null,
       "eval": {
