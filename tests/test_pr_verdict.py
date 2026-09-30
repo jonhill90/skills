@@ -1,7 +1,6 @@
 """jonhill90/skills#254: mutation-check for pr_verdict.py's comment-verdict
-gate -- the same "a guard nobody has watched fail is not a guard" bar
-`test_check_skill_install.py` already applies to this repository's other
-mechanical gate, applied here to the four directions #254 itself names:
+gate -- "a guard nobody has watched fail is not a guard", applied to the
+four directions #254 itself names:
 
   1. same-lane verdict                          -> must FAIL (unknown)
   2. genuine cross-lane verdict at current head  -> must PASS (approved)
@@ -9,9 +8,7 @@ mechanical gate, applied here to the four directions #254 itself names:
   4. no verdict at all                           -> must FAIL (none)
 
 Every fixture supplies a fake `gh pr view` payload through `resolve`'s own
-`gh_pr_view` seam -- no real subprocess, no real network, matching this
-repository's other scripts/*.py test files (`test_check_skill_install.py`'s
-own synthetic-fixture discipline)."""
+`gh_pr_view` seam -- no real subprocess, no real network."""
 
 from __future__ import annotations
 

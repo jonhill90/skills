@@ -1,21 +1,22 @@
-# docs/ — taxonomy index
+# docs/
 
-Not a skill inventory (`SKILLS-INDEX.md` was deleted for exactly that
-anti-pattern, #303 — never resurrected under any name, here or elsewhere).
-This is a one-page signpost for the classified documentation tree
-itself, enforced by `scripts/docs_lint.py`:
+Maintained documentation for this repository, organized by subject. Start
+with the root [`AGENTS.md`](../AGENTS.md) for the rules; come here for the
+detail behind them. The skill inventory is the generated table in the root
+`README.md`; do not add another one here (#303).
 
-- **`canonical/`** — current, standing reference material. Actively
-  true today, not a record of a past event.
-- **`historical/`** — dated investigation/decision records. Correctly
-  kept, not archived by accident; each states its own disposition.
-- **`research/`** — open proposals, not yet decided one way or the
-  other.
+## Reference
 
-State (generated JSON/JSONL) lives under `state/` at the repo root, not
-here — documentation and data are different trees. `docs/eval-status.json`
-is the one exception you'll see in a directory listing: a symlink, not a
-file, kept so `jonhill90/agent-estate`'s TUI (which hardcodes that exact
-relative path as a Go constant) keeps resolving without this repo
-hand-editing a sibling repo's source. The real, generated file lives at
-`state/eval-status.json`.
+- [Distribution](reference/distribution.md): what merging a skill does and
+  does not do, the plugin manifest, and the orphan-skill check.
+- [Merge gate](reference/merge-gate.md): the cross-lane verdict comment and
+  `scripts/merge_pr.py`.
+- [Validation](reference/validation.md): spec conformance, and where this
+  repository is deliberately stricter than the reference validator.
+
+## Decisions
+
+- [0001 Documentation layout](decisions/0001-documentation-layout.md): why
+  `docs/` is organized by subject, and what was removed.
+- [0002 Remove the eval system and `state/`](decisions/0002-remove-eval-system.md):
+  what went, what stayed, and the replacement plan (#309).

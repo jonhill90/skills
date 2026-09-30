@@ -22,82 +22,37 @@ file; the other two follow with no sync step.
   MCP declarations, install/sync tooling) lives in Jon's separate
   `agent-dotfiles` repository, which consumes this collection rather than
   vendoring it.
-- Behavioral evaluation methodology, scenarios, transcripts, and results
-  live in a private companion repository. None of that is published here.
+- There is no behavioral eval system in this repository for now. A vetted,
+  community-maintained replacement is tracked in jonhill90/skills#309. Past
+  evaluation evidence is private and is not published here.
 - Employer-owned or project-specific material is never copied into this
   repository.
 
 ## What "shipped" means
 
-Merging a skill here does not install it anywhere. This repository has no
-install gate of its own — a merged, CI-green skill is published and
-installable (`npx skills add`, or as an Agent Plugin), and that is the whole
-of what this repository controls.
-
-Whether a harness loads it automatically is a **separate, later decision**
-made in a different repository: Jon's `agent-dotfiles`
-(`settings/default-skills.txt`) rosters the subset it installs by default
-for his own harnesses, per its own evidence bar (SPEC §10.1 rule 5) — a new
-skill does not earn a roster slot by arriving here. `default-skills.txt`
-also carries a `[benched]` section recording, per skill, that withholding it
-was a deliberate decision rather than an oversight.
-
-Concretely, for a skill authored here: merged and un-rostered is the normal
-resting state for a brand-new skill, not a bug — but merged, un-rostered,
-and **un-benched** is exactly the failure jonhill90/skills#162 measured
-(eleven skills, 2026-08-11, installed on no harness, with no record either
-repository could point to). `scripts/check_orphan_skills.py` (see "Orphan
-skill check" below) is this repository's own advisory view into that
-question; it cannot roster or bench anything itself.
-
-### Orphan skill check
-
-`scripts/check_orphan_skills.py` reports skills present here that
-`agent-dotfiles`' roster neither rosters nor benches. It is **advisory, not
-authoritative** — this repository is not where the roster lives, and it may
-not be the only consumer — so it never fails CI (the `orphan-check` job runs
-with `continue-on-error: true`) and its verdict is not a gate.
-
-It degrades honestly: "the roster was not reachable" and "checked, no
-orphans" are different exit codes (2 vs. 0) and different printed lines, on
-purpose — reporting the former as the latter would be the same blind spot
-`agent-dotfiles#145` fixed for the skill description budget, one layer over.
-Run it locally with `python3 scripts/check_orphan_skills.py`; point it at a
-local `agent-dotfiles` checkout with `--roster-path
-/path/to/agent-dotfiles/settings/default-skills.txt` if you have one, rather
-than relying on the network fetch CI uses.
+Merging a skill here publishes it (`npx skills add`, or as an Agent
+Plugin); it does not install it anywhere. Whether a harness loads it by
+default is decided later, in `agent-dotfiles`. `scripts/check_orphan_skills.py`
+is an advisory view of that question and never gates CI. Details, including
+the plugin manifest and what Claude Code does and does not read:
+[docs/reference/distribution.md](docs/reference/distribution.md).
 
 ## Canonical Layout
 
 ```text
 plugin.json                # Agent Plugins 1.0.0 manifest (closed schema)
-skills/
-  <skill-name>/
-    SKILL.md
-    scripts/
-    references/
-    assets/
-scripts/
-  validate_repository.py   # structural + link + naming checks
-  check_orphan_skills.py   # advisory: rostered/benched in agent-dotfiles?
-docs/
-  <issue-name>-<N>.md      # one doc per issue; each states its own
-                            # disposition — landed, rejected, or still open
-tests/
-  test_validate_repository.py
-  test_plugin_manifest.py  # manifest fields + plugin-root path containment
-  test_check_orphan_skills.py
-.github/workflows/         # CI: validate + unit tests
+skills/<skill-name>/       # SKILL.md plus scripts/, references/, assets/ when needed
+scripts/                   # repository tooling: validation, docs lint, eval status, merge gate
+tests/                     # unit tests for scripts/ and for every bundled skill script
+docs/                      # indexed by docs/README.md
+  reference/               # maintained explanations that stay true
+  decisions/               # numbered decision records; superseded, never deleted
+.github/workflows/         # CI: validate, docs lint, skills-table check, unit tests
 ```
 
-`docs/` holds investigation and proposal documents named after the GitHub
-issue that asked for them, not project-level PRD/SPEC material — this
-repository does not carry those (see "Scope"). Each document states its own
-disposition up top: whether Jon accepted, rejected, or has not yet reacted
-to what it recommends. A document with no disposition note predates that
-convention (2026-08-16) — treat its recommendation as unconfirmed until
-checked against `gh issue view` / `gh pr list` for what actually happened,
-never as settled practice on its own say-so.
+Placement follows `skills/organize-repository`. Investigations and proposals
+belong in issues and pull requests, not in `docs/`; this repository carries
+no project-level PRD/SPEC material (see "Scope").
 
 ## Skill Authoring
 
@@ -142,71 +97,13 @@ surface for open work here. Close an issue with `Fixes #N` in the PR
 body. Branch with a type prefix (`docs/`, `feat/`, `chore/`); CI gates on
 `pull_request`.
 
-## Merging PRs (jonhill90/skills#254, #256)
+## Merging PRs
 
-When more than one agent lane works this repository at once, every lane
-pushes through the same shared GitHub login — `gh pr review --approve`
-is refused as self-review regardless of who is actually asking, so a
-real cross-lane review has to be recorded another way: a reviewing lane
-posts a plain PR comment, not a GitHub review object, carrying
-
-```
-Verdict: APPROVE            (or REQUEST CHANGES, with specifics)
-Review-Lane: <reviewing lane's own name>
-Reviewed-SHA: <the exact head commit SHA reviewed>
-```
-
-and the PR's own body states which lane opened it:
-
-```
-Author-Lane: <authoring lane's own name>
-```
-
-**`scripts/merge_pr.py` is the only way to merge a PR in this repository
-(jonhill90/skills#256).** Do not run `gh pr merge` directly — not by
-hand, not from a lane. `gh pr merge` is a bare, unchecked command; it
-does not know CI is red, and it does not know whether a `Verdict:`
-comment exists, let alone whether it is a genuine cross-lane one at the
-current head. That gap is exactly how `jonhill90/skills#255` (this
-gate's own PR) got self-merged unreviewed 2m22s after opening — nothing
-stopped it, because `gh pr merge` never checked. `scripts/merge_pr.py`
-is the wrapper that cannot skip the gate:
-
-```bash
-python3 scripts/merge_pr.py --repo <owner/name> --number <N>
-```
-
-It checks, in order, and merges only if BOTH pass:
-
-1. CI is green (`gh pr checks`) — any failing or still-pending check,
-   or no checks at all, refuses.
-2. `scripts/pr_verdict.py --repo <owner/name> --number <N>` exits `0`
-   (`approved`) at the PR's CURRENT head — every other exit code (`1`
-   rejected, `2` no verdict on record, `3` unknown/unresolved: same
-   lane, stale SHA, a missing trailer) refuses, same as CI being red.
-
-Exit code `0` means it merged; `1`/`2`/`3` each name a specific refusal
-reason in the printed JSON — see `scripts/merge_pr.py`'s own doc comment
-for the full exit-code table. `scripts/pr_verdict.py` on its own is
-still the thing to run when you want the verdict WITHOUT merging (a
-dry-run read, or building another caller on top); `scripts/pr_verdict.py`'s
-own doc comment covers exactly what that check does and why — it is a
-port of `jonhill90/agent-supervisor`'s `verdict.py`/`verdict-independence.sh`,
-adapted because this repository has no lane ledger to resolve
-authorship from independently — `Author-Lane:`/`Review-Lane:` are both
-self-declared, the same trust model either side already has.
-
-**Not wired into CI, deliberately.** This repository's own CI
-(`.github/workflows/validate.yml`) never merges a PR — every job here
-validates content and exits; merging is always a separate
-`scripts/merge_pr.py` invocation an operator or an agent lane runs
-directly, outside any workflow. There is no merge-time CI job to attach
-this gate to without inventing one that does not otherwise exist;
-`scripts/merge_pr.py` is the script that invocation must run instead of
-`gh pr merge`, by convention stated here, the same way
-`scripts/check_skill_install.py` is wired into `eval_status.py --record`
-as a Python import rather than a workflow step because ITS caller is
-also not a CI job.
+Merge only with `python3 scripts/merge_pr.py --repo jonhill90/skills --number <N>`,
+never `gh pr merge`. It merges only when CI is green and a different lane
+has posted a `Verdict: APPROVE` comment for the PR's current head. The PR
+body must carry `Author-Lane: <name>`. Comment format, exit codes, and why
+the gate is not a CI job: [docs/reference/merge-gate.md](docs/reference/merge-gate.md).
 
 ## Required Verification
 
@@ -222,35 +119,11 @@ Run language-specific tests when changing bundled scripts.
 
 ## Spec Conformance
 
-`scripts/validate_repository.py` is checked against the specification's own
-reference implementation — `skills-ref` from
-[agentskills/agentskills](https://github.com/agentskills/agentskills) — by the
-`spec-conformance` CI job, which runs `skills-ref validate` over every skill.
-Reading the spec and comparing it to our own code is not an independent check;
-that job is the independent instrument.
-
-`plugin.json` follows the same split (#159). `tests/test_plugin_manifest.py`
-encodes the Agent Plugins constraints offline — required fields, the exact
-`$schema` value, the `name` pattern, and the closed top-level key set — and the
-`plugin-conformance` CI job validates the same file against the schema fetched
-from `agent-plugins.org`. The manifest schema is closed, so one misspelled key
-fails every conformant client; both instruments were confirmed to go red on a
-`keywords` → `keyword` edit before this was merged.
-
-Where the two deliberately differ, this repository is the stricter one. None of
-these are spec violations — a skill accepted here is accepted by the reference:
-
-- **ASCII names only.** `NAME_RE` allows `a-z0-9-`; the reference also accepts
-  Unicode letters (`café-skill` passes it, fails us). The spec's own wording is
-  "lowercase alphanumeric characters (`a-z`, `0-9`)", and ASCII directory names
-  travel better across filesystems and URLs.
-- **`SKILL.md` must be uppercase.** The reference also accepts `skill.md`.
-- **A skill must have a body.** The reference accepts frontmatter with no
-  markdown after it.
-- **Names are not whitespace-stripped** before the directory-match check.
-- Plus checks the spec does not cover at all: the 500-line cap, resolvable
-  relative links, no `README.md` inside a skill, executable bits on bundled
-  scripts, collection-wide duplicate names, and the privacy denylist.
+CI independently validates every skill with the specification's reference
+validator (`skills-ref`) and `plugin.json` against the published Agent
+Plugins schema. `scripts/validate_repository.py` is deliberately stricter
+than the reference. The differences and the reasons:
+[docs/reference/validation.md](docs/reference/validation.md).
 
 ## Recording Figures
 
@@ -261,27 +134,8 @@ you have not enumerated.
 
 ## Distribution
 
-- `npx skills add jonhill90/skills --list` browses the collection.
-- `npx skills add jonhill90/skills --skill <name>` installs one skill
-  into the current project.
-- `plugin.json` declares the whole repository as an Agent Plugins 1.0.0
-  plugin, so any conformant client can consume it without bespoke
-  tooling (#159). **It replaces nothing today.** `npx skills` stays the
-  per-skill install path and is a different granularity — one skill,
-  content-hash pinned — which no whole-plugin install offers. A
-  consumer's `apm.yml` pinning is that consumer's concern, not this
-  repository's.
-- **Claude Code does not read this manifest.** Its own manifest is
-  `.claude-plugin/plugin.json`; `claude plugin validate .` on this tree
-  reports "No manifest found ... Expected .claude-plugin/marketplace.json
-  or .claude-plugin/plugin.json". Adding that second file is a separate
-  decision, not implied by this one.
-- Do not hand-maintain a growing matrix of harness-specific copies of
-  this repository; harness projection is that consumer's job, not this
-  repository's.
-- Do not add `mcp.json`. It is optional, this repository ships no MCP
-  servers, and a missing fixed component location is explicitly not an
-  error for a client.
+- Do not add harness-specific copies of this repository or an `mcp.json`;
+  see [docs/reference/distribution.md](docs/reference/distribution.md).
 
 ## Guardrails
 
@@ -301,8 +155,8 @@ Do not:
   from this tree — plain provenance statements (what happened, when) are
   fine; clickable links to private material are not. This repository is
   public deliberately; a relative Markdown link or `https://` link into a
-  private repository (the companion behavioral-evaluation repository
-  mentioned in "Scope", `jonhill90/agent-evals`, or any repository named
+  private repository (the former evaluation repository
+  `jonhill90/agent-evals`, or any repository named
   by convention with a `-private` suffix) is simply broken for every
   public reader. Name the private source in plain text instead — a repo
   name and issue number a reader cannot click through to is provenance,

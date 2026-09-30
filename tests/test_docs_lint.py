@@ -27,8 +27,8 @@ class UnclassifiedRootFiles(unittest.TestCase):
     def test_classified_tree_is_clean(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            (root / "docs" / "canonical").mkdir(parents=True)
-            (root / "docs" / "canonical" / "a.md").write_text("A\n")
+            (root / "docs" / "reference").mkdir(parents=True)
+            (root / "docs" / "reference" / "a.md").write_text("A\n")
             self.assertEqual(m.check_unclassified_root_files(root), [])
 
     def test_loose_root_file_fails(self):
@@ -55,13 +55,34 @@ class UnclassifiedRootFiles(unittest.TestCase):
             self.assertEqual(len(violations), 1)
             self.assertIn("docs/eval-log/", violations[0])
 
-    def test_tombstone_stub_is_not_a_violation(self):
+    def test_pointer_stub_at_root_is_a_violation(self):
+        # docs/decisions/0001: prose pointer files are no longer kept at old
+        # paths. Git history is the archive; only machine readers get a
+        # compatibility symlink.
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             (root / "docs").mkdir()
             (root / "docs" / "moved.md").write_text(
-                m.TOMBSTONE_MARKER + "\n\nMoved to docs/historical/moved.md.\n")
+                "# Moved (P12, run/iteration-queue.md)\n\nMoved elsewhere.\n")
+            violations = m.check_unclassified_root_files(root)
+            self.assertEqual(len(violations), 1)
+            self.assertIn("docs/moved.md", violations[0])
+
+    def test_subject_directories_are_recognized(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "docs" / "reference").mkdir(parents=True)
+            (root / "docs" / "decisions").mkdir(parents=True)
+            (root / "docs" / "decisions" / "0001-x.md").write_text("X\n")
             self.assertEqual(m.check_unclassified_root_files(root), [])
+
+    def test_retired_lifecycle_directory_fails(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "docs" / "historical").mkdir(parents=True)
+            violations = m.check_unclassified_root_files(root)
+            self.assertEqual(len(violations), 1)
+            self.assertIn("docs/historical/", violations[0])
 
     def test_symlink_at_root_is_not_a_rule_1_violation(self):
         # Rule 1 defers to rule 2 for symlink legitimacy -- it only
@@ -79,15 +100,15 @@ class NoStateFilesInDocs(unittest.TestCase):
     def test_clean_tree_has_no_violations(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            (root / "docs" / "canonical").mkdir(parents=True)
-            (root / "docs" / "canonical" / "a.md").write_text("A\n")
+            (root / "docs" / "reference").mkdir(parents=True)
+            (root / "docs" / "reference" / "a.md").write_text("A\n")
             self.assertEqual(m.check_no_state_files_in_docs(root), [])
 
     def test_real_json_file_in_docs_fails(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            (root / "docs" / "canonical").mkdir(parents=True)
-            (root / "docs" / "canonical" / "state.json").write_text("{}")
+            (root / "docs" / "reference").mkdir(parents=True)
+            (root / "docs" / "reference" / "state.json").write_text("{}")
             violations = m.check_no_state_files_in_docs(root)
             self.assertEqual(len(violations), 1)
             self.assertIn("state.json", violations[0])
@@ -116,11 +137,11 @@ class NoStateFilesInDocs(unittest.TestCase):
         # symlink, not a real redirect to state/.
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            (root / "docs" / "canonical").mkdir(parents=True)
-            (root / "docs" / "canonical" / "real.json").write_text("{}")
-            (root / "docs" / "fake.json").symlink_to("canonical/real.json")
+            (root / "docs" / "reference").mkdir(parents=True)
+            (root / "docs" / "reference" / "real.json").write_text("{}")
+            (root / "docs" / "fake.json").symlink_to("reference/real.json")
             violations = m.check_no_state_files_in_docs(root)
-            # Two violations here: canonical/real.json is itself a genuine
+            # Two violations here: reference/real.json is itself a genuine
             # state file in docs/ (caught on its own merits), and
             # fake.json is a symlink that fails the "must resolve outside
             # docs/" exemption -- both real, both expected, not double-
@@ -189,8 +210,8 @@ class Run(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             git_repo(root)
-            (root / "docs" / "canonical").mkdir(parents=True)
-            (root / "docs" / "canonical" / "a.md").write_text("A\n")
+            (root / "docs" / "reference").mkdir(parents=True)
+            (root / "docs" / "reference" / "a.md").write_text("A\n")
             git_add(root)
             code, lines = m.run(root)
             self.assertEqual(code, 0)
@@ -208,7 +229,7 @@ class Run(unittest.TestCase):
             code, lines = m.run(root)
             self.assertEqual(code, 1)
             joined = "\n".join(lines)
-            self.assertIn("unclassified root file", joined)
+            self.assertIn("unfiled root file", joined)
             self.assertIn("state file under docs/", joined)
             self.assertIn("full-text duplicate", joined)
 
