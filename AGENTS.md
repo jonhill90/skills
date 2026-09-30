@@ -30,8 +30,8 @@ file; the other two follow with no sync step.
 
 ## What "shipped" means
 
-Merging a skill here publishes it (`npx skills add`, or as an Agent
-Plugin); it does not install it anywhere. Whether a harness loads it by
+Merging a skill here publishes it (`npx skills add`, as an Agent Plugin,
+or in the Claude Code plugin); it does not install it anywhere. Whether a harness loads it by
 default is decided later, in `agent-dotfiles`. `scripts/check_orphan_skills.py`
 is an advisory view of that question and never gates CI. Details, including
 the plugin manifest and what Claude Code does and does not read:
@@ -41,6 +41,7 @@ the plugin manifest and what Claude Code does and does not read:
 
 ```text
 plugin.json                # Agent Plugins 1.0.0 manifest (closed schema)
+.claude-plugin/            # Claude Code plugin + marketplace manifests; same plugin name
 skills/<skill-name>/       # SKILL.md plus scripts/, references/, assets/ when needed
 scripts/                   # repository tooling: validation, docs lint, eval status, merge gate
 tests/                     # unit tests for scripts/ and for every bundled skill script

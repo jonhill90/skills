@@ -20,3 +20,5 @@ detail behind them. The skill inventory is the generated table in the root
   `docs/` is organized by subject, and what was removed.
 - [0002 Remove the eval system and `state/`](decisions/0002-remove-eval-system.md):
   what went, what stayed, and the replacement plan (#309).
+- [0003 Claude Code plugin](decisions/0003-claude-code-plugin.md): why the
+  collection ships as one Claude Code plugin with a flat `skills/`.

@@ -1,0 +1,15 @@
+{
+  "name": "jonhill90",
+  "description": "Jon Hill's portable Agent Skills, installable as one Claude Code plugin.",
+  "owner": {
+    "name": "Jon Hill",
+    "url": "https://github.com/jonhill90"
+  },
+  "plugins": [
+    {
+      "name": "jonhill90-skills",
+      "source": "./",
+      "description": "Every skill in skills/, installed as one plugin that follows main."
+    }
+  ]
+}

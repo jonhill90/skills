@@ -170,5 +170,37 @@ class PluginLayoutTests(unittest.TestCase):
         self.assertEqual(escaping, [], f"symlinks escaping the plugin root: {escaping}")
 
 
+class ClaudeCodePluginTests(unittest.TestCase):
+    """.claude-plugin/ makes the collection installable as a Claude Code
+    plugin (docs/decisions/0003-claude-code-plugin.md). `claude plugin
+    validate .` in CI is the authoritative check; these offline tests only
+    keep the three manifests from drifting apart."""
+
+    def load(self, name: str) -> dict:
+        return json.loads((ROOT / ".claude-plugin" / name).read_text(encoding="utf-8"))
+
+    def test_plugin_name_matches_agent_plugins_manifest(self) -> None:
+        agent_plugins = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(self.load("plugin.json")["name"], agent_plugins["name"])
+
+    def test_marketplace_lists_this_repo_as_its_only_plugin(self) -> None:
+        marketplace = self.load("marketplace.json")
+        entries = marketplace["plugins"]
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["name"], self.load("plugin.json")["name"])
+        self.assertEqual(entries[0]["source"], "./")
+
+    def test_version_is_not_pinned(self) -> None:
+        # Without a version, Claude Code uses the commit SHA, so installs
+        # follow main. A pinned version would freeze users until bumped.
+        self.assertNotIn("version", self.load("plugin.json"))
+        self.assertNotIn("version", self.load("marketplace.json")["plugins"][0])
+
+    def test_skills_use_the_default_location(self) -> None:
+        # skills/ at the plugin root is scanned by default; listing skills
+        # would be a second inventory to keep in sync.
+        self.assertNotIn("skills", self.load("plugin.json"))
+
+
 if __name__ == "__main__":
     unittest.main()
