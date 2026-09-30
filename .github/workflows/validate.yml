@@ -116,3 +116,16 @@ jobs:
             fi
           done
           exit $status
+
+  claude-plugin-conformance:
+    # Validate .claude-plugin/ with Claude Code's own `claude plugin validate`,
+    # the authoritative check for those manifests (docs/decisions/0003).
+    # tests/test_plugin_manifest.py only keeps the manifests consistent with
+    # each other. Tracks the latest CLI on purpose, like spec-conformance.
+    # Not --strict: the missing `version` warning is intentional, so installs
+    # follow main by commit SHA.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate the Claude Code plugin and marketplace manifests
+        run: npx -y @anthropic-ai/claude-code@latest plugin validate .

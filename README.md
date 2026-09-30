@@ -35,10 +35,23 @@ count), which is the standard's own discovery convention.
 Any conformant client can consume the collection whole, with no bespoke
 tooling.
 
-That is a portability claim, not a local one. Claude Code reads its own
-manifest at `.claude-plugin/plugin.json` and does not look for this file, so
-adding it changed nothing for Claude Code users today. `npx skills` above
-remains the way to install individual skills, and nothing here replaces it.
+### As a Claude Code plugin
+
+`.claude-plugin/` makes this repository its own Claude Code marketplace with
+one plugin, `jonhill90-skills`, that contains every skill:
+
+```bash
+claude plugin marketplace add jonhill90/skills
+```
+
+```bash
+claude plugin install jonhill90-skills@jonhill90
+```
+
+The plugin has no pinned version, so each install and update takes the
+latest commit on `main`. It loads the whole collection, which adds roughly
+5.6k tokens of skill descriptions to every session (measured 2026-09-30 with
+`claude plugin details`). To take only a few skills, use `npx skills` above.
 
 ## Skills in this collection
 

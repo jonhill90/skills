@@ -52,11 +52,13 @@ than relying on the network fetch CI uses.
   content-hash pinned — which no whole-plugin install offers. A
   consumer's `apm.yml` pinning is that consumer's concern, not this
   repository's.
-- **Claude Code does not read this manifest.** Its own manifest is
-  `.claude-plugin/plugin.json`; `claude plugin validate .` on this tree
-  reports "No manifest found ... Expected .claude-plugin/marketplace.json
-  or .claude-plugin/plugin.json". Adding that second file is a separate
-  decision, not implied by this one.
+- **Claude Code reads its own manifests, not this one.** Since
+  [decision 0003](../decisions/0003-claude-code-plugin.md),
+  `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` make the
+  repository a one-plugin Claude Code marketplace. Both plugin manifests use
+  the name `jonhill90-skills`; `tests/test_plugin_manifest.py` keeps them in
+  step, and the `claude-plugin-conformance` CI job runs
+  `claude plugin validate .`.
 - Do not hand-maintain a growing matrix of harness-specific copies of
   this repository; harness projection is that consumer's job, not this
   repository's.
