@@ -30,8 +30,8 @@ reference.
 
 This repository is also an [Agent Plugins
 1.0.0](https://agent-plugins.org/specification) plugin: `plugin.json` at the
-root, 40 skills at `skills/<name>/SKILL.md` (measured `ls -d skills/*/ | wc -l`,
-verified 2026-08-23), which is the standard's own discovery convention.
+root, every skill at `skills/<name>/SKILL.md` (the generated table below is the
+count), which is the standard's own discovery convention.
 Any conformant client can consume the collection whole, with no bespoke
 tooling.
 
@@ -44,7 +44,7 @@ remains the way to install individual skills, and nothing here replaces it.
 
 <!-- generated-skills:start -->
 
-Generated from 41 current skill bundles and the dated environment observation; do not hand-edit.
+Generated from 42 current skill bundles and the dated environment observation; do not hand-edit.
 Regenerate with `python3 scripts/reconcile_skills.py`; verify with `--check`.
 The [machine-readable manifest](state/skills-reconciliation.json) names evidence and static audit locations.
 Installed observations: 2026-09-07; refresh explicitly, never interpret this as a live roster.
@@ -78,6 +78,7 @@ Eval status reports existing evidence, not quality approval; missing external co
 | [`mine-transcripts`](skills/mine-transcripts/) | public | linked-to-canonical | FAIL | [has-evals](skills/mine-transcripts/references/eval-result.md) |
 | [`notify`](skills/notify/) | public | linked-to-canonical | FAIL | [has-evals](skills/notify/references/eval-result.md) |
 | [`obsidian`](skills/obsidian/) | public | linked-to-canonical | FAIL | [could-not-measure](skills/obsidian/references/eval-result.md) |
+| [`organize-repository`](skills/organize-repository/) | public | could-not-measure | PASS | no-evals |
 | [`plan-parallel-execution`](skills/plan-parallel-execution/) | public | linked-to-canonical | PASS | [has-evals](skills/plan-parallel-execution/references/eval-result.md) |
 | [`prd`](skills/prd/) | public | linked-to-canonical | PASS | [has-evals](skills/prd/references/eval-result.md) |
 | [`primer`](skills/primer/) | public | linked-to-canonical | FAIL | [has-evals](skills/primer/references/eval-result.md) |

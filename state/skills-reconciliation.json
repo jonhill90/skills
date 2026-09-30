@@ -1086,6 +1086,39 @@
     {
       "authorship": {
         "basis": "Earliest available addition commit; git attribution does not prove absence of upstream copying.",
+        "class": "unknown",
+        "commit": null
+      },
+      "canonical_home": null,
+      "eval": {
+        "evidence": null,
+        "reason": "No bundled evaluation record; external coverage not inspected.",
+        "status": "no-evals"
+      },
+      "hashes": {
+        "bundle_sha256": "b05187b4f63de371609f367fd6b9a609d346fc38b686143c2058c5e22d73c727",
+        "files": 5,
+        "skill_sha256": "a4aae7831c91dc22d405330cac7e2941b836b4a8733526a58f828b1f73708607"
+      },
+      "home_state": "could-not-measure",
+      "installed": {
+        "repo_home_count": null,
+        "skill_matches_public": null,
+        "state": "could-not-measure",
+        "where": null
+      },
+      "name": "organize-repository",
+      "packaging": {
+        "findings": [],
+        "meaning": "Static upload-only audit: flagged local/CLI assumptions need review; PASS means none detected, not a web execution test.",
+        "status": "PASS"
+      },
+      "scope": "public",
+      "scope_basis": "Current public repository placement; deployment scope may be narrower."
+    },
+    {
+      "authorship": {
+        "basis": "Earliest available addition commit; git attribution does not prove absence of upstream copying.",
         "class": "jon-or-agent-attributed",
         "commit": "97b2befa1b02f745fd53e64490ecfb0e045c9887"
       },

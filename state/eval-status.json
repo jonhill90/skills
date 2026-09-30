@@ -25,6 +25,7 @@
     "mine-transcripts": {"verdict": "improve", "date": "2026-08-28", "evidence": "skills/mine-transcripts/references/eval-result.md"},
     "notify": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/notify/references/eval-result.md"},
     "obsidian": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/obsidian/references/eval-result.md"},
+    "organize-repository": {"verdict": "unevaluated", "date": null, "evidence": null},
     "plan-parallel-execution": {"verdict": "could_not_measure", "date": "2026-08-23", "evidence": "skills/plan-parallel-execution/references/eval-result.md"},
     "prd": {"verdict": "improve", "date": "2026-08-23", "evidence": "skills/prd/references/eval-result.md"},
     "primer": {"verdict": "drop", "date": "2026-08-23", "evidence": "skills/primer/references/eval-result.md"},

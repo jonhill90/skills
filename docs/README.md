@@ -19,3 +19,11 @@ file, kept so `jonhill90/agent-estate`'s TUI (which hardcodes that exact
 relative path as a Go constant) keeps resolving without this repo
 hand-editing a sibling repo's source. The real, generated file lives at
 `state/eval-status.json`.
+
+The six Markdown files directly under `docs/` are also pointers, not
+documents: each names the classified path its content moved to. They stay
+because other repositories still cite the old paths (measured 2026-09-30
+with `gh search code --owner jonhill90`): `agent-estate`'s P12
+disposition reports, `agent-evals` scenario prompts and criteria, and one
+`agent-dotfiles` triage note. Remove a pointer once nothing cites its path;
+add nothing else at this level.
