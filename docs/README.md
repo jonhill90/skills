@@ -18,9 +18,5 @@ detail behind them. The skill inventory is the generated table in the root
 
 - [0001 Documentation layout](decisions/0001-documentation-layout.md): why
   `docs/` is organized by subject, and what was removed.
-
-## Not documentation
-
-`eval-status.json` is a symlink to the generated `state/eval-status.json`.
-It stays because `jonhill90/agent-estate`'s TUI hardcodes this path as a Go
-constant. Remove it when that constant changes.
+- [0002 Remove the eval system and `state/`](decisions/0002-remove-eval-system.md):
+  what went, what stayed, and the replacement plan (#309).

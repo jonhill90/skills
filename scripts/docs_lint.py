@@ -30,7 +30,7 @@ it. It only enforces the structural invariants that call depends on:
 
 Every check function below takes `repo` (the root to check) as its own
 parameter, never reads a module-level default internally -- the same
-shape `scripts/reconcile_skills.py`'s own functions use, and for the same
+shape `scripts/skills_table.py`'s own functions use, and for the same
 reason: `tests/test_docs_lint.py` points these at a throwaway fixture
 directory, never this repository's own tree, so a broken rule can be
 proven broken without ever touching real content.
@@ -117,8 +117,8 @@ def check_no_state_files_in_docs(repo: Path) -> list[str]:
             continue
         violations.append(
             f"{rel}: state file under docs/ -- relocate it "
-            f"(state/ or wherever the repo keeps generated data), state "
-            f"does not belong in a documentation tree")
+            f"outside docs/; generated data does not belong in a "
+            f"documentation tree")
     return violations
 
 

@@ -106,7 +106,7 @@ project/
 ├── skills/<name>/            SKILL.md plus scripts/, references/, assets/ when needed
 ├── scripts/                  repository-wide tooling
 ├── tests/                    tests for all bundled and repository scripts
-├── state/                    generated, machine-written records
+├── state/                    only if generated records must be committed
 └── docs/
 ```
 

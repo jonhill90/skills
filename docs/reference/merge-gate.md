@@ -61,7 +61,4 @@ validates content and exits; merging is always a separate
 directly, outside any workflow. There is no merge-time CI job to attach
 this gate to without inventing one that does not otherwise exist;
 `scripts/merge_pr.py` is the script that invocation must run instead of
-`gh pr merge`, by convention stated here, the same way
-`scripts/check_skill_install.py` is wired into `eval_status.py --record`
-as a Python import rather than a workflow step because ITS caller is
-also not a CI job.
+`gh pr merge`, by convention stated here.

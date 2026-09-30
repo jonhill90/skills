@@ -1,6 +1,6 @@
 # 0001 Documentation layout
 
-- Status: Accepted
+- Status: Accepted; the `docs/eval-status.json` exception below was removed by [0002](0002-remove-eval-system.md)
 - Date: 2026-09-30
 
 ## Context

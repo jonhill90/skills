@@ -60,8 +60,7 @@ THE GATE THIS ANSWERS, exactly:
 
 Prints one JSON object and exits by DECISION, not by whether the read
 itself succeeded -- a caller distinguishes "go ahead" from every other
-outcome by exit code alone, without parsing JSON, mirroring
-`check_skill_install.py`'s own exit-code contract:
+outcome by exit code alone, without parsing JSON:
   0  approved   -- independent, decisive, current-head verdict found
   1  rejected   -- independent, decisive REQUEST CHANGES at current head
   2  none       -- no verdict-bearing comment exists at all
