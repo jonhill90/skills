@@ -44,6 +44,23 @@ thing at hand; follow that.
    discovered by the runner, links resolve, and anything moved still has
    its consumers updated (see [references/moving-files.md](references/moving-files.md)).
 
+## Day one
+
+A new repository starts with one commit of real files and no empty
+directories:
+
+1. `README.md`, with a short "where new things go" table.
+2. `AGENTS.md` (plus the `CLAUDE.md` alias only if that harness is used).
+3. `docs/decisions/0001-adopt-repo-standard.md`, naming this standard's
+   version.
+4. A CI workflow that runs the shared checks (a leak scan for public
+   repositories, and `scripts/check_layout.py`) from a separate
+   repository, pinned by commit, so a pull request cannot edit its own
+   checker.
+
+Repositories whose root a tool owns (a Stow dotfiles tree, a plugin or
+skill collection) keep only the entry points.
+
 ## Rules
 
 Common to every repository:
@@ -68,11 +85,31 @@ Common to every repository:
   replaced it. Other retired documents are deleted; git history is the
   archive. Leave a pointer only when something outside the repository still
   reads the old path.
+- **Name folders by capability, never by vendor product.** A folder says
+  what the thing is for (`private-network/`, `dns/`, `backup/`), so
+  replacing the vendor product behind it moves no folders. A vendor
+  product may own one subfolder below a capability folder, in its native
+  layout (`hosts/ansible/`). A platform the whole repository is built on
+  (`kubernetes/` in a cluster repo) is a recorded exception.
+- **Name environments and clusters by role** (`main`, `home`), never by the
+  machine or provider they run on today.
+- **Every process has one runbook.** `docs/runbooks/<name>.md` names its
+  trigger, its runner, and its files. The trigger lives where its runner
+  reads it (`.github/workflows/`, a GitOps entry point); a manual process
+  has no trigger file and its runbook names the command.
+- **Public repositories commit no private values.** No secret, hostname,
+  address, email, or private network name, including in generated files.
+  Write placeholders and fill them at apply time; a generated file that
+  would hold such values is produced at apply time, not committed.
 - **Scripts are for repeated operations.** Repository-wide scripts in
   `scripts/`; scripts owned by one component live with that component.
 - **Generated output is labelled.** Either gitignored, or committed under a
   directory whose README (or the docs index) names the generator and says
   not to hand-edit.
+- **A part leaves for its own repository** when it gets its own release
+  cadence, its own access boundary, or a consumer outside this repository.
+  It carries the same day-one files, and its readers are updated in the
+  same change.
 - **Directories are created when needed.** No placeholders. A topic starts
   as one file (`docs/development.md`) and becomes a directory when a second
   document arrives.
