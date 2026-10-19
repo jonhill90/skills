@@ -12,7 +12,8 @@ it. Changing the renderer means replacing that root, not moving the rest.
 
 | Arrangement | Use when | Watch for |
 |---|---|---|
-| `docs/site/` beside the maintainer docs | Default. Keeps audiences visibly separate and works with any renderer that accepts a configured root | One extra level for published pages |
+| Its own repository | Default. Sites placed as their own root folder moved most in the repositories studied, and most ended in a separate repository | Cross-repository links for pages that describe code |
+| `docs/site/` beside the maintainer docs | The site must ship in the same change as the code it documents | One extra level for published pages |
 | The renderer owns `docs/`, with maintainer docs inside it | The repository already does this, or the tool has no configurable root | Maintainer files are published unless excluded; see Mintlify below |
 | `services/docs/` or `apps/docs/` | The site is a buildable application in a workspace | Treat it as a service with its own manifest |
 | The repository root | Documentation-only repository | Code-profile rules do not apply |
