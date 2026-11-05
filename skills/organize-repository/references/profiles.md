@@ -15,6 +15,7 @@ profile plus a docs site root from `documentation-sites.md`.
 - [Terraform](#terraform)
 - [Skill or configuration collection](#skill-or-configuration-collection)
 - [Documentation-only](#documentation-only)
+- [Knowledge store](#knowledge-store)
 - [Docs taxonomies](#docs-taxonomies)
 
 ## Single service or application
@@ -156,6 +157,15 @@ only for the repository's own bookkeeping, because it ships with the skill.
 The repository root is the documentation root. The renderer's native
 layout applies at the top level; code-profile rules do not.
 
+## Knowledge store
+
+A repository or folder that exists to keep knowledge (notes, research,
+captured pages and repositories) rather than to document one system.
+It follows [knowledge-store.md](knowledge-store.md) at its root: INPARA
+top folders, the yes/no wizard, the naming rule, and hand-written hubs
+the checks keep complete. Code-profile rules do not apply inside it. A
+code repository holds its own knowledge store in `docs/knowledge/`.
+
 ## Docs taxonomies
 
 Pick one per repository, declare it in `docs/README.md`, and do not mix
@@ -164,8 +174,10 @@ them:
 | Taxonomy | Directories | Fits |
 |---|---|---|
 | Subject | `architecture/`, `decisions/`, `development/`, `reference/`, `runbooks/` | Products and services: readers arrive with a task |
-| Lifecycle | `canonical/`, `historical/`, `research/` | Research-heavy and tooling repositories: readers need to know whether something is still true |
+| Lifecycle | `canonical/`, `historical/`, `evidence/` | Research-heavy and tooling repositories: readers need to know whether something is still true |
 
 Under the subject taxonomy, "is this still true?" is answered by the
-decision record's status, not by the directory. Under the lifecycle
+decision record's status, not by the directory. Under either taxonomy,
+the research itself lives in the knowledge store (`docs/knowledge/`), and
+`evidence/` holds only the short summary behind each decision. Under the lifecycle
 taxonomy, decisions are `historical/` records with a stated disposition.
