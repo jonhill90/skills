@@ -73,8 +73,8 @@ directories:
 
 Repositories whose root a tool owns (a Stow dotfiles tree, a plugin or
 skill collection) keep only the entry points. When the first knowledge
-file arrives, add `docs/knowledge/README.md` and
-`docs/knowledge/99-meta/ORGANIZE.md`, and the knowledge block for
+file arrives, add `docs/knowledge/README.md`,
+`docs/knowledge/99-meta/README.md` and `docs/knowledge/99-meta/ORGANIZE.md`, and the knowledge block for
 `AGENTS.md` from [references/knowledge-store.md](references/knowledge-store.md#adopting-the-standard).
 
 ## Rules

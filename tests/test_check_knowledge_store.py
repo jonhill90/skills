@@ -299,5 +299,52 @@ class SinceTests(StoreFixture):
         self.assertIn("orphans", [c for c, _, _ in cks.since(str(self.root), "base")])
 
 
+    def test_bad_ref_exits_two(self) -> None:
+        code, out = self.run_main(str(self.root), "--since", "no-such-ref")
+        self.assertEqual(code, 2)
+        self.assertIn("not a commit", out)
+
+    def test_store_absent_at_ref_counts_as_empty(self) -> None:
+        sub = self.root / "docs" / "knowledge"
+        sub.mkdir(parents=True)
+        for rel, text in CLEAN_STORE.items():
+            path = sub / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "adopt the standard")
+        self.assertEqual(cks.since(str(sub), "base"), [])
+
+    def test_name_restored_from_another_branch_is_not_new(self) -> None:
+        self.git("checkout", "-q", "-b", "side")
+        self.write("01-notes/01a-atomic/Old_Name.md", "# Old\n")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "side")
+        self.git("checkout", "-q", "main")
+        self.git("checkout", "-q", "-b", "work")
+        self.git("checkout", "side", "--", "01-notes/01a-atomic/Old_Name.md")
+        self.git("commit", "-q", "-m", "bring it back")
+        self.assertNotIn("names", [c for c, _, _ in cks.since(str(self.root), "base")])
+
+
+class AdoptionTests(unittest.TestCase):
+    def test_minimal_store_from_the_adoption_steps_is_clean(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            files = {
+                "README.md": (
+                    "# Store\n\nBefore saving, run the wizard in 99-meta/ORGANIZE.md; to find "
+                    "anything, follow the hub lists from here.\n\n"
+                    "- [99-meta](99-meta/README.md): how this store works\n"
+                ),
+                "99-meta/README.md": "# Meta\n\n- [ORGANIZE](ORGANIZE.md): the wizard and naming rule\n",
+                "99-meta/ORGANIZE.md": "# Organization standard\n",
+            }
+            for rel, text in files.items():
+                (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                (root / rel).write_text(text)
+            self.assertEqual(cks.check(str(root)), [])
+
+
 if __name__ == "__main__":
     unittest.main()
