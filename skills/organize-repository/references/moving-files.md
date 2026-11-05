@@ -38,4 +38,34 @@ might reference. A path is a contract with every reader of it.
 - Other documents: delete. Git history is the archive. Keep a pointer only
   under the consumer rule above.
 - Do not create an `archive/` directory for material nobody reads; it
-  becomes a second place to search.
+  becomes a second place to search. A knowledge store's `05-archive/` is
+  narrower: it holds only records that arrived finished. An item that
+  finishes later stays where it is, marked `status: replaced`.
+
+## Reorganizing a whole store
+
+A one-time reorganization of many files (a new layout, a new standard)
+is the one rename a store should ever have, so do it once and fully.
+
+1. **Measure before proposing.** Count files by top folder, by kind, and
+   by who made them. Most of a large store is often captured bulk
+   (exports, cloned repositories, scraped pages) that nobody reads file by
+   file; it can move or be packed as a whole instead of being sorted.
+2. **Ask the owner about rules, never about files.** Settle the tree, the
+   names, and the hard cases, then let the wizard place every file. Show a
+   preview of each change of shape (a new folder level, a rename pattern)
+   before applying it.
+3. **One writer.** Only one agent or branch moves files in a store at a
+   time; others hand their changes to it. Parallel movers produce
+   conflicts that cost more than the speed they bought.
+4. **Script the move.** Write an old-path to new-path map, apply it with
+   `git mv`, and rewrite links from the same map. Keep the map in the pull
+   request as the record. Remove caches and build output (for example
+   `__pycache__`) before generating or checking anything.
+5. **One home survives the move.** A file that belongs to several areas
+   moves once, to one place, and each area links to it. Do not split it
+   into copies, and do not add per-area reference folders.
+6. **Check the head, not the plan.** Run every check on the final commit
+   before pushing, and confirm the file count, with every removed file
+   either present byte-for-byte at a new path or deliberately deleted.
+   Note the commit before the move as a restore point.

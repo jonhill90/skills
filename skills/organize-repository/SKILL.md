@@ -1,6 +1,6 @@
 ---
 name: organize-repository
-description: Decide where code, tests, docs, scripts, config, and generated files belong in a repository, so placement stays predictable across projects instead of being re-decided each time. Use when starting a repository, adding something whose home is not obvious, adding a documentation site such as Mintlify, moving or retiring files, auditing a layout for drift, or writing a repository's layout rules into AGENTS.md. Not for choosing application architecture or dependency boundaries.
+description: Decide where code, tests, docs, scripts, config, generated files, and knowledge (notes, research, captured sources) belong, so placement and names stay predictable across projects instead of being re-decided each time. Use when starting a repository or knowledge store, saving something whose home is not obvious, adding a documentation site such as Mintlify, moving, retiring, or reorganizing files, auditing a layout for drift, or writing layout rules into AGENTS.md. Not for choosing application architecture or dependency boundaries.
 ---
 
 # Organize a Repository
@@ -15,8 +15,10 @@ write down the exceptions so they are not mistaken for drift later.
 - Starting a repository, or adding its first test, doc, script, or config.
 - Adding a file and more than one location looks plausible.
 - Adding, replacing, or removing a documentation site.
+- Saving a note, research, or a captured page or repository into a
+  knowledge store, or setting one up.
 - Moving, renaming, or retiring files other things might point at.
-- Asked to audit, tidy, or standardize a repository's layout.
+- Asked to audit, tidy, standardize, or reorganize a repository or store.
 
 Do not reach for this to design module boundaries, layering, or dependency
 rules inside the code — that is architecture, not placement. Do not reach
@@ -28,21 +30,32 @@ thing at hand; follow that.
 1. **Read before placing.** Read the root `AGENTS.md`, the docs index, and
    any decision records about layout. A documented decision outranks every
    default below, including one that looks inconsistent with other repos.
-2. **Identify the profile and the tools.** Match the repository to a profile
+2. **Pick the store.** Is the file about this repository's own system:
+   why it is so, what it is, how to run or change it? Then it is
+   documentation, placed by the rules below. Anything learned or gathered
+   (research, notes, captured pages, outside repositories) is knowledge:
+   place and name it with the wizard in
+   [references/knowledge-store.md](references/knowledge-store.md), in
+   `docs/knowledge/` inside a code repository.
+3. **Identify the profile and the tools.** Match the repository to a profile
    in [references/profiles.md](references/profiles.md). Note every tool with
    path rules of its own: language build/test tools, docs renderers,
    deployment tools. Tool-native layout outranks these defaults.
-3. **Classify the thing.** Code, test, doc (which audience), script,
-   config, generated output, or research. Most placement confusion is two
+4. **Classify the thing.** Code, test, doc (which audience), script,
+   config, generated output, or knowledge. Most placement confusion is two
    of these being treated as one.
-4. **Place it by the rules below.** If two homes still fit, pick the one a
+5. **Search before creating.** If an item on the same subject exists,
+   add to it or link to it. A copy is never a new item.
+6. **Place it by the rules below.** If two homes still fit, pick the one a
    stranger would look in first, then record why.
-5. **Record exceptions.** A deliberate deviation goes in a decision record
+7. **Record exceptions.** A deliberate deviation goes in a decision record
    with its reason. An unrecorded deviation is drift, and will be "fixed"
    by the next agent.
-6. **Verify.** Run `scripts/check_layout.py`. Confirm tests are still
-   discovered by the runner, links resolve, and anything moved still has
-   its consumers updated (see [references/moving-files.md](references/moving-files.md)).
+8. **Verify.** Run `scripts/check_layout.py`, and
+   `scripts/check_knowledge_store.py` on any knowledge store. Confirm
+   tests are still discovered by the runner, links resolve, and anything
+   moved still has its consumers updated (see
+   [references/moving-files.md](references/moving-files.md)).
 
 ## Day one
 
@@ -59,7 +72,10 @@ directories:
    checker.
 
 Repositories whose root a tool owns (a Stow dotfiles tree, a plugin or
-skill collection) keep only the entry points.
+skill collection) keep only the entry points. When the first knowledge
+file arrives, add `docs/knowledge/README.md` and
+`docs/knowledge/99-meta/ORGANIZE.md`, and the knowledge block for
+`AGENTS.md` from [references/knowledge-store.md](references/knowledge-store.md#adopting-the-standard).
 
 ## Rules
 
@@ -81,10 +97,16 @@ Common to every repository:
   `docs/README.md`. A published site gets its own root beside them (see
   [references/documentation-sites.md](references/documentation-sites.md)),
   so adding, swapping, or removing a renderer touches only that root.
+- **Knowledge is not documentation.** Research, notes, and captured
+  material go in the knowledge store (`docs/knowledge/`), never loose in
+  `docs/`. The evidence behind a decision may sit in `docs/evidence/` as a
+  short summary that links to the research.
 - **Decisions are superseded, not deleted.** Mark the old record with what
-  replaced it. Other retired documents are deleted; git history is the
-  archive. Leave a pointer only when something outside the repository still
-  reads the old path.
+  replaced it. A repository that records it corrects records in place
+  while it is new follows that record instead. Other retired documents are
+  deleted; git history is the archive. Leave a pointer only when something
+  outside the repository still reads the old path. History logs keep the
+  paths they recorded; only current text is rewritten after a move.
 - **Name folders by capability, never by vendor product.** A folder says
   what the thing is for (`private-network/`, `dns/`, `backup/`), so
   replacing the vendor product behind it moves no folders. A vendor
@@ -114,7 +136,9 @@ Common to every repository:
   as one file (`docs/development.md`) and becomes a directory when a second
   document arrives.
 - **Lowercase, hyphenated names** for directories you create. Tool-required
-  names (`SKILL.md`, `Dockerfile`, `ROOT`) keep their required form.
+  names (`SKILL.md`, `Dockerfile`, `ROOT`) keep their required form. In a
+  knowledge store every name follows its naming rule: a slug of the title,
+  no dates, IDs, or versions, and no rename after saving.
 
 Varies by profile or tool — decide from
 [references/profiles.md](references/profiles.md) and the tool's docs, not
@@ -133,6 +157,12 @@ pair, placeholder directories, test file names pytest cannot collect, and
 Mintlify pages that are published by URL without being in navigation.
 Exit `0` means no errors, `1` errors, `2` could not check. It does not judge
 whether something is in the right home; that stays with the routine above.
+
+`scripts/check_knowledge_store.py <store>` checks a knowledge store: root
+folders, names, dead links, orphans, byte-identical copies, hub lists, and
+map links. `--path` checks one proposed name before saving; `--since
+<ref>` fails only on new faults, for CI. Details in
+[references/knowledge-store.md](references/knowledge-store.md#checks).
 
 ## When the answer is still unclear
 
