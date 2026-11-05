@@ -181,7 +181,7 @@ standard library.
 
 | Check | Fails when |
 |---|---|
-| root | the store root holds anything but the top folders, the role files, and dot files |
+| root | the store root holds anything but the top folders, dot files, and `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `CODEOWNERS` |
 | names | a file or folder breaks the naming rule |
 | links | a relative Markdown link points to nothing |
 | orphans | no chain of links from `README.md` reaches a file |
@@ -194,7 +194,8 @@ standard library.
   `05-archive/`, and any `sources/` or `data/` folder.
 - `--path <relative path>` checks one proposed name before saving.
 - `--hubs` prints the lines each hub is missing.
-- `--since <git ref>` fails names only on new files, and the other checks
+- `--since <git ref>` (exit `2` if the ref is not a commit; a store that
+  did not exist at the ref counts as empty) fails names only on new files, and the other checks
   only when their count rose, so an existing store with old faults can
   adopt the check without fixing everything first.
 - `--find <path>` prints the store root holding a path (the nearest
@@ -207,11 +208,11 @@ CI are the backstop.
 
 ## Adopting the standard
 
-1. Create `README.md` with the one-sentence rule and `99-meta/ORGANIZE.md`.
-   The latter is the marker the check looks for; it holds the store's
-   version of this standard, or a pointer to where that version lives.
-   Create each top folder and its hub `README.md` when the first item
-   arrives.
+1. Create `README.md` with the one-sentence rule, `99-meta/ORGANIZE.md`,
+   and the hub `99-meta/README.md` that links it. `ORGANIZE.md` is the
+   marker the check looks for; it holds the store's version of this
+   standard, or a pointer to where that version lives. Create each other
+   top folder and its hub `README.md` when the first item arrives.
 2. Tell agents. In a repository's `AGENTS.md`:
 
    ```markdown

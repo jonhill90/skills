@@ -309,6 +309,9 @@ def since(store, ref):
                          capture_output=True, text=True).stdout.strip()
     if not top:
         return None
+    if subprocess.run(["git", "-C", top, "rev-parse", "--verify", "--quiet", ref + "^{commit}"],
+                      capture_output=True).returncode != 0:
+        return "bad-ref"
     prefix = os.path.relpath(os.path.abspath(store), top).replace(os.sep, "/")
     prefix = "" if prefix == "." else prefix + "/"
     diff = subprocess.run(["git", "-C", top, "diff", "--name-status", "-M", "-l0", "-z", ref + "...HEAD"],
@@ -324,12 +327,16 @@ def since(store, ref):
             if st.startswith("A"):
                 new.append(diff[i + 1])
             i += 2
-    # A name the history up to <ref> has used before is not new: restores and
-    # byte-identical copies paired by -M keep their original names. Only <ref>'s own
-    # history counts; adding --all would include HEAD, and every new name would pass.
-    hist = subprocess.run(["git", "-C", top, "log", ref, "--name-only", "--format=", "--no-renames"],
-                          capture_output=True, text=True).stdout.split("\n")
-    known = {posixpath.basename(x) for x in hist if x}
+    # A name the repo has used before is not new: restores and byte-identical copies
+    # paired by -M keep their original names. "Before" means the history of <ref>, plus
+    # commits on other refs that HEAD does not contain (files brought back from another
+    # branch). Commits reachable from HEAD but not from <ref> are the change under check,
+    # so they never count: with plain --all, a newly committed bad name hid itself.
+    known = set()
+    for rev in ([ref], ["--all", "--not", "HEAD"]):
+        hist = subprocess.run(["git", "-C", top, "log", *rev, "--name-only", "--format=", "--no-renames"],
+                              capture_output=True, text=True).stdout.split("\n")
+        known |= {posixpath.basename(x) for x in hist if x}
     new = [f for f in new if posixpath.basename(f) not in known]
     v = []
     for f in new:
@@ -339,11 +346,12 @@ def since(store, ref):
     with tempfile.TemporaryDirectory() as tmp:
         arc = subprocess.run(["git", "-C", top, "archive", "--format=tar", ref, "--", prefix or "."],
                              capture_output=True).stdout
-        tf = tarfile.open(fileobj=io.BytesIO(arc))
-        try:
-            tf.extractall(tmp, filter="data")
-        except TypeError:
-            tf.extractall(tmp)
+        if arc:                                     # empty: the store did not exist at <ref>
+            tf = tarfile.open(fileobj=io.BytesIO(arc))
+            try:
+                tf.extractall(tmp, filter="data")
+            except TypeError:
+                tf.extractall(tmp)
         base = os.path.join(tmp, prefix) if prefix else tmp
         before = check(base) if os.path.isdir(base) else []
     after = check(store)
@@ -476,6 +484,8 @@ def main(a):
         v = since(store, a[2])
         if v is None:
             print("not a git repo"); return 2
+        if v == "bad-ref":
+            print(f"'{a[2]}' is not a commit in this repo"); return 2
     elif len(a) == 1:
         v = check(store)
     else:
