@@ -74,7 +74,7 @@ directories:
 Repositories whose root a tool owns (a Stow dotfiles tree, a plugin or
 skill collection) keep only the entry points. When the first knowledge
 file arrives, add `docs/knowledge/README.md`,
-`docs/knowledge/99-meta/README.md` and `docs/knowledge/99-meta/ORGANIZE.md`, and the knowledge block for
+`docs/knowledge/99-meta/99-meta.md` and `docs/knowledge/99-meta/ORGANIZE.md`, and the knowledge block for
 `AGENTS.md` from [references/knowledge-store.md](references/knowledge-store.md#adopting-the-standard).
 
 ## Rules
@@ -137,8 +137,9 @@ Common to every repository:
   document arrives.
 - **Lowercase, hyphenated names** for directories you create. Tool-required
   names (`SKILL.md`, `Dockerfile`, `ROOT`) keep their required form. In a
-  knowledge store every name follows its naming rule: a slug of the title,
-  no dates, IDs, or versions, and no rename after saving.
+  knowledge store every name follows its naming rule: a note is named by
+  its id, every other file by a slug of its title with no dates or
+  versions, and nothing is renamed after saving.
 
 Varies by profile or tool — decide from
 [references/profiles.md](references/profiles.md) and the tool's docs, not
@@ -159,9 +160,11 @@ Exit `0` means no errors, `1` errors, `2` could not check. It does not judge
 whether something is in the right home; that stays with the routine above.
 
 `scripts/check_knowledge_store.py <store>` checks a knowledge store: root
-folders, names, dead links, orphans, byte-identical copies, hub lists, and
-map links. `--path` checks one proposed name before saving; `--since
-<ref>` fails only on new faults, for CI. Details in
+folders, names (id-named notes, batch hubs, day logs), flat folders, dead
+links, orphans, byte-identical copies, hub lists, map links, research
+batch links, map shape, task front matter, and tags. `--path` checks one
+proposed name before saving; `--since <ref>` fails only on new faults, for
+CI; `--maps-write` puts maps in their template's shape. Details in
 [references/knowledge-store.md](references/knowledge-store.md#checks).
 
 ## When the answer is still unclear
