@@ -114,7 +114,8 @@ class NameTests(unittest.TestCase):
         self.assertTrue(self.faults("01-notes/01a-atomic/Joining-Network.md"))
 
     def test_role_file_capitals_pass(self) -> None:
-        self.assertEqual(self.faults("01-notes/01r-research/0107-graphs/SYNTHESIS.md"), [])
+        self.assertEqual(self.faults("99-meta/SPEC.md"), [])
+        self.assertEqual(self.faults("05-archive/old-batch/SYNTHESIS.md"), [])
 
     def test_date_in_name_fails(self) -> None:
         self.assertTrue(self.faults("01-notes/01a-atomic/plan-2026-11-03.md"))
@@ -128,9 +129,39 @@ class NameTests(unittest.TestCase):
     def test_catch_all_word_fails(self) -> None:
         self.assertTrue(self.faults("01-notes/01a-atomic/misc.md"))
 
-    def test_batch_number_allowed_only_in_research(self) -> None:
-        self.assertEqual(self.faults("01-notes/01r-research/0107-graphs", True), [])
+    def test_batch_number_allowed_only_on_batch_hubs(self) -> None:
+        # ORGANIZE 1.14 and 1.15: a batch is one hub note in 01rb-batches, never a numbered folder.
+        self.assertEqual(self.faults("01-notes/01r-research/01rb-batches/0107-graphs.md"), [])
+        self.assertTrue(self.faults("01-notes/01r-research/0107-graphs", True))
         self.assertTrue(self.faults("01-notes/01a-atomic/0107-graphs", True))
+        self.assertTrue(self.faults("01-notes/01r-research/01rb-batches/graphs.md"))
+
+    def test_research_holds_only_its_kind_folders(self) -> None:
+        for kind in ("01ra-atomic", "01rc-check", "01rd-deviations", "01re-evidence",
+                     "01rl-ledger", "01rp-protocol", "01rs-synthesis"):
+            self.assertEqual(self.faults(f"01-notes/01r-research/{kind}/2026110719250001.md"), [])
+            self.assertTrue(self.faults(f"01-notes/01r-research/{kind}/some-words.md"))
+        self.assertTrue(self.faults("01-notes/01r-research/graphs", True))
+        self.assertTrue(self.faults("01-notes/01r-research/01rx-misc/2026110719250001.md"))
+
+    def test_note_named_by_its_id(self) -> None:
+        # ORGANIZE 1.11: YYYYMMDDhhmmss## in Eastern time, counter 01-99.
+        self.assertEqual(self.faults("01-notes/01a-atomic/2026110719250001.md"), [])
+        self.assertTrue(self.faults("01-notes/01a-atomic/2026110719250000.md"))
+        self.assertTrue(self.faults("01-notes/01a-atomic/2026133119250001.md"))
+        self.assertTrue(self.faults("03-areas/2026110719250001.md"))
+        self.assertEqual(self.faults("01-notes/01m-meetings/meeting-2026110719250001.md"), [])
+        self.assertTrue(self.faults("01-notes/01a-atomic/meeting-2026110719250001.md"))
+
+    def test_day_log_is_named_by_its_date(self) -> None:
+        self.assertEqual(self.faults("01-notes/01d-daily/20261108.md"), [])
+        self.assertTrue(self.faults("01-notes/01a-atomic/20261108.md"))
+
+    def test_task_is_named_by_its_id(self) -> None:
+        # ORGANIZE 1.22: one note per task in 01-notes/01t-tasks.
+        self.assertEqual(self.faults("01-notes/01t-tasks/2026110723150001.md"), [])
+        self.assertEqual(self.faults("01-notes/01t-tasks/01t-tasks.md"), [])
+        self.assertTrue(self.faults("01-notes/01t-tasks/save-the-secret.md"))
 
     def test_lettered_folder_must_carry_parent_number(self) -> None:
         self.assertTrue(self.faults("01-notes/04p-pages", True))
@@ -150,7 +181,8 @@ class NameTests(unittest.TestCase):
 
     def test_captured_material_keeps_its_names(self) -> None:
         self.assertEqual(self.faults("04-resources/04r-repos/some-repo/Makefile"), [])
-        self.assertEqual(self.faults("01-notes/01r-research/graphs/sources/Paper_2024.pdf"), [])
+        self.assertEqual(self.faults("05-archive/old-export/sources/Paper_2024.pdf"), [])
+        self.assertEqual(self.faults("01-notes/01h-handbook/01hd-data/Raw_Export.JSON"), [])
 
 
 class LinkAndOrphanTests(StoreFixture):
@@ -169,20 +201,23 @@ class LinkAndOrphanTests(StoreFixture):
         self.write("01-notes/01a-atomic/lonely.md", "# Lonely\n")
         self.assertIn("orphans", self.checks())
 
-    def test_files_inside_a_linked_item_folder_are_reached(self) -> None:
-        self.write("01-notes/01a-atomic/joining-network.md", "")
-        (self.root / "01-notes/01a-atomic/joining-network.md").unlink()
-        self.write("01-notes/01a-atomic/joining-network/README.md", "# Joining\n")
-        self.write("01-notes/01a-atomic/joining-network/data/hosts.csv", "a,b\n")
+    def test_data_file_linked_from_its_note_is_reached(self) -> None:
+        # ORGANIZE 1.15 and 1.17: no item folders in 01-notes; a file that is not a note sits in a
+        # lettered sub-kind of its kind folder and is reached by the note that links it.
+        self.write("01-notes/01a-atomic/01ad-data/hosts.csv", "a,b\n")
+        self.write(
+            "01-notes/01a-atomic/joining-network.md",
+            CLEAN_STORE["01-notes/01a-atomic/joining-network.md"] + "\n[hosts](01ad-data/hosts.csv)\n",
+        )
         self.write(
             "01-notes/01a-atomic/README.md",
-            "# Atomic\n\n- [joining-network](joining-network/): how an agent joins the network\n",
-        )
-        self.write(
-            "03-areas/networking.md",
-            "# Networking\n\n- [Joining](../01-notes/01a-atomic/joining-network/): first step\n",
+            CLEAN_STORE["01-notes/01a-atomic/README.md"] + "- [01ad-data](01ad-data/hosts.csv): data files the notes cite\n",
         )
         self.assertEqual(self.faults(), [])
+
+    def test_item_folder_in_notes_fails(self) -> None:
+        self.write("01-notes/01a-atomic/joining-network/data/hosts.csv", "a,b\n")
+        self.assertIn("folders", self.checks())
 
 
 class TwinTests(StoreFixture):
@@ -234,13 +269,19 @@ class MapTests(StoreFixture):
         rows = [(c, p) for c, p, _ in self.faults() if c == "maps"]
         self.assertIn(("maps", "02-projects/move/"), rows)
 
-    def test_project_folder_has_no_readme(self) -> None:
+    def test_project_is_one_map_note_never_a_folder(self) -> None:
+        # ORGANIZE 1.6 and 1.8: a project's plans are notes of their kind, linked from its map note.
         self.write("02-projects/README.md", "# Projects\n\n- [move](move.md): moving the store\n")
         self.write("02-projects/move.md", "# Move\n\n- [plan](move/plan.md): the steps in order\n")
         self.write("02-projects/move/plan.md", "# Plan\n")
-        self.write("02-projects/move/README.md", "# Move\n")
         rows = [p for c, p, _ in self.faults() if c == "maps"]
-        self.assertIn("02-projects/move/README.md", rows)
+        self.assertIn("02-projects/move/", rows)
+
+    def test_day_log_is_mapped_by_its_hub(self) -> None:
+        self.write("01-notes/README.md", CLEAN_STORE["01-notes/README.md"] + "- [01d-daily](01d-daily/01d-daily.md): one log per day\n")
+        self.write("01-notes/01d-daily/01d-daily.md", "# Daily\n\n- [20261108](20261108.md): the work of one day\n")
+        self.write("01-notes/01d-daily/20261108.md", "# 2026-11-08\n")
+        self.assertEqual(self.faults(), [])
 
 
 class PathAndFindTests(StoreFixture):
@@ -257,6 +298,106 @@ class PathAndFindTests(StoreFixture):
     def test_find_returns_none_outside_a_store(self) -> None:
         with tempfile.TemporaryDirectory() as other:
             self.assertIsNone(cks.find_store(other))
+
+
+class FolderNoteHubTests(StoreFixture):
+    def test_folder_note_named_for_its_folder_is_the_hub(self) -> None:
+        # ORGANIZE 1.5: below the root a folder's note is <folder>/<folder>.md; README.md still counts.
+        (self.root / "01-notes/01a-atomic/README.md").unlink()
+        self.write("01-notes/01a-atomic/01a-atomic.md", CLEAN_STORE["01-notes/01a-atomic/README.md"])
+        self.write("01-notes/README.md", "# Notes\n\n- [01a-atomic](01a-atomic/01a-atomic.md): one idea per note\n")
+        self.assertEqual(self.faults(), [])
+
+
+RESEARCH_HUB = "01-notes/01r-research/01rb-batches/0001-demo.md"
+RESEARCH_NOTE = "01-notes/01r-research/01re-evidence/2026110719250001.md"
+
+
+class ResearchTests(unittest.TestCase):
+    def test_note_names_its_batch_and_the_hub_links_it(self) -> None:
+        files = {RESEARCH_NOTE, RESEARCH_HUB}
+        ok = {RESEARCH_NOTE: "---\nbatch: 0001-demo\n---\n# x\n"}
+        self.assertEqual(cks.research_faults(files, ok, {RESEARCH_HUB: [RESEARCH_NOTE]}), [])
+        self.assertEqual(len(cks.research_faults(files, ok, {})), 1)
+        self.assertEqual(len(cks.research_faults(files, {RESEARCH_NOTE: "# x\n"}, {RESEARCH_HUB: [RESEARCH_NOTE]})), 1)
+        bad = {RESEARCH_NOTE: "---\nbatch: 0009-none\n---\n"}
+        self.assertEqual(len(cks.research_faults(files, bad, {RESEARCH_HUB: [RESEARCH_NOTE]})), 1)
+
+
+TASK = "01-notes/01t-tasks/2026110723150001.md"
+TASK_TEXT = "---\ntype: task\nlabel: BL-0001\nstate: ready\n---\n# Save the secret\n"
+
+
+class TaskTests(unittest.TestCase):
+    def test_task_front_matter(self) -> None:
+        # ORGANIZE 1.22: type, label and state are fixed; the backlog is a state, not a folder.
+        self.assertEqual(cks.task_faults({TASK}, {TASK: TASK_TEXT}), [])
+        for broken in (TASK_TEXT.replace("type: task", "type: note"),
+                       TASK_TEXT.replace("BL-0001", "backlog one"),
+                       TASK_TEXT.replace("state: ready", "state: backlog")):
+            self.assertEqual(len(cks.task_faults({TASK}, {TASK: broken})), 1)
+
+    def test_task_hub_is_not_a_task(self) -> None:
+        hub = "01-notes/01t-tasks/01t-tasks.md"
+        self.assertEqual(cks.task_faults({hub}, {hub: "# Tasks\n"}), [])
+
+
+class TagTests(unittest.TestCase):
+    def test_body_tag_fails_and_code_or_numbers_do_not(self) -> None:
+        self.assertEqual([t for _, t in cks.body_tags("# Title\n\nsee #kubernetes here\n")], ["kubernetes"])
+        self.assertEqual(cks.body_tags("# Title\n\nissue #490 and `#code` and C#\n\n```\n#fenced\n```\n"), [])
+        self.assertEqual(cks.body_tags("---\ntags: [a]\n---\n# Heading\n"), [])
+
+    def test_body_tag_line_number_counts_front_matter(self) -> None:
+        self.assertEqual(cks.body_tags("---\ntitle: x\n---\n\n#tag\n"), [(5, "tag")])
+
+    def test_kind_and_month_tags(self) -> None:
+        # ORGANIZE 1.23: the kind words of the folder and the month MM-YYYY from created or the id.
+        note = "01-notes/01a-atomic/2026110719250001.md"
+        good = {note: "---\nid: 2026110719250001\ntags: [note, 11-2026, networking]\n---\n# x\n"}
+        self.assertEqual(cks.tag_faults(good), [])
+        self.assertEqual(len(cks.tag_faults({note: good[note].replace("note, ", "")})), 1)
+        self.assertEqual(len(cks.tag_faults({note: good[note].replace("11-2026, ", "")})), 1)
+        self.assertEqual(cks.tag_faults({note: "---\nid: 2026110719250001\n---\n# no tags line\n"}), [])
+        self.assertEqual(cks.tag_faults({"05-archive/x.md": "---\ntags: []\n---\n"}), [])
+
+
+AREA_TEMPLATE = """# Area map template
+
+Catch-all section: Purpose
+
+```markdown
+# <Area>
+
+## Purpose
+
+<why>
+
+<!-- map: start (written by org_check.py --maps-write) -->
+
+- [<Name>](<path>): <reason>
+
+<!-- map: end -->
+```
+"""
+
+
+class ShapeTests(StoreFixture):
+    def test_maps_write_puts_a_map_in_shape_and_the_check_passes(self) -> None:
+        # ORGANIZE 1.7: one template per map kind; the link block is written, not hand-sorted.
+        self.write("99-meta/templates/area-map.md", AREA_TEMPLATE)
+        self.write("99-meta/templates/templates.md", "# Templates\n\n- [area-map](area-map.md): the area map shape\n")
+        self.write("99-meta/README.md", CLEAN_STORE["99-meta/README.md"] + "- [templates](templates/area-map.md): map templates\n")
+        self.assertIn("shape", self.checks())
+        code, _ = self.run_main(str(self.root), "--maps-write")
+        self.assertEqual(code, 0)
+        text = (self.root / "03-areas/networking.md").read_text()
+        self.assertIn("## Purpose", text)
+        self.assertIn("## Atomic notes", text)
+        self.assertNotIn("shape", self.checks())
+
+    def test_store_without_templates_has_no_shape_check(self) -> None:
+        self.assertNotIn("shape", self.checks())
 
 
 class SinceTests(StoreFixture):

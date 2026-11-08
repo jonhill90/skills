@@ -491,7 +491,9 @@ class NoDanglingEvalReferenceTests(unittest.TestCase):
         paths = set(self.ROOT.glob("skills/**/SKILL.md"))
         paths |= set(self.ROOT.glob("skills/**/references/**/*"))
         paths |= set(self.ROOT.glob("skills/**/scripts/**/*"))
-        return sorted(path for path in paths if path.is_file())
+        # Compiled bytecode that test runs leave behind is not skill content, and its
+        # bytes can match the identifier pattern by chance.
+        return sorted(path for path in paths if path.is_file() and "__pycache__" not in path.parts)
 
     def test_no_hard_banned_eval_identifiers(self) -> None:
         offenders: list[str] = []
