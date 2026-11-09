@@ -41,8 +41,9 @@ What is checked (references/knowledge-store.md, "Checks"):
            that batch's hub 01rb-batches/NNNN-<name>.md links it
   shape    an area or project map is in the shape --maps-write writes from its template in
            99-meta/templates/ (skipped when the store has no such template)
-  tasks    a task note in 01-notes/01t-tasks has `type: task`, a `label` like BL-0001 and a `state`
-           from TASK_STATES
+  tasks    a task note in 01-notes/01t-tasks has `type: task`, a `label` TASK-NNNN, an `external-refs`
+           list and a `state` from TASK_STATES (ORGANIZE 1.26)
+  handbook a note directly in 01-notes/01h-handbook has `handbook-kind:` from HANDBOOK_KINDS (ORGANIZE 1.27)
   tags     no body text holds a #tag (tags live in front matter only); a note whose front matter has a
            one-line `tags: [...]` list carries its folder's kind words and its month tag MM-YYYY
 Captured material keeps its original names and is skipped by names, links and twins:
@@ -105,7 +106,11 @@ BATCH_HUBS = "01rb-batches"
 # ORGANIZE 1.22: task management is its own kind. A task never moves when its state changes; the backlog is a state.
 TASKS = "01t-tasks"
 TASK_STATES = ("jon", "doing", "ready", "blocked", "idea", "parked", "done")   # `jon`: waiting on the owner
-TASK_LABEL = re.compile(r"^[A-Z]{1,4}-\d{4}$")                                # BL-0001, D-0020
+TASK_LABEL = re.compile(r"^TASK-\d{4,}$")                                      # ORGANIZE 1.26: TASK-0001
+TASK_REF = re.compile(r"^[a-z][a-z0-9-]*:\S+$")                                 # github:owner/repo#12, linear:TEAM-3
+# ORGANIZE 1.27: the handbook is reference only; each of its notes names its kind.
+HANDBOOK = "01h-handbook"
+HANDBOOK_KINDS = ("vocabulary", "policy", "profile", "catalogue", "how-we-work", "reference")
 RESEARCH_FOLDERS = RESEARCH_KINDS + (BATCH_HUBS,)
 BATCH_HUB_FILE = re.compile(r"^(\d{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
 ID_EXT = re.compile(r"^[a-z0-9]+(?:\.[a-z0-9]+)*$")      # ORGANIZE 1.15: the extension of an id-named file is kept
@@ -444,6 +449,8 @@ def check(store, only=None):
             continue
         if p[:2] == ["01-notes", "01d-daily"]:
             continue                                # ORGANIZE 1.9: day logs are mapped by their hub, 01d-daily.md
+        if p[:2] == ["04-resources", "04r-repos"]:
+            continue                                # ORGANIZE 1.24: a repo note is covered by the notes that cite it
         items.add("/".join(p[:3]))
     # ORGANIZE 1.13: pages and resources sit flat in their lettered folder. A flat note is covered when a mapped note
     # of the same lettered folder links it (a resource note links its clippings; a page links its notes), and a
@@ -464,11 +471,12 @@ def check(store, only=None):
         p = parts(d)
         if len(p) == 2 and p[0] == "02-projects":
             v.append(("maps", d + "/", f"a project is one map note, 02-projects/{p[1]}.md, with links only; "
-                                       "its plans are notes of their kind, such as 01-notes/01h-handbook/ (ORGANIZE 1.8)"))
+                                       "its plan is task notes in 01-notes/01t-tasks/ with plan-order (ORGANIZE 1.8, 1.27)"))
     v += hubs(store)
     v += map_faults(store)
     v += research_faults(fileset, texts, edges)
     v += task_faults(fileset, texts)
+    v += handbook_faults(fileset, texts)
     v += tag_faults(texts)
     if only is not None:
         only = {o.rstrip("/") for o in only}
@@ -517,9 +525,17 @@ def front_matter(text):
     return out
 
 
+def flow_list(raw):
+    """The items of a one-line `[a, "b"]` front matter list, or None when the value is not such a list."""
+    raw = raw.strip()
+    if not (raw.startswith("[") and raw.endswith("]")):
+        return None
+    return [x.strip().strip("\"'") for x in raw[1:-1].split(",") if x.strip()]
+
+
 def task_faults(fileset, texts):
-    """ORGANIZE 1.22: each task note carries the same front matter: type, label and state (plus waits-on, owner,
-    horizon and source, which are free text and not checked)."""
+    """ORGANIZE 1.22 and 1.26: each task note carries the same front matter: type, label TASK-NNNN, external-refs
+    and state (plus waits-on, owner, horizon, source and plan fields, which are free text and not checked)."""
     v = []
     for f in sorted(fileset):
         p = parts(f)
@@ -529,16 +545,42 @@ def task_faults(fileset, texts):
         if fm.get("type") != "task":
             v.append(("tasks", f, "front matter needs `type: task` (ORGANIZE 1.22)"))
         if not TASK_LABEL.match(fm.get("label", "")):
-            v.append(("tasks", f, "front matter needs `label: BL-NNNN` (ORGANIZE 1.22)"))
+            v.append(("tasks", f, "front matter needs `label: TASK-NNNN` (ORGANIZE 1.26)"))
+        refs = flow_list(fm.get("external-refs", "")) if "external-refs" in fm else None
+        if refs is None:
+            v.append(("tasks", f, "front matter needs `external-refs: []`, or the task's keys in other trackers "
+                                  "as `<system>:<key>` strings (ORGANIZE 1.26)"))
+        else:
+            for r in refs:
+                if not TASK_REF.match(r):
+                    v.append(("tasks", f, f"external-refs entry `{r}` is not `<system>:<key>`, such as "
+                                          "github:owner/repo#12 (ORGANIZE 1.26)"))
         if fm.get("state") not in TASK_STATES:
             v.append(("tasks", f, f"front matter `state` must be one of {', '.join(TASK_STATES)} (ORGANIZE 1.22)"))
+    return v
+
+
+def handbook_faults(fileset, texts):
+    """ORGANIZE 1.27: a note in 01-notes/01h-handbook/ names its reference kind in `handbook-kind:`. A note that fits
+    none of the kinds is not a handbook page: a plan is task notes, a dashboard goes in 00-inbox/00d-dashboards/, a
+    dated record goes in 05-archive/. Sub-kind folders (01hr-runbooks) and the hub are not checked."""
+    v = []
+    for f in sorted(fileset):
+        p = parts(f)
+        if len(p) != 3 or p[:2] != ["01-notes", HANDBOOK] or not f.endswith(".md") or p[2] == HANDBOOK + ".md":
+            continue
+        k = front_matter(texts.get(f, "")).get("handbook-kind", "")
+        if k not in HANDBOOK_KINDS:
+            v.append(("handbook", f, (f"`handbook-kind: {k}` is not one of " if k else
+                                      "front matter has no `handbook-kind:`; it must be one of ")
+                      + ", ".join(HANDBOOK_KINDS) + ". A note that fits none is not a handbook page (ORGANIZE 1.27)"))
     return v
 
 
 # ORGANIZE 1.23: kind words a note's tags carry, by the folder it sits in (the longest matching folder wins).
 KIND_TAGS = {
     "00-inbox": ["inbox"], "00-inbox/00t-thoughts": ["thought"], "00-inbox/00c-clippings": ["inbox", "clippings"],
-    "00-inbox/00e-excalidraw": ["inbox", "drawing"],
+    "00-inbox/00e-excalidraw": ["inbox", "drawing"], "00-inbox/00d-dashboards": ["inbox", "dashboard"],
     "01-notes": ["note"], "01-notes/01a-atomic": ["note"], "01-notes/01r-research": ["note", "research"],
     "01-notes/01m-meetings": ["meeting"], "01-notes/01h-handbook": ["note", "handbook"],
     "01-notes/01h-handbook/01hr-runbooks": ["note", "runbook"], "01-notes/01s-samples": ["note", "sample"],
@@ -665,7 +707,7 @@ def since(store, ref):
             base = os.path.join(tmp, prefix) if prefix else tmp
             before = check(base) if os.path.isdir(base) else []
     after = check(store)
-    for c in ("root", "links", "orphans", "twins", "hubs", "maps", "shape", "research", "folders", "tasks", "tags"):
+    for c in ("root", "links", "orphans", "twins", "hubs", "maps", "shape", "research", "folders", "tasks", "handbook", "tags"):
         nb = sum(1 for x in before if x[0] == c)
         na = [x for x in after if x[0] == c]
         if len(na) > nb:

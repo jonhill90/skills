@@ -284,6 +284,15 @@ class MapTests(StoreFixture):
         self.assertEqual(self.faults(), [])
 
 
+    def test_repo_note_is_covered_by_the_notes_that_cite_it(self) -> None:
+        # ORGANIZE 1.24: 04r-repos holds one link note per repository, made by a script; no map lists it.
+        self.write("README.md", CLEAN_STORE["README.md"] + "- [04-resources](04-resources/04-resources.md): made by others\n")
+        self.write("04-resources/04-resources.md", "# Resources\n\n- [04r-repos](04r-repos/04r-repos.md): one note per repository\n")
+        self.write("04-resources/04r-repos/04r-repos.md", "# Repos\n\n- [owner/tool](owner-tool.md): a tool our notes cite\n")
+        self.write("04-resources/04r-repos/owner-tool.md", "---\nurl: https://github.com/owner/tool\n---\n# owner/tool\n")
+        self.assertEqual([f for f in self.faults() if f[0] == "maps"], [])
+
+
 class PathAndFindTests(StoreFixture):
     def test_path_mode_checks_a_proposed_name(self) -> None:
         self.assertEqual(self.run_main(str(self.root), "--path", "01-notes/01a-atomic/good-name.md")[0], 0)
@@ -325,7 +334,7 @@ class ResearchTests(unittest.TestCase):
 
 
 TASK = "01-notes/01t-tasks/2026110723150001.md"
-TASK_TEXT = "---\ntype: task\nlabel: BL-0001\nstate: ready\n---\n# Save the secret\n"
+TASK_TEXT = "---\ntype: task\nlabel: TASK-0001\nexternal-refs: []\nstate: ready\n---\n# Save the secret\n"
 
 
 class TaskTests(unittest.TestCase):
@@ -333,13 +342,40 @@ class TaskTests(unittest.TestCase):
         # ORGANIZE 1.22: type, label and state are fixed; the backlog is a state, not a folder.
         self.assertEqual(cks.task_faults({TASK}, {TASK: TASK_TEXT}), [])
         for broken in (TASK_TEXT.replace("type: task", "type: note"),
-                       TASK_TEXT.replace("BL-0001", "backlog one"),
+                       TASK_TEXT.replace("TASK-0001", "backlog one"),
+                       TASK_TEXT.replace("TASK-0001", "BL-0001"),
+                       TASK_TEXT.replace("external-refs: []\n", ""),
+                       TASK_TEXT.replace("external-refs: []", "external-refs: [owner/repo#12]"),
                        TASK_TEXT.replace("state: ready", "state: backlog")):
             self.assertEqual(len(cks.task_faults({TASK}, {TASK: broken})), 1)
+
+    def test_external_refs_name_their_tracker(self) -> None:
+        # ORGANIZE 1.26: the same task's keys in other trackers, as <system>:<key> strings.
+        text = TASK_TEXT.replace("external-refs: []",
+                                 'external-refs: ["github:owner/repo#12", linear:TEAM-3]')
+        self.assertEqual(cks.task_faults({TASK}, {TASK: text}), [])
 
     def test_task_hub_is_not_a_task(self) -> None:
         hub = "01-notes/01t-tasks/01t-tasks.md"
         self.assertEqual(cks.task_faults({hub}, {hub: "# Tasks\n"}), [])
+
+
+HANDBOOK = "01-notes/01h-handbook/2026110723150002.md"
+
+
+class HandbookTests(unittest.TestCase):
+    def test_handbook_note_names_its_kind(self) -> None:
+        # ORGANIZE 1.27: the handbook is reference only; the kind is a field, not a guess from the title.
+        ok = "---\nhandbook-kind: vocabulary\n---\n# Words\n"
+        self.assertEqual(cks.handbook_faults({HANDBOOK}, {HANDBOOK: ok}), [])
+        for broken in ("---\ntitle: Plan\n---\n# Plan\n", "---\nhandbook-kind: plan\n---\n# Plan\n"):
+            self.assertEqual(len(cks.handbook_faults({HANDBOOK}, {HANDBOOK: broken})), 1)
+
+    def test_hub_and_runbooks_are_not_checked(self) -> None:
+        hub = "01-notes/01h-handbook/01h-handbook.md"
+        runbook = "01-notes/01h-handbook/01hr-runbooks/2026110723150003.md"
+        texts = {hub: "# Handbook\n", runbook: "---\ntitle: Steps\n---\n"}
+        self.assertEqual(cks.handbook_faults(set(texts), texts), [])
 
 
 class TagTests(unittest.TestCase):

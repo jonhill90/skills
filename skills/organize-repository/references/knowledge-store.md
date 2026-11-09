@@ -46,12 +46,13 @@ a folder name never answers yes to both sides of the question above.
 ├── README.md          hub: a written map of the top folders
 ├── 00-inbox/          not sorted yet
 │   ├── 00c-clippings/   raw web captures not yet processed
+│   ├── 00d-dashboards/  live dashboard pages and boards still being iterated on
 │   ├── 00e-excalidraw/  drawings not yet sorted
 │   └── 00t-thoughts/    quick ideas and to-dos
 ├── 01-notes/          we wrote it
 │   ├── 01a-atomic/      a note on one idea
 │   ├── 01d-daily/       a log of one day's work, named YYYYMMDD.md
-│   ├── 01h-handbook/    pages kept current that hold many ideas: vocabularies, policies, profiles
+│   ├── 01h-handbook/    reference pages kept current, each with a handbook-kind: vocabulary, policy, catalogue
 │   │   └── 01hr-runbooks/  steps for a person or an agent to do one thing
 │   ├── 01i-incidents/   one problem: what broke, the root cause, the fix
 │   ├── 01m-meetings/    one meeting: attendees, agenda, notes, next steps
@@ -70,11 +71,11 @@ a folder name never answers yes to both sides of the question above.
 ├── 02-projects/       work that will end: one map note per project, <project>.md, links only
 ├── 03-areas/          subjects that never end: one map-of-content note per area, <area>.md
 ├── 04-resources/      someone else made it; kept to reference
-│   ├── 04c-clippings/   clippings of web pages and documents
-│   ├── 04d-documents/   resource notes for papers and documents; the file is kept locally
+│   ├── 04c-clippings/   web pages: one link note each, no copied text
+│   ├── 04d-documents/   papers and documents: one link note each, the file not kept
 │   ├── 04h-harness/     agent harness material: 04hp-prompts/ for chat thread exports
 │   ├── 04l-learning/    courses and curricula
-│   ├── 04r-repos/       clippings of repository READMEs and docs, and links to the repositories
+│   ├── 04r-repos/       one link note per repository our notes cite, owner-repo.md, made by a script
 │   └── 04v-video/       videos and their transcripts
 ├── 05-archive/        arrived finished, kept as it was
 └── 99-meta/           how this store works: ORGANIZE.md, tools, templates, setup
@@ -118,13 +119,13 @@ flowchart TD
   Q1 -->|"no"| Q2{"2. Does it arrive already finished, kept only as a record?"}
   Q2 -->|"yes"| AR["05-archive/"]
   Q2 -->|"no"| Q3{"3. Did someone else make it?"}
-  Q3 -->|"yes"| RS["04-resources/: one note per doc; 04c clippings, 04d documents, 04r repos, 04l courses, 04v videos, 04h harness"]
+  Q3 -->|"yes"| RS["04-resources/: one link note per thing, never a copy; 04r repos, 04d documents, 04c pages, 04l courses, 04v videos, 04h harness"]
   Q3 -->|"no"| Q4{"4. Is it the plan, status or log of work that will end?"}
-  Q4 -->|"yes"| PR["a note of its kind (01h kept current, 01a one idea), linked from 02-projects/project.md"]
+  Q4 -->|"yes"| PR["plan: task notes with plan-order; dashboard: 00-inbox/00d-dashboards; else a note of its kind, linked from 02-projects/project.md"]
   Q4 -->|"no"| Q5{"5. Is it the hub page of a subject that never ends?"}
   Q5 -->|"yes"| AA["03-areas/area.md, one map note"]
   Q5 -->|"no"| Q6{"6. Did we write it and know what it is?"}
-  Q6 -->|"yes"| NO["01-notes/: 01r research batch, 01s sample, 01d day log, 01m meeting, 01w work session, 01i incident, 01t task, 01hr runbook, 01h kept-current page, else 01a one idea"]
+  Q6 -->|"yes"| NO["01-notes/: 01r research batch, 01s sample, 01d day log, 01m meeting, 01w work session, 01i incident, 01t task, 01hr runbook, 01h reference page, else 01a one idea"]
   Q6 -->|"no"| IN["00-inbox/, sorted later by this same wizard"]
 ```
 
@@ -132,11 +133,11 @@ flowchart TD
 |---|---|---|---|
 | 0 | Is there already an item on this subject? Read the hub lists from `README.md` down and search the names and titles. | Join it: edit that note, or link to it. | A copy of an item is never a new item. |
 | 1 | Is it about how this store works: its rules, checks, tools, templates, or setup? | `99-meta/` | A page on how we work in general (a vocabulary, tool choice, review rules) is a handbook page (step 6). |
-| 2 | Does it arrive already finished or replaced, kept only as a record (an old snapshot, a finished review)? | `05-archive/`, unchanged | An item already saved that later finishes **stays where it is** with `status: replaced` in its front matter, so links keep working. Only something retired as a whole record goes to the archive. |
-| 3 | Did someone else make it? | `04-resources/<kind>/`, flat: one Markdown clipping per doc and one resource note `<resource>.md` per resource that links its clippings. `04c-clippings/` for a web page or document clipping, `04d-documents/` for the resource note of a paper or document, `04r-repos/` for a repository's README or docs, `04l-learning/` for a course, `04v-video/` for a video, `04h-harness/04hp-prompts/` for agent chat exports | A clipping is the doc's text as Markdown with `source:` (its URL) in front matter. Only the Markdown is in git: a PDF, video, repository copy or raw page it points to is kept locally under `.cache/` and ignored. A scraped dump of other people's material is not kept in git either: a resource note records its source, how to pull it again, the date, and each file's size and sha256. Our notes about a resource are not a resource: they go to step 6 and link to it. |
-| 4 | Is it the plan, status, or log of one piece of work that will end? | A note of the kind it is, linked from the project's map note `02-projects/<project>.md`: a page kept current (plan, status page, runbook) in `01-notes/01h-handbook/`, a note on one idea in `01-notes/01a-atomic/`, a review kept only as a record in `05-archive/` | A project is one map note with links only, like an area; it never has a folder, and there is no plans folder. |
+| 2 | Does it arrive already finished or replaced, kept only as a record (an old snapshot, a finished review)? | `05-archive/<project or subject>/`, unchanged, the folder named by a word already in this standard, with a README that lists every file | An item already saved that later finishes **stays where it is** with `status: replaced` in its front matter, so links keep working. Only something retired as a whole record goes to the archive. |
+| 3 | Did someone else make it? | `04-resources/<kind>/`, flat, one **link note** per thing and never a copy of its text: `04r-repos/` one note per repository our notes cite, `<owner>-<repo>.md`, made and removed by a script from the repositories the notes cite; `04d-documents/` a paper or document; `04c-clippings/` a web page; `04l-learning/` a course; `04v-video/` a video; `04h-harness/04hp-prompts/` agent chat exports | A link note holds `id`, `title`, `description` and `url` in front matter, and the list of notes that cite it; nothing else. The text, PDF, video or repository it points to is not kept in git: read it at its URL, or keep a local copy under `.cache/`, which git ignores. A note that cites a repository carries a `repos:` front matter list naming its repo notes, written by the same script. Our notes about a resource are not a resource: they go to step 6 and link to it. |
+| 4 | Is it the plan, status, or log of one piece of work that will end? | A plan is task notes, not a page: one note per step in `01-notes/01t-tasks/` with `plan-order` (see [Tasks](#tasks)). A status picture or dashboard is a page in `00-inbox/00d-dashboards/`, drawn from the notes' fields. Anything else is a note of the kind it is, linked from the project's map note `02-projects/<project>.md`: a runbook or reference page in `01-notes/01h-handbook/`, a note on one idea in `01-notes/01a-atomic/`, a review, audit or dated snapshot kept only as a record in `05-archive/` | A project is one map note with links only, like an area; it never has a folder, and there is no plans folder. A plan or dashboard never goes in the handbook. |
 | 5 | Is it the hub page of a subject that never ends? | `03-areas/<area>.md`, one map note, no folder | The map is a list of links, each with a reason. Everything it links lives elsewhere. A living page about the area (a catalogue, a status page) is a handbook note the map links. |
-| 6 | Did we write it, and do we know what it is? | `01-notes/`: `01r-research/` for a registered research batch (see below), `01s-samples/` for example code, `01d-daily/` for one day's log, `01m-meetings/` for one meeting, `01w-worklogs/` for one work session on one subject, `01i-incidents/` for one problem and its fix, `01t-tasks/` for one task, `01h-handbook/01hr-runbooks/` for steps to do one thing, `01h-handbook/` for a page kept current that holds many ideas, otherwise `01a-atomic/` | Research is a question answered from sources, saved as a numbered batch. A plan or review for one project is step 4, even when it cites sources. An option comparison is research; a how-to is a runbook. A worklog covers one session; the day log covers the whole day and links to it. A note on one idea is atomic even when edited later. |
+| 6 | Did we write it, and do we know what it is? | `01-notes/`: `01r-research/` for a registered research batch (see below), `01s-samples/` for example code, `01d-daily/` for one day's log, `01m-meetings/` for one meeting, `01w-worklogs/` for one work session on one subject, `01i-incidents/` for one problem and its fix, `01t-tasks/` for one task, `01h-handbook/01hr-runbooks/` for steps to do one thing, `01h-handbook/` for a reference page kept current that holds many ideas, with `handbook-kind:` set to `vocabulary`, `policy`, `profile`, `catalogue`, `how-we-work` or `reference` (a note that fits none of them is not a handbook note), otherwise `01a-atomic/` | Research is a question answered from sources, saved as a numbered batch. A plan or review for one project is step 4, even when it cites sources. An option comparison is research; a how-to is a runbook. A worklog covers one session; the day log covers the whole day and links to it. A note on one idea is atomic even when edited later. |
 | - | None of the above | `00-inbox/` | Sorted later with this same wizard. |
 
 **Tie rule:** if two answers still fit, pick the one a stranger would look
@@ -167,13 +168,16 @@ same front matter:
 ---
 id: 2026110723150001
 type: task
-title: "BL-0001: Save the network secret so agents can reach the server"
-label: BL-0001
+title: "TASK-0001: Save the network secret so agents can reach the server"
+label: TASK-0001
+external-refs: []     # the same task's keys in other trackers: ["github:owner/repo#12", "linear:TEAM-3"]
 state: ready          # jon | doing | ready | blocked | idea | parked | done
 waits-on: []
 owner: "<who does it>"
 horizon: "Now"
 source: "<where the task came from>"
+plan-order: 40        # optional: its place in the plan, lower first
+jon-action: ""        # optional: the one thing the owner must do; set only when no agent can
 tags: [task, 11-2026]
 ---
 ```
@@ -181,7 +185,15 @@ tags: [task, 11-2026]
 `jon` means waiting on the store's owner. The backlog is a state, not a
 folder: a task never moves when its state changes, so its links keep
 working, and the hub `01t-tasks.md` lists every task by state. A new task
-takes the next free label.
+takes the next free `TASK-NNNN` label. A task synced in from another
+tracker takes the next free label too, and its source key goes in
+`external-refs`, never in `label`.
+
+The plan is fields on tasks, not a page. A task is on the plan when it
+has `plan-order`; `waits-on` gives the arrows and `state` the colour. A
+dashboard in `00-inbox/00d-dashboards/` draws the plan from those fields,
+so the plan changes only when a task's front matter changes, and no page
+holds a copy of it. A step that is not a task yet gets a task note first.
 
 ## Item shape
 
@@ -285,7 +297,7 @@ are complete.
   area or project map. A hub link does not count: a map link says why the
   item matters to that subject. Three things are covered another way: a
   day log by its hub `01d-daily.md`, a research note by its batch hub, and
-  a clipping by the resource note that links it.
+  a repo note in `04r-repos/` by the notes that cite it.
 - Hubs and maps are written by hand (or by `--maps-write` from hand-written
   link lines); the checks keep them complete. Hand lists without a check
   go stale, and generated lists lose the reason each link exists.
@@ -306,10 +318,11 @@ standard library.
 | orphans | no chain of links from `README.md` reaches a file |
 | twins | two written Markdown notes have the same bytes |
 | hubs | a hub note does not link one of its children, or a link line has no description |
-| maps | a note in `01-notes/` or `04-resources/` has no area or project map linking it; `02-projects/` holds a folder |
+| maps | a note in `01-notes/` or `04-resources/` has no area or project map linking it (a repo note in `04r-repos/` is exempt); `02-projects/` holds a folder |
 | research | a note in a research kind folder has no `batch: NNNN-<name>`, names no batch hub, or its batch hub does not link it |
 | shape | an area or project map is not in the shape `--maps-write` writes from its template (only when the store has templates) |
-| tasks | a task note lacks `type: task`, a `label` like `BL-0001`, or a `state` from the list above |
+| tasks | a task note lacks `type: task`, a `label` `TASK-NNNN`, an `external-refs` list of `<system>:<key>` strings (`[]` when none), or a `state` from the list above |
+| handbook | a note directly in `01-notes/01h-handbook/` (not its hub or `01hr-runbooks/`) has no `handbook-kind:` from the list in step 6 |
 | tags | body text holds a `#tag`, or a note's one-line `tags` list lacks its folder's kind words or its month (area and topic lists belong to each store, so their checks are the store's own) |
 
 - Captured material keeps its original names and is skipped by the names,
