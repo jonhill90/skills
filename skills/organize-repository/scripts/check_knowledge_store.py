@@ -202,6 +202,8 @@ def name_faults(rel, is_dir=False):
         stem, ext = (seg, "") if dir_seg else (seg.split(".", 1) + [""])[:2]
         if stem in ROLE_FILES:
             continue
+        if i == 2 and last and not is_dir and p[:2] == ["04-resources", "04r-repos"] and ext == "md" and KEBAB.match(stem):
+            continue                                # ORGANIZE 1.24: a repo note is named by its repository, <owner>-<repo>
         if i == 3 and last and not is_dir and p[:2] == ["01-notes", "01r-research"] and p[2] == BATCH_HUBS:
             hm = BATCH_HUB_FILE.match(seg)              # ORGANIZE 1.14: a batch hub is NNNN-<name>.md, a word name
             if seg == BATCH_HUBS + ".md":

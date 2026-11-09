@@ -163,6 +163,13 @@ class NameTests(unittest.TestCase):
         self.assertEqual(self.faults("01-notes/01t-tasks/01t-tasks.md"), [])
         self.assertTrue(self.faults("01-notes/01t-tasks/save-the-secret.md"))
 
+    def test_repo_note_is_named_by_its_repository(self) -> None:
+        # ORGANIZE 1.24: a script names a repo note <owner>-<repo>.md, digits and version words included.
+        self.assertEqual(self.faults("04-resources/04r-repos/owner-tool-v2.md"), [])
+        self.assertEqual(self.faults("04-resources/04r-repos/fedia-2211-notes.md"), [])
+        self.assertTrue(self.faults("04-resources/04r-repos/Owner_Tool.md"))
+        self.assertTrue(self.faults("04-resources/04c-clippings/page-v2.md"))
+
     def test_lettered_folder_must_carry_parent_number(self) -> None:
         self.assertTrue(self.faults("01-notes/04p-pages", True))
         self.assertTrue(self.faults("01-notes/atomic", True))
