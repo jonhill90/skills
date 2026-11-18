@@ -76,6 +76,7 @@ def nonnote(lettered, seg):
 
 
 NONNOTE_SEG = re.compile(r"^\d\d[a-z]{1,3}(?:d-data|s-scripts|i-images|p-pages)$")   # any 1.17/1.18 folder
+ASSETS = "04a-assets"   # ORGANIZE 1.36: the files we made that notes in 01-notes cite, in 04ad-data, 04ai-images, 04ap-pages, 04as-scripts
 NONNOTE_DATA = re.compile(r"^\d\d[a-z]{1,3}(?:d-data|p-pages)$")   # data and pages keep their names, like data/
 #    # ORGANIZE 1.16: the files we made that are not notes, beside the notes that cite them
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -147,6 +148,8 @@ def captured(rel):
         return False
     if any(x in CAPTURED_DIRS or NONNOTE_DATA.match(x) for x in p[:-1]):
         return True
+    if p[:2] == ["04-resources", ASSETS]:
+        return False                              # ORGANIZE 1.36: its scripts and images are checked like those in 01-notes
     if p[0] in ("04-resources", "05-archive"):
         return len(p) > ITEM_DEPTH[p[0]]          # below the item folder itself
     return False
@@ -221,7 +224,7 @@ def name_faults(rel, is_dir=False):
             if not NOTE_ID.match(stem):                 # ORGANIZE 1.22: one note per task, named by its id
                 out.append(("names", f"'{seg}': a task is one note named by its id (<id>.md), and the folder's hub is {TASKS}.md"))
             continue
-        if not dir_seg and ext != "md" and ID_EXT.match(ext) and NOTE_ID.match(stem) and p[0] == "01-notes" and i >= 2 and last:
+        if not dir_seg and ext != "md" and ID_EXT.match(ext) and NOTE_ID.match(stem) and (p[0] == "01-notes" or p[:2] == ["04-resources", ASSETS]) and i >= 2 and last:
             continue                                # ORGANIZE 1.15: a data, script or drawing file we made is <id>.<ext>, flat beside its note
         if not dir_seg and ext == "md" and p[0] in ("01-notes", "04-resources") and i >= 3 - (p[1] != "01r-research") and last:
             mm = MEETING_ID.match(stem)
@@ -270,16 +273,31 @@ def folder_faults(d):
         return []
     if p[0] in ("02-projects", "03-areas"):
         return []                                   # already reported by the names check
-    if len(p) == 3 and p[0] == "01-notes" and subkind(p[1], p[2]):
-        return []
+    if len(p) == 3 and p[0] == "01-notes" and subkind(p[1], p[2]) and not nonnote(p[1], p[2]):
+        return []                                   # ORGANIZE 1.10; a data, image, page or script folder (1.17) no longer sits here (1.36)
     if p == ["04-resources", "04h-harness", "04hp-prompts"]:
         return []                                   # ORGANIZE 1.21: the one 04 sub-kind folder
-    if (p[0] == "01-notes" or p[:2] == ["04-resources", "04h-harness"]) and len(p) == 3 and nonnote(p[1], p[2]):   # 04h: ORGANIZE 1.21
-        return []                                   # ORGANIZE 1.16: 01-notes/<kind>/scripts|data|drawings
-    if p[0] == "01-notes" and len(p) == 4 and nonnote(p[2], p[3]) and subkind(p[1], p[2]):
-        return []                                   # ORGANIZE 1.16: 01-notes/<kind>/<sub-kind>/scripts|data|drawings
-    return ["inside 01-notes, 04-resources and 00-inbox the only folders are the lettered kind folders, "
-            "their sub-kind folders, and in 01-notes their scripts/, data/ and drawings/ (ORGANIZE 1.16)"]
+    if p[:2] in (["04-resources", "04h-harness"], ["04-resources", ASSETS]) and len(p) == 3 and nonnote(p[1], p[2]):   # 04h: ORGANIZE 1.21; 04a: 1.36
+        return []                                   # ORGANIZE 1.36: 04-resources/04a-assets/04ad-data|04ai-images|04ap-pages|04as-scripts
+    return ["inside 01-notes, 04-resources and 00-inbox the only folders are the lettered kind folders and "
+            "their sub-kind folders; the files we made sit in the four sub-kind folders of 04a-assets (ORGANIZE 1.36)"]
+
+
+def is_asset_file(rel):
+    """ORGANIZE 1.36: a file in a sub-kind folder of 04a-assets is a file we made, not a note, whatever its extension."""
+    p = parts(rel)
+    return len(p) >= 4 and p[:2] == ["04-resources", ASSETS]
+
+
+def asset_file_faults(rel):
+    """ORGANIZE 1.36: 04a-assets holds the files we made inside its sub-kind folders and no notes. Directly in the
+    kind folder only its hub, 04a-assets.md, may sit. rel is a store-relative file path."""
+    p = parts(rel)
+    if len(p) == 3 and p[:2] == ["04-resources", ASSETS] and p[2] != ASSETS + ".md":
+        return [f"'{p[2]}' sits directly in {ASSETS}, which holds files we made only in its sub-kind folders "
+                f"(04ad-data, 04ai-images, 04ap-pages, 04as-scripts) and its hub {ASSETS}.md; a note goes in 01-notes/ (ORGANIZE 1.36)"]
+    return []
+
 
 def walk(store):
     files, dirs = [], []
@@ -344,6 +362,8 @@ def check(store, only=None):
     # folders; 00-inbox, 02-projects and 03-areas hold no folders below their lettered ones.
     for d in dirs:
         v += [("folders", d + "/", w) for w in folder_faults(d)]
+    for f in files:
+        v += [("folders", f, w) for w in asset_file_faults(f)]
     # two paths that differ only by letter case are one file on macOS and Windows disks, anywhere
     by_low = {}
     for x in files + [d + "/" for d in dirs]:
@@ -436,6 +456,8 @@ def check(store, only=None):
             continue                                # a lettered folder's hub, not an item
         if p[0] == "01-notes" and (NONNOTE_SEG.match(p[2]) or (len(p) >= 5 and NONNOTE_SEG.match(p[3]))):
             continue                                # ORGANIZE 1.16: a script, data file or drawing is covered by the notes that cite it
+        if p[:2] == ["04-resources", ASSETS] and len(p) >= 4 and NONNOTE_SEG.match(p[2]):
+            continue                                # ORGANIZE 1.36: a file we made is covered by the notes that cite it, as in 01-notes
         if len(p) >= 4 and p[:2] == ["01-notes", "01r-research"] and p[2] in RESEARCH_KINDS:
             continue                                # ORGANIZE 1.12: a research note is covered by its batch hub (checked below)
         if len(p) >= 4 and p[:3] == ["01-notes", "01r-research", BATCH_HUBS]:
@@ -479,6 +501,7 @@ def check(store, only=None):
     v += research_faults(fileset, texts, edges)
     v += task_faults(fileset, texts)
     v += handbook_faults(fileset, texts)
+    v += project_faults(fileset, texts)
     v += tag_faults(texts)
     if only is not None:
         only = {o.rstrip("/") for o in only}
@@ -487,6 +510,38 @@ def check(store, only=None):
 
 
 BATCH_FM = re.compile(r"^batch:[ \t]*(\S+)[ \t]*$", re.M)
+
+
+TYPE_FM = re.compile(r"^type:[ \t]*(.*?)[ \t]*$", re.M)
+PROJECT_FM = re.compile(r"^project:[ \t]*(.*?)[ \t]*$", re.M)
+PROJECT_NEEDED = ("task", "incident", "worklog")
+FOLDER_KIND = {"01t-tasks": "task", "01i-incidents": "incident", "01w-worklogs": "worklog"}   # ORGANIZE 1.38: these kinds always belong to a project
+
+
+def project_faults(fileset, texts):
+    """ORGANIZE 1.38: a note in 01-notes/ that has `project:` names an existing 02-projects/<value>.md, and a
+    task, incident or worklog has one. Hubs (the folder notes) and the files in non-note folders are not checked."""
+    projects = {f[len("02-projects/"):-3] for f in fileset if parts(f)[0] == "02-projects" and len(parts(f)) == 2
+                and f.endswith(".md") and f != "02-projects/02-projects.md"}
+    v = []
+    for f in sorted(fileset):
+        p = parts(f)
+        if p[0] != "01-notes" or not f.endswith(".md") or len(p) < 3 or any(NONNOTE_SEG.match(x) for x in p[:-1]):
+            continue
+        if p[-1] == p[-2] + ".md":   # the folder's hub
+            continue
+        text = texts.get(f, "")
+        fm = text.split("\n---\n", 1)[0] if text.startswith("---\n") else ""
+        m = PROJECT_FM.search(fm)
+        k = m.group(1).strip("\"'") if m else ""
+        t = TYPE_FM.search(fm)
+        kind = t.group(1).strip("\"'") if t else ""
+        kind = FOLDER_KIND.get(p[1], kind)    # a note in the task, incident or worklog folder is that kind, whatever its type says
+        if k and k not in projects:
+            v.append(("projects", f, "`project: %s` names no project map; it must be the name of a 02-projects/<project>.md (ORGANIZE 1.38)" % k))
+        elif not k and kind in PROJECT_NEEDED:
+            v.append(("projects", f, "%s %s note needs `project:`, the name of a 02-projects/<project>.md (ORGANIZE 1.38)" % ("an" if kind[0] in "aeiou" else "a", kind)))
+    return v
 
 
 def research_faults(fileset, texts, edges):
@@ -709,12 +764,15 @@ def since(store, ref):
             base = os.path.join(tmp, prefix) if prefix else tmp
             before = check(base) if os.path.isdir(base) else []
     after = check(store)
-    for c in ("root", "links", "orphans", "twins", "hubs", "maps", "shape", "research", "folders", "tasks", "handbook", "tags"):
-        nb = sum(1 for x in before if x[0] == c)
+    for c in ("root", "links", "orphans", "twins", "hubs", "maps", "shape", "research", "folders", "tasks", "handbook", "projects", "tags"):
+        was = {x for x in before if x[0] == c}
         na = [x for x in after if x[0] == c]
-        if len(na) > nb:
-            v.append((c, "(store)", f"{len(na)} now, {nb} at {ref}; fix the new ones"))
-            v += [x for x in na][:20]
+        fresh = [x for x in na if x not in was]
+        # projects (1.38): a fault is new when its (file, message) was not there before, so fixing an old
+        # note can't hide a new one. The other categories compare counts, so a moved file's old fault isn't new.
+        if (c == "projects" and fresh) or len(na) > len(was):
+            v.append((c, "(store)", f"{len(na)} now, {len(was)} at {ref}; {len(fresh)} not there before; fix the new ones"))
+            v += (fresh + [x for x in na if x in was])[:20]
     return v
 
 
@@ -1070,6 +1128,8 @@ def main(a):
         v = [(c, rel, w) for c, w in name_faults(rel, a[2].endswith("/"))]
         d = rel if a[2].endswith("/") else posixpath.dirname(rel)
         v += [("folders", rel, w) for w in (folder_faults(d) if d else [])]
+        if not a[2].endswith("/"):
+            v += [("folders", rel, w) for w in asset_file_faults(rel)]
     elif len(a) >= 2 and a[1] == "--changed":
         v = check(store, a[2:])
     elif len(a) == 2 and a[1] == "--maps-write":

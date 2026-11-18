@@ -208,19 +208,35 @@ class LinkAndOrphanTests(StoreFixture):
         self.write("01-notes/01a-atomic/lonely.md", "# Lonely\n")
         self.assertIn("orphans", self.checks())
 
-    def test_data_file_linked_from_its_note_is_reached(self) -> None:
-        # ORGANIZE 1.15 and 1.17: no item folders in 01-notes; a file that is not a note sits in a
-        # lettered sub-kind of its kind folder and is reached by the note that links it.
-        self.write("01-notes/01a-atomic/01ad-data/hosts.csv", "a,b\n")
+    def test_asset_file_linked_from_its_note_is_reached(self) -> None:
+        # ORGANIZE 1.36: a file we made sits in a sub-kind folder of 04-resources/04a-assets and is reached
+        # by the note that links it.
+        self.write("04-resources/04a-assets/04ad-data/hosts.csv", "a,b\n")
+        self.write("04-resources/04a-assets/04a-assets.md", "# Assets\n\nFiles we made.\n")
+        self.write("README.md", CLEAN_STORE["README.md"]
+                   + "- [04a-assets](04-resources/04a-assets/04a-assets.md): files we made\n")
         self.write(
             "01-notes/01a-atomic/joining-network.md",
-            CLEAN_STORE["01-notes/01a-atomic/joining-network.md"] + "\n[hosts](01ad-data/hosts.csv)\n",
+            CLEAN_STORE["01-notes/01a-atomic/joining-network.md"]
+            + "\n[hosts](../../04-resources/04a-assets/04ad-data/hosts.csv)\n",
         )
-        self.write(
-            "01-notes/01a-atomic/README.md",
-            CLEAN_STORE["01-notes/01a-atomic/README.md"] + "- [01ad-data](01ad-data/hosts.csv): data files the notes cite\n",
-        )
-        self.assertEqual(self.faults(), [])
+        self.assertEqual([f for f in self.faults() if f[0] in ("folders", "names", "orphans", "links")], [])
+
+    def test_data_folder_in_notes_no_longer_allowed(self) -> None:
+        self.write("01-notes/01a-atomic/01ad-data/hosts.csv", "a,b\n")
+        self.assertIn("folders", self.checks())
+
+    def test_note_directly_in_assets_fails(self) -> None:
+        self.write("04-resources/04a-assets/04a-assets.md", "# Assets\n")
+        self.write("04-resources/04a-assets/loose.md", "# Loose\n")
+        self.assertIn("folders", self.checks())
+        self.assertEqual(cks.asset_file_faults("04-resources/04a-assets/04a-assets.md"), [])
+        self.assertTrue(cks.asset_file_faults("04-resources/04a-assets/loose.md"))
+
+    def test_other_folder_in_assets_fails(self) -> None:
+        self.write("04-resources/04a-assets/04a-assets.md", "# Assets\n")
+        self.write("04-resources/04a-assets/stuff/a.txt", "a\n")
+        self.assertIn("folders", self.checks())
 
     def test_item_folder_in_notes_fails(self) -> None:
         self.write("01-notes/01a-atomic/joining-network/data/hosts.csv", "a,b\n")
@@ -368,6 +384,40 @@ class TaskTests(unittest.TestCase):
 
 
 HANDBOOK = "01-notes/01h-handbook/2026110723150002.md"
+
+
+class ProjectTests(unittest.TestCase):
+    """ORGANIZE 1.38: a note's `project:` names a project map; task, incident and worklog notes need one."""
+
+    def faults(self, files: dict[str, str]) -> list[tuple[str, str, str]]:
+        texts = dict(files)
+        return cks.project_faults(set(files), texts)
+
+    MAP = {"02-projects/central-hub.md": "# Central Hub\n"}
+
+    def test_task_without_project_fails(self) -> None:
+        files = {**self.MAP, "01-notes/01t-tasks/2026111800000001.md": "---\ntype: task\n---\nx\n"}
+        self.assertEqual([c for c, _, _ in self.faults(files)], ["projects"])
+
+    def test_task_with_project_passes(self) -> None:
+        files = {**self.MAP, "01-notes/01t-tasks/2026111800000001.md": "---\ntype: task\nproject: central-hub\n---\nx\n"}
+        self.assertEqual(self.faults(files), [])
+
+    def test_project_naming_no_map_fails(self) -> None:
+        files = {**self.MAP, "01-notes/01a-atomic/note.md": "---\ntype: atomic\nproject: nowhere\n---\nx\n"}
+        self.assertEqual([c for c, _, _ in self.faults(files)], ["projects"])
+
+    def test_plain_note_needs_no_project(self) -> None:
+        files = {**self.MAP, "01-notes/01a-atomic/note.md": "---\ntype: atomic\n---\nx\n"}
+        self.assertEqual(self.faults(files), [])
+
+    def test_folder_hub_is_not_checked(self) -> None:
+        files = {**self.MAP, "01-notes/01t-tasks/01t-tasks.md": "---\ntype: hub\n---\nx\n"}
+        self.assertEqual(self.faults(files), [])
+
+    def test_a_task_folder_note_is_a_task_whatever_its_type(self) -> None:
+        files = {**self.MAP, "01-notes/01t-tasks/2026111800000001.md": "---\ntype: atomic\n---\nx\n"}
+        self.assertEqual([c for c, _, _ in self.faults(files)], ["projects"])
 
 
 class HandbookTests(unittest.TestCase):

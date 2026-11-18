@@ -168,7 +168,8 @@ whether something is in the right home; that stays with the routine above.
 `scripts/check_knowledge_store.py <store>` checks a knowledge store: root
 folders, names (id-named notes, batch hubs, day logs), flat folders, dead
 links, orphans, byte-identical copies, hub lists, map links, research
-batch links, map shape, task front matter, and tags. `--path` checks one
+batch links, map shape, task front matter, project links, the files-we-made home
+(`04-resources/04a-assets/`), and tags. `--path` checks one
 proposed name before saving; `--since <ref>` fails only on new faults, for
 CI; `--maps-write` puts maps in their template's shape. Details in
 [references/knowledge-store.md](references/knowledge-store.md#checks).
