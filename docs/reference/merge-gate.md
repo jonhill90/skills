@@ -36,7 +36,7 @@ python3 scripts/merge_pr.py --repo <owner/name> --number <N>
 
 It checks, in order, and merges only if BOTH pass:
 
-1. CI is green (`gh pr checks`) — any failing or still-pending check,
+1. CI is green (every check run on the head, read over REST) — any failing or still-pending check,
    or no checks at all, refuses.
 2. `scripts/pr_verdict.py --repo <owner/name> --number <N>` exits `0`
    (`approved`) at the PR's CURRENT head — every other exit code (`1`

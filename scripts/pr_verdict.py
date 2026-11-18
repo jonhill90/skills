@@ -255,19 +255,32 @@ def _parse_trailer(pattern: re.Pattern, body: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _default_gh_pr_view(repo: str, number: int) -> dict:
-    """The one network call this script makes. A function-typed seam (this
-    repo's own "adapter discipline" -- AGENTS.md, and matching every other
-    scripts/*.py's own runner-argument pattern) so tests supply a fake
-    payload instead of a real `gh` subprocess."""
+def _gh_api(path: str, *extra: str):
+    """One REST call through `gh api` (the cloud sessions block GitHub GraphQL, which
+    `gh pr view` uses)."""
     raw = subprocess.run(
-        ["gh", "pr", "view", str(number), "--repo", repo, "--json", "body,headRefOid,comments"],
+        ["gh", "api", *extra, path],
         check=True,
         capture_output=True,
         text=True,
         timeout=30,
     ).stdout
     return json.loads(raw)
+
+
+def _default_gh_pr_view(repo: str, number: int) -> dict:
+    """The one network call this script makes, over REST. A function-typed seam (this
+    repo's own "adapter discipline" -- AGENTS.md) so tests supply a fake payload instead
+    of a real `gh` subprocess. Returns the shape `resolve` reads: body, headRefOid and
+    comments with `author.login`."""
+    pr = _gh_api(f"repos/{repo}/pulls/{number}")
+    comments = _gh_api(f"repos/{repo}/issues/{number}/comments?per_page=100", "--paginate", "--slurp")
+    flat = [c for page in comments for c in page] if comments and isinstance(comments[0], list) else comments
+    return {
+        "body": pr.get("body") or "",
+        "headRefOid": (pr.get("head") or {}).get("sha"),
+        "comments": [{"body": c.get("body") or "", "author": {"login": (c.get("user") or {}).get("login")}} for c in flat],
+    }
 
 
 def resolve(repo: str, number: int, *, gh_pr_view=None) -> dict:

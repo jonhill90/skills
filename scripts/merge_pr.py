@@ -74,37 +74,35 @@ EXIT_MERGE_FAILED = 3
 _GREEN_BUCKETS = frozenset({"pass", "skipping"})
 
 
+def _gh_api(path: str, *extra: str):
+    """One REST call through `gh api`. The cloud sessions block GitHub GraphQL, which
+    `gh pr checks` and `gh pr merge` use, so this script reads and merges over REST."""
+    result = subprocess.run(["gh", "api", *extra, path], capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        raise RuntimeError((result.stderr or result.stdout).strip())
+    return json.loads(result.stdout or "null")
+
+
+_GREEN_CONCLUSIONS = frozenset({"success", "skipped", "neutral"})
+
+
 def _default_ci_green(repo: str, number: int) -> tuple[bool, str]:
-    """The one CI-status seam (function-typed, this repo's own "adapter
-    discipline" — matching `pr_verdict.py`'s own `gh_pr_view` seam so
-    tests supply a fake instead of a real `gh` subprocess). Green means
-    every check's `bucket` is `pass` or `skipping`; a `fail`, a `pending`,
-    or zero checks at all are each refused, not merely a `fail` — a PR
-    whose CI has not finished yet is exactly as unsafe to merge as one
-    that failed outright, and a PR reporting NO checks has nothing this
-    script can call green."""
+    """The one CI-status seam. Green means every check run on the PR's current head
+    is completed with conclusion success, skipped or neutral; a failure, a check still
+    running, or zero checks at all are each refused."""
     try:
-        result = subprocess.run(
-            ["gh", "pr", "checks", str(number), "--repo", repo, "--json", "name,bucket"],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
+        sha = _gh_api(f"repos/{repo}/pulls/{number}")["head"]["sha"]
+        runs = _gh_api(f"repos/{repo}/commits/{sha}/check-runs?per_page=100")["check_runs"]
     except Exception as error:  # noqa: BLE001 - this boundary must never raise
-        return False, f"gh pr checks failed to run: {error}"
+        return False, f"check-runs lookup failed: {error}"
 
-    try:
-        checks = json.loads(result.stdout or "[]")
-    except json.JSONDecodeError:
-        return False, f"gh pr checks returned unparsable output: {result.stdout!r}"
+    if not runs:
+        return False, "no check runs on the head -- cannot confirm green"
 
-    if not isinstance(checks, list) or not checks:
-        return False, "gh pr checks reported no checks at all -- cannot confirm green"
-
-    buckets = sorted({c.get("bucket") for c in checks if isinstance(c, dict)})
-    if set(buckets) <= _GREEN_BUCKETS:
-        return True, f"{len(checks)} check(s) green, buckets: {buckets}"
-    return False, f"{len(checks)} check(s), buckets: {buckets}"
+    states = sorted({f"{r.get('status')}/{r.get('conclusion')}" for r in runs})
+    if all(r.get("status") == "completed" and r.get("conclusion") in _GREEN_CONCLUSIONS for r in runs):
+        return True, f"{len(runs)} check(s) green on {sha[:7]}, states: {states}"
+    return False, f"{len(runs)} check(s) on {sha[:7]}, states: {states}"
 
 
 def _default_pr_verdict(repo: str, number: int) -> tuple[int, dict]:
@@ -128,16 +126,22 @@ def _default_pr_verdict(repo: str, number: int) -> tuple[int, dict]:
 
 
 def _default_merge(repo: str, number: int) -> tuple[bool, str]:
+    """Squash-merge over REST with the head SHA pinned, so a push after the checks ran
+    is refused by GitHub, then delete the branch (best effort)."""
     try:
-        result = subprocess.run(
-            ["gh", "pr", "merge", str(number), "--repo", repo, "--squash", "--delete-branch"],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
+        pr = _gh_api(f"repos/{repo}/pulls/{number}")
+        sha, ref = pr["head"]["sha"], pr["head"]["ref"]
+        same_repo = (pr["head"].get("repo") or {}).get("full_name") == repo
+        out = _gh_api(f"repos/{repo}/pulls/{number}/merge", "-X", "PUT", "-f", "merge_method=squash", "-f", f"sha={sha}")
     except Exception as error:  # noqa: BLE001 - this boundary must never raise
-        return False, f"gh pr merge failed to run: {error}"
-    return result.returncode == 0, (result.stdout + result.stderr).strip()
+        return False, f"merge over REST failed: {error}"
+    detail = str(out.get("message", "merged")) if isinstance(out, dict) else "merged"
+    if same_repo:
+        try:
+            _gh_api(f"repos/{repo}/git/refs/heads/{ref}", "-X", "DELETE")
+        except Exception as error:  # noqa: BLE001
+            detail += f"; branch delete failed: {error}"
+    return True, detail
 
 
 def run(repo: str, number: int, *, ci_green=None, pr_verdict=None, merge=None) -> dict:
