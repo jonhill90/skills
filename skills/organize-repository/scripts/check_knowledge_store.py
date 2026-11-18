@@ -2,7 +2,7 @@
 """Check a knowledge store against the standard in references/knowledge-store.md.
 
 Stdlib only. One file. Works on any folder laid out as INPARA: a knowledge repository's
-root, a code repository's docs/knowledge/, or a project's shared files folder. A folder
+root or a project's shared files folder (a code repository keeps no store inside it). A folder
 is a store when it holds 99-meta/ORGANIZE.md.
 
 Usage:

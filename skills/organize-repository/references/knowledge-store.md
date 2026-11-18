@@ -3,8 +3,8 @@
 Read this before saving notes, research, captured pages, or other learning
 material, or when setting up or reorganizing a place that holds them. A
 **store** is any folder that keeps knowledge: a knowledge repository's
-root, a code repository's `docs/knowledge/`, or a project's shared files
-folder. The goal is that two agents saving the same file pick the same
+root or a project's shared files folder. A code repository keeps no
+knowledge store inside it. The goal is that two agents saving the same file pick the same
 folder and the same name, and that a reader finds anything by following
 at most three written lists.
 
@@ -27,12 +27,14 @@ Ask first: is the file about this repository's own system, saying why it
 is so, what it is, or how to run or change it?
 
 - **Yes:** it is documentation. It goes in the repository's `docs/` kind
-  folders (`decisions/`, `runbooks/`, `specs/` and the like) and follows
-  the docs rules in `SKILL.md`, not this file.
-- **No:** it is knowledge, something learned or gathered. It goes in the
-  knowledge store, and the wizard below places it. In a code repository
-  the knowledge store is `docs/knowledge/`, and the docs checks (front
-  matter, prose linting) skip that folder.
+  folders (`decisions/`, `runbooks/`, `specs/`, `explanations/` and the
+  like) and follows the docs rules in `SKILL.md`, not this file. That
+  includes the polished version of what was learned about the system,
+  once it is measured or sourced.
+- **No, or still working material:** it is knowledge, something learned
+  or gathered. It goes in the knowledge store, and the wizard below
+  places it. A code repository keeps no knowledge store of its own, and
+  its pages never link into one that is private.
 
 A docs folder that holds the evidence behind decisions is named
 `evidence/`, one summary per decision, linking to the full research in
@@ -354,13 +356,13 @@ CI are the backstop.
    standard, or a pointer to where that version lives. Create each other
    top folder and its hub `<folder>/<folder>.md` when the first item
    arrives.
-2. Tell agents. In a repository's `AGENTS.md`:
+2. Tell agents. In the knowledge store's own `AGENTS.md`:
 
    ```markdown
    ## Where knowledge goes
 
-   Knowledge (notes, research, captured sources) lives in `docs/knowledge/`
-   and follows `docs/knowledge/99-meta/ORGANIZE.md`.
+   Knowledge (notes, research, captured sources) lives in this store and
+   follows `99-meta/ORGANIZE.md`.
    - Before saving, run its wizard: answer the steps in order, take the
      first yes, then name the file by the naming rule.
    - One home per item. Link to it from every map that uses it; never copy.
@@ -369,6 +371,19 @@ CI are the backstop.
      from an area or project map.
    - To find something, start at README.md, then the hub, then only the
      items you need. Name the files you opened.
+   ```
+
+   A code repository's `AGENTS.md` carries the docs-or-knowledge rule
+   instead:
+
+   ```markdown
+   ## Docs or knowledge?
+
+   Is the file about this repository's own system: why it is so, what it
+   is, or how to run or change it? Yes: it is documentation and goes in
+   `docs/` by pull request, including the polished, sourced version of a
+   finding. No, or still working material: it goes in the knowledge store,
+   which may link here but is never linked from here.
    ```
 
 3. Run the check in CI against the pull request's base, with the script
@@ -388,7 +403,7 @@ CI are the backstop.
        base="$BASE"
        # A new branch has no before SHA; after a force push it is not in the clone.
        if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then base=origin/main; fi
-       python3 -I "$RUNNER_TEMP/check_knowledge_store.py" docs/knowledge --since "$base"
+       python3 -I "$RUNNER_TEMP/check_knowledge_store.py" . --since "$base"
    ```
 
 To leave the standard, delete `99-meta/ORGANIZE.md`: the check then treats
