@@ -32,11 +32,14 @@ thing at hand; follow that.
    default below, including one that looks inconsistent with other repos.
 2. **Pick the store.** Is the file about this repository's own system:
    why it is so, what it is, how to run or change it? Then it is
-   documentation, placed by the rules below. Anything learned or gathered
-   (research, notes, captured pages, outside repositories) is knowledge:
-   place and name it with the wizard in
-   [references/knowledge-store.md](references/knowledge-store.md), in
-   `docs/knowledge/` inside a code repository.
+   documentation, placed by the rules below, and that includes the
+   polished version of a finding about the system once it is measured or
+   sourced. Anything else, or still working material (research,
+   measurements, notes, captured pages, outside repositories), is
+   knowledge: place and name it with the wizard in
+   [references/knowledge-store.md](references/knowledge-store.md), in a
+   knowledge store of its own. A code repository keeps no knowledge store
+   inside it, and its pages never link into a private one.
 3. **Identify the profile and the tools.** Match the repository to a profile
    in [references/profiles.md](references/profiles.md). Note every tool with
    path rules of its own: language build/test tools, docs renderers,
@@ -72,10 +75,10 @@ directories:
    checker.
 
 Repositories whose root a tool owns (a Stow dotfiles tree, a plugin or
-skill collection) keep only the entry points. When the first knowledge
-file arrives, add `docs/knowledge/README.md`,
-`docs/knowledge/99-meta/99-meta.md` and `docs/knowledge/99-meta/ORGANIZE.md`, and the knowledge block for
-`AGENTS.md` from [references/knowledge-store.md](references/knowledge-store.md#adopting-the-standard).
+skill collection) keep only the entry points. A repository that agents
+also write knowledge about adds the docs-or-knowledge rule to `AGENTS.md`
+from [references/knowledge-store.md](references/knowledge-store.md#adopting-the-standard);
+the knowledge store itself is a separate repository or folder.
 
 ## Rules
 
@@ -98,9 +101,12 @@ Common to every repository:
   [references/documentation-sites.md](references/documentation-sites.md)),
   so adding, swapping, or removing a renderer touches only that root.
 - **Knowledge is not documentation.** Research, notes, and captured
-  material go in the knowledge store (`docs/knowledge/`), never loose in
-  `docs/`. The evidence behind a decision may sit in `docs/evidence/` as a
-  short summary that links to the research.
+  material go in a knowledge store, never loose in `docs/` and never in a
+  `docs/knowledge/` folder of a code repository. The polished version of a
+  measured finding about the repository's system is documentation and goes
+  in `docs/` (for example `docs/explanations/`) by pull request, carrying
+  its own sources. The evidence behind a decision may sit in
+  `docs/evidence/` as a short summary; it does not link into the store.
 - **Decisions are superseded, not deleted.** Mark the old record with what
   replaced it. A repository that records it corrects records in place
   while it is new follows that record instead. Other retired documents are
@@ -162,7 +168,8 @@ whether something is in the right home; that stays with the routine above.
 `scripts/check_knowledge_store.py <store>` checks a knowledge store: root
 folders, names (id-named notes, batch hubs, day logs), flat folders, dead
 links, orphans, byte-identical copies, hub lists, map links, research
-batch links, map shape, task front matter, and tags. `--path` checks one
+batch links, map shape, task front matter, project links, the files-we-made home
+(`04-resources/04a-assets/`), and tags. `--path` checks one
 proposed name before saving; `--since <ref>` fails only on new faults, for
 CI; `--maps-write` puts maps in their template's shape. Details in
 [references/knowledge-store.md](references/knowledge-store.md#checks).

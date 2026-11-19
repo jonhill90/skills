@@ -164,7 +164,9 @@ captured pages and repositories) rather than to document one system.
 It follows [knowledge-store.md](knowledge-store.md) at its root: INPARA
 top folders, the yes/no wizard, the naming rule, and hand-written hubs
 the checks keep complete. Code-profile rules do not apply inside it. A
-code repository holds its own knowledge store in `docs/knowledge/`.
+code repository keeps no knowledge store inside it: working knowledge
+about its system lives in a store of its own, and only the polished,
+sourced version of a finding becomes the repository's documentation.
 
 ## Docs taxonomies
 
@@ -178,6 +180,7 @@ them:
 
 Under the subject taxonomy, "is this still true?" is answered by the
 decision record's status, not by the directory. Under either taxonomy,
-the research itself lives in the knowledge store (`docs/knowledge/`), and
-`evidence/` holds only the short summary behind each decision. Under the lifecycle
+the research itself lives in a knowledge store outside the repository, and
+`evidence/` holds only the short summary behind each decision, with its own
+sources. Under the lifecycle
 taxonomy, decisions are `historical/` records with a stated disposition.

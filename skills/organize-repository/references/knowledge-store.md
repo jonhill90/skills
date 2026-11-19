@@ -3,8 +3,8 @@
 Read this before saving notes, research, captured pages, or other learning
 material, or when setting up or reorganizing a place that holds them. A
 **store** is any folder that keeps knowledge: a knowledge repository's
-root, a code repository's `docs/knowledge/`, or a project's shared files
-folder. The goal is that two agents saving the same file pick the same
+root or a project's shared files folder. A code repository keeps no
+knowledge store inside it. The goal is that two agents saving the same file pick the same
 folder and the same name, and that a reader finds anything by following
 at most three written lists.
 
@@ -27,12 +27,14 @@ Ask first: is the file about this repository's own system, saying why it
 is so, what it is, or how to run or change it?
 
 - **Yes:** it is documentation. It goes in the repository's `docs/` kind
-  folders (`decisions/`, `runbooks/`, `specs/` and the like) and follows
-  the docs rules in `SKILL.md`, not this file.
-- **No:** it is knowledge, something learned or gathered. It goes in the
-  knowledge store, and the wizard below places it. In a code repository
-  the knowledge store is `docs/knowledge/`, and the docs checks (front
-  matter, prose linting) skip that folder.
+  folders (`decisions/`, `runbooks/`, `specs/`, `explanations/` and the
+  like) and follows the docs rules in `SKILL.md`, not this file. That
+  includes the polished version of what was learned about the system,
+  once it is measured or sourced.
+- **No, or still working material:** it is knowledge, something learned
+  or gathered. It goes in the knowledge store, and the wizard below
+  places it. A code repository keeps no knowledge store of its own, and
+  its pages never link into one that is private.
 
 A docs folder that holds the evidence behind decisions is named
 `evidence/`, one summary per decision, linking to the full research in
@@ -70,7 +72,8 @@ a folder name never answers yes to both sides of the question above.
 │   └── 01w-worklogs/    one work session on one subject: what was done, files changed
 ├── 02-projects/       work that will end: one map note per project, <project>.md, links only
 ├── 03-areas/          subjects that never end: one map-of-content note per area, <area>.md
-├── 04-resources/      someone else made it; kept to reference
+├── 04-resources/      someone else made it; kept to reference (04a-assets: the files we made that notes cite)
+│   ├── 04a-assets/      files we made that notes cite: 04ad-data, 04ai-images, 04ap-pages, 04as-scripts
 │   ├── 04c-clippings/   web pages: one link note each, no copied text
 │   ├── 04d-documents/   papers and documents: one link note each, the file not kept
 │   ├── 04h-harness/     agent harness material: 04hp-prompts/ for chat thread exports
@@ -98,13 +101,18 @@ parent's number.
 - **Flat folders.** Inside `00-inbox/`, `01-notes/` and `04-resources/`
   the only folders are the lettered kind folders and their sub-kind
   folders. There are no item folders and no numbered batch folders there.
-- **Files that are not notes** (code, data, drawings, HTML pages we made)
-  sit in a lettered sub-kind of the kind folder whose notes cite them: the
-  kind's letters, then `d` for `data`, `s` for `scripts`, `i` for `images`
-  or `p` for `pages`. For example `01-notes/01h-handbook/01hd-data/`,
-  `01-notes/01h-handbook/01hs-scripts/` and
-  `01-notes/01r-research/01re-evidence/01rep-pages/`. Files in a data or
-  pages folder keep their names; scripts and images follow the naming rule.
+- **Files that are not notes** (code, data, images, HTML pages we made)
+  sit in `04-resources/04a-assets/`, in its four sub-kind folders:
+  `04ad-data`, `04ai-images`, `04ap-pages` and `04as-scripts`. The note
+  that cites a file links it. `01-notes/` holds notes only: a data,
+  images, pages or scripts folder there is a `folders` fault. Only the hub
+  `04a-assets.md` may sit directly in `04a-assets/`. Files in a data or
+  pages folder keep their names; scripts and images follow the naming rule
+  (a name already taken in its sub-kind folder takes the words of its old
+  kind in front).
+- **A note belongs to a project.** A note in `01-notes/` may carry
+  `project:`, the name of a `02-projects/<project>.md`; a task, incident or
+  worklog note must.
 
 ## The wizard
 
@@ -313,7 +321,7 @@ standard library.
 |---|---|
 | root | the store root holds anything but the top folders, dot files, and `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `CODEOWNERS` |
 | names | a file or folder breaks the naming rule: a bad word name, an id that is not a real `YYYYMMDDhhmmss##`, a word name in a research kind folder or `01t-tasks/`, a batch hub not named `NNNN-<name>.md`, anything in `01r-research/` but its eight folders and hub, or two paths that differ only by letter case |
-| folders | a folder inside `00-inbox/`, `01-notes/` or `04-resources/` that is not a lettered kind folder, its sub-kind, or (in `01-notes/`) a data, scripts, images or pages sub-kind |
+| folders | a folder inside `00-inbox/`, `01-notes/` or `04-resources/` that is not a lettered kind folder, its sub-kind, or one of the four sub-kinds of `04a-assets/`; a data, scripts, images or pages folder in `01-notes/`, or a file directly in `04a-assets/` other than its hub `04a-assets.md`, fails |
 | links | a relative Markdown link points to nothing |
 | orphans | no chain of links from `README.md` reaches a file |
 | twins | two written Markdown notes have the same bytes |
@@ -323,12 +331,13 @@ standard library.
 | shape | an area or project map is not in the shape `--maps-write` writes from its template (only when the store has templates) |
 | tasks | a task note lacks `type: task`, a `label` `TASK-NNNN`, an `external-refs` list of `<system>:<key>` strings (`[]` when none), or a `state` from the list above |
 | handbook | a note directly in `01-notes/01h-handbook/` (not its hub or `01hr-runbooks/`) has no `handbook-kind:` from the list in step 6 |
+| projects | a note in `01-notes/` has `project:` naming no `02-projects/<project>.md`, or a task, incident or worklog note has no `project:`; `--since` flags a fault whose file and message were not there before |
 | tags | body text holds a `#tag`, or a note's one-line `tags` list lacks its folder's kind words or its month (area and topic lists belong to each store, so their checks are the store's own) |
 
 - Captured material keeps its original names and is skipped by the names,
   links, and twins checks: anything inside an item folder of
   `05-archive/` or a sub-kind folder of `04-resources/`, and anything in a
-  `sources/` or `data/` folder or a data or pages sub-kind folder.
+  `sources/` or `data/` folder or a data or pages sub-kind folder of `05-archive/`.
 - `--path <relative path>` checks one proposed name and its folder before
   saving.
 - `--hubs` prints the lines each hub is missing.
@@ -354,13 +363,13 @@ CI are the backstop.
    standard, or a pointer to where that version lives. Create each other
    top folder and its hub `<folder>/<folder>.md` when the first item
    arrives.
-2. Tell agents. In a repository's `AGENTS.md`:
+2. Tell agents. In the knowledge store's own `AGENTS.md`:
 
    ```markdown
    ## Where knowledge goes
 
-   Knowledge (notes, research, captured sources) lives in `docs/knowledge/`
-   and follows `docs/knowledge/99-meta/ORGANIZE.md`.
+   Knowledge (notes, research, captured sources) lives in this store and
+   follows `99-meta/ORGANIZE.md`.
    - Before saving, run its wizard: answer the steps in order, take the
      first yes, then name the file by the naming rule.
    - One home per item. Link to it from every map that uses it; never copy.
@@ -369,6 +378,19 @@ CI are the backstop.
      from an area or project map.
    - To find something, start at README.md, then the hub, then only the
      items you need. Name the files you opened.
+   ```
+
+   A code repository's `AGENTS.md` carries the docs-or-knowledge rule
+   instead:
+
+   ```markdown
+   ## Docs or knowledge?
+
+   Is the file about this repository's own system: why it is so, what it
+   is, or how to run or change it? Yes: it is documentation and goes in
+   `docs/` by pull request, including the polished, sourced version of a
+   finding. No, or still working material: it goes in the knowledge store,
+   which may link here but is never linked from here.
    ```
 
 3. Run the check in CI against the pull request's base, with the script
@@ -388,7 +410,7 @@ CI are the backstop.
        base="$BASE"
        # A new branch has no before SHA; after a force push it is not in the clone.
        if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then base=origin/main; fi
-       python3 -I "$RUNNER_TEMP/check_knowledge_store.py" docs/knowledge --since "$base"
+       python3 -I "$RUNNER_TEMP/check_knowledge_store.py" . --since "$base"
    ```
 
 To leave the standard, delete `99-meta/ORGANIZE.md`: the check then treats
