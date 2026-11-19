@@ -135,5 +135,46 @@ class MergeFailureTests(unittest.TestCase):
         self.assertEqual(merge.calls, [("jonhill90/skills", 1)])
 
 
+class RestAdapterTests(unittest.TestCase):
+    """The CI and merge seams read and merge over REST (GraphQL is blocked in cloud sessions)."""
+
+    def _fake(self, runs):
+        calls = []
+
+        def api(path, *extra):
+            calls.append((path, extra))
+            if path.endswith("/check-runs?per_page=100"):
+                return {"check_runs": runs}
+            return {"head": {"sha": HEAD, "ref": "feat/x", "repo": {"full_name": "o/r"}}, "message": "Pull Request successfully merged"}
+
+        return api, calls
+
+    def test_green_only_when_every_run_completed_successfully(self):
+        for runs, want in (
+            ([{"status": "completed", "conclusion": "success"}, {"status": "completed", "conclusion": "skipped"}], True),
+            ([{"status": "completed", "conclusion": "success"}, {"status": "in_progress", "conclusion": None}], False),
+            ([{"status": "completed", "conclusion": "failure"}], False),
+            ([], False),
+        ):
+            api, _ = self._fake(runs)
+            original, mp._gh_api = mp._gh_api, api
+            try:
+                self.assertEqual(mp._default_ci_green("o/r", 1)[0], want, runs)
+            finally:
+                mp._gh_api = original
+
+    def test_merge_pins_the_head_sha_and_squashes(self):
+        api, calls = self._fake([])
+        original, mp._gh_api = mp._gh_api, api
+        try:
+            ok, _ = mp._default_merge("o/r", 1)
+        finally:
+            mp._gh_api = original
+        self.assertTrue(ok)
+        put = [c for c in calls if c[0].endswith("/merge")][0]
+        self.assertIn(f"sha={HEAD}", put[1])
+        self.assertIn("merge_method=squash", put[1])
+
+
 if __name__ == "__main__":
     unittest.main()
